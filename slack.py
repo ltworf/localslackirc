@@ -19,8 +19,53 @@
 #
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
+from typing import Dict, List, NamedTuple
+
 from slackclient import SlackClient
 from typedload import load
+
+
+class ResponseException(Exception):
+    pass
+
+
+class Response(NamedTuple):
+    """
+    Internally used to parse a response from the API.
+    """
+    ok: bool
+    headers: Dict[str, str]
+
+
+class Topic(NamedTuple):
+    """
+    In slack, topic is not just a string, but has other fields.
+    """
+    value: str
+
+
+class Channel(NamedTuple):
+    """
+    A channel description.
+
+    real_topic tries to use the purpose if the topic is missing
+    """
+    id: str
+    name_normalized: str
+    purpose: Topic
+    topic: Topic
+    num_members: int
+
+    @property
+    def name(self):
+        return self.name_normalized
+
+    @property
+    def real_topic(self) -> str:
+        if self.topic.value:
+            return self.topic.value
+        return self.purpose.value
+
 
 class Slack:
     def __init__(self) -> None:
@@ -28,3 +73,15 @@ class Slack:
         with open('/home/salvo/.localslackcattoken') as f:
             token = f.readline().strip()
         self.client = SlackClient(token)
+
+    def channels(self) -> List[Channel]:
+        r = self.client.api_call("channels.list", exclude_archived=1)
+        response = load(r, Response)
+        if response.ok:
+            return load(r['channels'], List[Channel])
+        raise ResponseException(response)
+
+
+if __name__ == '__main__':
+    s  = Slack()
+    print(s.channels())
