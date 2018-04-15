@@ -19,7 +19,8 @@
 #
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
-from typing import Dict, List, NamedTuple
+from typing import Dict, List, NamedTuple, Union
+from time import sleep
 
 from slackclient import SlackClient
 from typedload import load
@@ -67,6 +68,21 @@ class Channel(NamedTuple):
         return self.purpose.value
 
 
+class Message(NamedTuple):
+    channel: str
+    user: str
+    text: str
+
+
+class MessageEdit(NamedTuple):
+    previous: Message
+    current: Message
+
+
+class MessageDelete(Message):
+    pass
+
+
 class Slack:
     def __init__(self) -> None:
         #FIXME open the token in a sensible way
@@ -77,11 +93,39 @@ class Slack:
     def channels(self) -> List[Channel]:
         r = self.client.api_call("channels.list", exclude_archived=1)
         response = load(r, Response)
+        print(response.headers)
         if response.ok:
             return load(r['channels'], List[Channel])
         raise ResponseException(response)
+
+    def loop(self):
+        if self.client.rtm_connect(with_team_state=False):
+            while True:
+                events = self.client.rtm_read()
+                for event in events:
+                    print(event)
+                    t = event.get('type')
+                    subt = event.get('subtype')
+
+                    if t == 'message' and not subt:
+                        yield load(event, Message)
+                    elif t == 'message' and subt == 'message_changed':
+                        event['message']['channel'] = event['channel']
+                        event['previous_message']['channel'] = event['channel']
+                        yield MessageEdit(
+                            previous=load(event['previous_message'], Message),
+                            current=load(event['message'], Message)
+                        )
+                    elif t == 'message' and subt == 'message_deleted':
+                        event['previous_message']['channel'] = event['channel']
+                        yield load(event['previous_message'], MessageDelete)
+
+
+                sleep(0.1)
 
 
 if __name__ == '__main__':
     s  = Slack()
     print(s.channels())
+    for event in s.loop():
+        print(event)
