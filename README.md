@@ -19,3 +19,9 @@ Instructions for chromium, probably similar for other browsers.
 * Copy the 'token' parameter from the WebSocket connection URL.
 
 Now you can use localslackirc.
+
+Contributors
+============
+
+Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>
+Joel Rosdahl (for the IRC server)
