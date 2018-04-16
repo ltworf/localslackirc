@@ -34,7 +34,7 @@ from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from optparse import OptionParser
 
-from slack import Slack
+from slack import Slack, Message, MessageDelete, MessageEdit
 
 VERSION = "1.2.1"
 
@@ -741,8 +741,9 @@ class Server:
                 [],
                 0.3)
             slackev = next(self.slackevents)
-            if slackev:
+            if isinstance(slackev, Message):
                 print(slackev)
+                print(self.slack.get_channel(slackev.channel))
 
             for x in iwtd:
                 if x in self.clients:

@@ -19,6 +19,7 @@
 #
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
+from functools import lru_cache
 from typing import Dict, List, NamedTuple, Union
 
 from slackclient import SlackClient
@@ -54,7 +55,7 @@ class Channel(NamedTuple):
     name_normalized: str
     purpose: Topic
     topic: Topic
-    num_members: int
+    members: List[str]
 
     @property
     def name(self):
@@ -68,8 +69,8 @@ class Channel(NamedTuple):
 
 
 class Message(NamedTuple):
-    channel: str
-    user: str
+    channel: str  # The channel id
+    user: str  # The user id
     text: str
 
 
@@ -90,12 +91,37 @@ class Slack:
         self.client = SlackClient(token)
 
     def channels(self) -> List[Channel]:
+        """
+        Returns the list of slack channels
+        """
+        result = []
         r = self.client.api_call("channels.list", exclude_archived=1)
         response = load(r, Response)
-        print(response.headers)
         if response.ok:
-            return load(r['channels'], List[Channel])
-        raise ResponseException(response)
+            result.extend(load(r['channels'], List[Channel]))
+        else:
+            raise ResponseException(response)
+
+        r = self.client.api_call("groups.list", exclude_archived=1)
+        response = load(r, Response)
+        if response.ok:
+            result.extend(load(r['groups'], List[Channel]))
+        else:
+            raise ResponseException(response)
+        return result
+
+    @lru_cache()
+    def get_channel(self, id_: str) -> Channel:
+        """
+        Returns a channel object from a slack channel id
+
+        raises KeyError if it doesn't exist.
+        """
+        for c in self.channels():
+            if c.id == id_:
+                return c
+        raise KeyError()
+
 
     def events_iter(self):
         """
