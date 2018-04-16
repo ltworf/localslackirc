@@ -49,20 +49,13 @@ def create_directory(path: str) -> None:
         os.makedirs(path)
 
 
-class Channel(object):
-    def __init__(self, server, name):
+class Channel:
+    def __init__(self, server: 'Server', name: str) -> None:
         self.server = server
         self.name = name
         self.members = set()  # type: Set['Client']
         self._topic = ""
         self._key = None
-        if self.server.state_dir:
-            self._state_path = "%s/%s" % (
-                self.server.state_dir,
-                name.replace("_", "__").replace("/", "_"))
-            self._read_state()
-        else:
-            self._state_path = None
 
     def add_member(self, client: 'Client'):
         self.members.add(client)
@@ -72,16 +65,14 @@ class Channel(object):
 
     def set_topic(self, value):
         self._topic = value
-        self._write_state()
 
     topic = property(get_topic, set_topic)
 
     def get_key(self):
         return self._key
 
-    def set_key(self, value):
+    def set_key(self, value) -> None:
         self._key = value
-        self._write_state()
 
     key = property(get_key, set_key)
 
@@ -90,29 +81,8 @@ class Channel(object):
         if not self.members:
             self.server.remove_channel(self)
 
-    def _read_state(self):
-        if not (self._state_path and os.path.exists(self._state_path)):
-            return
-        data = {}
 
-        with open(self._state_path, "rb") as state_file:
-            exec(state_file.read(), {}, data)
-
-        self._topic = data.get("topic", "")
-        self._key = data.get("key")
-
-    def _write_state(self):
-        if not self._state_path:
-            return
-        (fd, path) = tempfile.mkstemp(dir=os.path.dirname(self._state_path))
-        fp = os.fdopen(fd, "w")
-        fp.write("topic = %r\n" % self.topic)
-        fp.write("key = %r\n" % self.key)
-        fp.close()
-        os.rename(path, self._state_path)
-
-
-class Client(object):
+class Client:
     LINESEP_REGEXP = re.compile(r"\r?\n")
     # The RFC limit for nicknames is 9 characters, but what the heck.
     VALID_NICK_REGEXP = re.compile(
@@ -120,10 +90,10 @@ class Client(object):
     VALID_CHANNEL_REGEXP = re.compile(
         r"^[&#+!][^\x00\x07\x0a\x0d ,:]{0,50}$")
 
-    def __init__(self, server, socket) -> None:
+    def __init__(self, server: 'Server', socket) -> None:
         self.server = server
         self.socket = socket
-        self.channels = {}  # irc_lower(Channel name) --> Channel
+        self.channels = {}  # type: Dict[str, Channel]
         self.nickname = None
         self.user = None
         self.realname = None
@@ -580,7 +550,7 @@ class Client(object):
         except socket.error as x:
             self.disconnect(x)
 
-    def disconnect(self, quitmsg):
+    def disconnect(self, quitmsg: Any) -> None:
         self.message("ERROR :%s" % quitmsg)
         self.server.print_info(
             "Disconnected connection from %s:%s (%s)." % (
@@ -636,13 +606,12 @@ class Client(object):
                    % (self.nickname, len(self.server.clients)))
 
 
-class Server(object):
+class Server:
     def __init__(self, options) -> None:
         self.ports = options.ports
         self.verbose = options.verbose
         self.debug = options.debug
         self.channel_log_dir = options.channel_log_dir
-        self.state_dir = options.state_dir
         self.log_file = options.log_file
         self.log_max_bytes = options.log_max_size * 1024 * 1024
         self.log_count = options.log_count
@@ -656,20 +625,18 @@ class Server(object):
         self.name = socket.getfqdn(self.address)[:server_name_limit]
 
         self.channels = {}  # type: Dict[str, Channel]
-        self.clients = {}  # Socket --> Client instance.
-        self.nicknames = {}  # irc_lower(Nickname) --> Client instance.
+        self.clients = {}  # type: Dict[socket.socket, 'Client']
+        self.nicknames = {}  # type: Dict[str, 'Client']
         if self.channel_log_dir:
             create_directory(self.channel_log_dir)
-        if self.state_dir:
-            create_directory(self.state_dir)
 
-    def get_client(self, nickname):
+    def get_client(self, nickname: str) -> Optional[Client]:
         return self.nicknames.get(irc_lower(nickname))
 
-    def has_channel(self, name):
+    def has_channel(self, name: str) -> bool:
         return irc_lower(name) in self.channels
 
-    def get_channel(self, channelname):
+    def get_channel(self, channelname: str) -> Channel:
         if irc_lower(channelname) in self.channels:
             channel = self.channels[irc_lower(channelname)]
         else:
@@ -677,7 +644,7 @@ class Server(object):
             self.channels[irc_lower(channelname)] = channel
         return channel
 
-    def print_info(self, msg):
+    def print_info(self, msg) -> None:
         if self.verbose:
             print(msg)
             sys.stdout.flush()
@@ -706,7 +673,7 @@ class Server(object):
             channel = self.channels[irc_lower(channelname)]
             channel.remove_client(client)
 
-    def remove_client(self, client, quitmsg):
+    def remove_client(self, client, quitmsg) -> None:
         client.message_related(":%s QUIT :%s" % (client.prefix, quitmsg))
         for x in client.channels.values():
             client.channel_log(x, "quit (%s)" % quitmsg, meta=True)
@@ -719,7 +686,7 @@ class Server(object):
     def remove_channel(self, channel):
         del self.channels[irc_lower(channel.name)]
 
-    def start(self):
+    def start(self) -> None:
         serversockets = []
         for port in self.ports:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -835,10 +802,6 @@ def main(argv):
         "--ports",
         metavar="X",
         help="listen to ports X (a list separated by comma or whitespace);")
-    op.add_option(
-        "--state-dir",
-        metavar="X",
-        help="save persistent channel state (topic, key) in directory X")
     op.add_option(
         "--verbose",
         action="store_true",
