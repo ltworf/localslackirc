@@ -1,3 +1,4 @@
 slackclient/
 token.txt
 __pycache__/
+.mypy_cache/
