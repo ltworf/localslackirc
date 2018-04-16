@@ -34,6 +34,8 @@ from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from optparse import OptionParser
 
+from slack import Slack
+
 VERSION = "1.2.1"
 
 
@@ -616,6 +618,8 @@ class Server:
         self.log_max_bytes = options.log_max_size * 1024 * 1024
         self.log_count = options.log_count
         self.logger = None
+        self.slack = Slack()
+        self.slackevents = self.slack.events_iter()
 
         if options.listen:
             self.address = socket.gethostbyname(options.listen)
@@ -733,10 +737,13 @@ class Server:
         while True:
             (iwtd, owtd, ewtd) = select.select(
                 serversockets + [x.socket for x in self.clients.values()],
-                [x.socket for x in self.clients.values()
-                 if x.write_queue_size() > 0],
+                [x.socket for x in self.clients.values() if x.write_queue_size() > 0],
                 [],
-                10)
+                0.3)
+            slackev = next(self.slackevents)
+            if slackev:
+                print(slackev)
+
             for x in iwtd:
                 if x in self.clients:
                     self.clients[x].socket_readable_notification()

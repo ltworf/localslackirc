@@ -20,7 +20,6 @@
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
 from typing import Dict, List, NamedTuple, Union
-from time import sleep
 
 from slackclient import SlackClient
 from typedload import load
@@ -98,7 +97,10 @@ class Slack:
             return load(r['channels'], List[Channel])
         raise ResponseException(response)
 
-    def loop(self):
+    def events_iter(self):
+        """
+        This yields an event or None. Don't call it without sleeps
+        """
         if self.client.rtm_connect(with_team_state=False):
             while True:
                 events = self.client.rtm_read()
@@ -119,9 +121,7 @@ class Slack:
                     elif t == 'message' and subt == 'message_deleted':
                         event['previous_message']['channel'] = event['channel']
                         yield load(event['previous_message'], MessageDelete)
-
-
-                sleep(0.1)
+                yield None
 
 
 if __name__ == '__main__':
