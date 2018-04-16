@@ -29,6 +29,7 @@ import string
 import sys
 import tempfile
 import time
+from typing import *
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from optparse import OptionParser
@@ -36,14 +37,14 @@ from optparse import OptionParser
 VERSION = "1.2.1"
 
 
-def buffer_to_socket(msg):
+def buffer_to_socket(msg) -> bytes:
     return msg.encode()
 
-def socket_to_buffer(buf):
+def socket_to_buffer(buf) -> str:
     return buf.decode(errors="ignore")
 
 
-def create_directory(path):
+def create_directory(path: str) -> None:
     if not os.path.isdir(path):
         os.makedirs(path)
 
@@ -52,7 +53,7 @@ class Channel(object):
     def __init__(self, server, name):
         self.server = server
         self.name = name
-        self.members = set()
+        self.members = set()  # type: Set['Client']
         self._topic = ""
         self._key = None
         if self.server.state_dir:
@@ -63,7 +64,7 @@ class Channel(object):
         else:
             self._state_path = None
 
-    def add_member(self, client):
+    def add_member(self, client: 'Client'):
         self.members.add(client)
 
     def get_topic(self):
@@ -112,32 +113,26 @@ class Channel(object):
 
 
 class Client(object):
-    __linesep_regexp = re.compile(r"\r?\n")
+    LINESEP_REGEXP = re.compile(r"\r?\n")
     # The RFC limit for nicknames is 9 characters, but what the heck.
-    __valid_nickname_regexp = re.compile(
+    VALID_NICK_REGEXP = re.compile(
         r"^[][\`_^{|}A-Za-z][][\`_^{|}A-Za-z0-9-]{0,50}$")
-    __valid_channelname_regexp = re.compile(
+    VALID_CHANNEL_REGEXP = re.compile(
         r"^[&#+!][^\x00\x07\x0a\x0d ,:]{0,50}$")
 
-    def __init__(self, server, socket):
+    def __init__(self, server, socket) -> None:
         self.server = server
         self.socket = socket
         self.channels = {}  # irc_lower(Channel name) --> Channel
         self.nickname = None
         self.user = None
         self.realname = None
-        if self.server.ipv6:
-            (self.host, self.port, _, _) = socket.getpeername()
-        else:
-            (self.host, self.port) = socket.getpeername()
+        (self.host, self.port) = socket.getpeername()
         self.__timestamp = time.time()
         self.__readbuffer = ""
         self.__writebuffer = ""
         self.__sent_ping = False
-        if self.server.password:
-            self.__handle_command = self.__pass_handler
-        else:
-            self.__handle_command = self.__registration_handler
+        self.__handle_command = self.__registration_handler
 
     def get_prefix(self):
         return "%s!%s@%s" % (self.nickname, self.user, self.host)
@@ -157,11 +152,11 @@ class Client(object):
                 # Not registered.
                 self.disconnect("ping timeout")
 
-    def write_queue_size(self):
+    def write_queue_size(self) -> int:
         return len(self.__writebuffer)
 
     def __parse_read_buffer(self):
-        lines = self.__linesep_regexp.split(self.__readbuffer)
+        lines = self.LINESEP_REGEXP.split(self.__readbuffer)
         self.__readbuffer = lines[-1]
         lines = lines[:-1]
         for line in lines:
@@ -182,20 +177,6 @@ class Client(object):
                         arguments.append(y[1])
             self.__handle_command(command, arguments)
 
-    def __pass_handler(self, command, arguments):
-        server = self.server
-        if command == "PASS":
-            if len(arguments) == 0:
-                self.reply_461("PASS")
-            else:
-                if arguments[0].lower() == server.password:
-                    self.__handle_command = self.__registration_handler
-                else:
-                    self.reply("464 :Password incorrect")
-        elif command == "QUIT":
-            self.disconnect("Client quit")
-            return
-
     def __registration_handler(self, command, arguments):
         server = self.server
         if command == "NICK":
@@ -205,7 +186,7 @@ class Client(object):
             nick = arguments[0]
             if server.get_client(nick):
                 self.reply("433 * %s :Nickname is already in use" % nick)
-            elif not self.__valid_nickname_regexp.match(nick):
+            elif not self.VALID_NICK_REGEXP.match(nick):
                 self.reply("432 * %s :Erroneous nickname" % nick)
             else:
                 self.nickname = nick
@@ -228,12 +209,11 @@ class Client(object):
             self.reply("004 %s %s miniircd-%s o o"
                        % (self.nickname, server.name, VERSION))
             self.send_lusers()
-            self.send_motd()
             self.__handle_command = self.__command_handler
 
     def __send_names(self, arguments, for_join=False):
         server = self.server
-        valid_channel_re = self.__valid_channelname_regexp
+        valid_channel_re = self.VALID_CHANNEL_REGEXP
         if len(arguments) > 0:
             channelnames = arguments[0].split(",")
         else:
@@ -385,9 +365,6 @@ class Client(object):
             else:
                 self.reply_403(targetname)
 
-        def motd_handler():
-            self.send_motd()
-
         def names_handler():
             self.__send_names(arguments)
 
@@ -402,7 +379,7 @@ class Client(object):
             elif client and client is not self:
                 self.reply("433 %s %s :Nickname is already in use"
                            % (self.nickname, newnick))
-            elif not self.__valid_nickname_regexp.match(newnick):
+            elif not self.VALID_NICK_REGEXP.match(newnick):
                 self.reply("432 %s %s :Erroneous Nickname"
                            % (self.nickname, newnick))
             else:
@@ -556,7 +533,6 @@ class Client(object):
             "LIST": list_handler,
             "LUSERS": lusers_handler,
             "MODE": mode_handler,
-            "MOTD": motd_handler,
             "NAMES": names_handler,
             "NICK": nick_handler,
             "NOTICE": notice_and_privmsg_handler,
@@ -571,7 +547,7 @@ class Client(object):
             "WHOIS": whois_handler,
         }
         server = self.server
-        valid_channel_re = self.__valid_channelname_regexp
+        valid_channel_re = self.VALID_CHANNEL_REGEXP
         try:
             handler_table[command]()
         except KeyError:
@@ -594,7 +570,7 @@ class Client(object):
         else:
             self.disconnect(quitmsg)
 
-    def socket_writable_notification(self):
+    def socket_writable_notification(self) -> None:
         try:
             sent = self.socket.send(buffer_to_socket(self.__writebuffer))
             self.server.print_debug(
@@ -655,101 +631,37 @@ class Client(object):
         for client in clients:
             client.message(msg)
 
-    def send_lusers(self):
+    def send_lusers(self) -> None:
         self.reply("251 %s :There are %d users and 0 services on 1 server"
                    % (self.nickname, len(self.server.clients)))
 
-    def send_motd(self):
-        server = self.server
-        motdlines = server.get_motd_lines()
-        if motdlines:
-            self.reply("375 %s :- %s Message of the day -"
-                       % (self.nickname, server.name))
-            for line in motdlines:
-                self.reply("372 %s :- %s" % (self.nickname, line.rstrip()))
-            self.reply("376 %s :End of /MOTD command" % self.nickname)
-        else:
-            self.reply("422 %s :MOTD File is missing" % self.nickname)
-
 
 class Server(object):
-    def __init__(self, options):
+    def __init__(self, options) -> None:
         self.ports = options.ports
-        self.password = options.password
-        self.ssl_pem_file = options.ssl_pem_file
-        self.motdfile = options.motd
         self.verbose = options.verbose
-        self.ipv6 = options.ipv6
         self.debug = options.debug
         self.channel_log_dir = options.channel_log_dir
-        self.chroot = options.chroot
-        self.setuid = options.setuid
         self.state_dir = options.state_dir
         self.log_file = options.log_file
         self.log_max_bytes = options.log_max_size * 1024 * 1024
         self.log_count = options.log_count
         self.logger = None
 
-        if options.password_file:
-            with open(options.password_file, "r") as fp:
-                self.password = fp.read().strip("\n")
-
-        if self.ssl_pem_file:
-            self.ssl = __import__("ssl")
-
-        # Find certificate after daemonization if path is relative:
-        if self.ssl_pem_file and os.path.exists(self.ssl_pem_file):
-            self.ssl_pem_file = os.path.abspath(self.ssl_pem_file)
-        # else: might exist in the chroot jail, so just continue
-
-        if options.listen and self.ipv6:
-            self.address = socket.getaddrinfo(
-                    options.listen, None, proto=socket.IPPROTO_TCP)[0][4][0]
-        elif options.listen:
+        if options.listen:
             self.address = socket.gethostbyname(options.listen)
         else:
             self.address = ""
         server_name_limit = 63  # From the RFC.
         self.name = socket.getfqdn(self.address)[:server_name_limit]
 
-        self.channels = {}  # irc_lower(Channel name) --> Channel instance.
+        self.channels = {}  # type: Dict[str, Channel]
         self.clients = {}  # Socket --> Client instance.
         self.nicknames = {}  # irc_lower(Nickname) --> Client instance.
         if self.channel_log_dir:
             create_directory(self.channel_log_dir)
         if self.state_dir:
             create_directory(self.state_dir)
-
-    def make_pid_file(self, filename):
-        try:
-            fd = os.open(filename, os.O_RDWR | os.O_CREAT | os.O_EXCL, 0o644)
-            os.write(fd, "%i\n" % os.getpid())
-            os.close(fd)
-        except:
-            self.print_error("Could not create PID file %r" % filename)
-            sys.exit(1)
-
-    def daemonize(self):
-        try:
-            pid = os.fork()
-            if pid > 0:
-                sys.exit(0)
-        except OSError:
-            sys.exit(1)
-        os.setsid()
-        try:
-            pid = os.fork()
-            if pid > 0:
-                self.print_info("PID: %d" % pid)
-                sys.exit(0)
-        except OSError:
-            sys.exit(1)
-        os.chdir("/")
-        os.umask(0)
-        dev_null = open("/dev/null", "r+")
-        os.dup2(dev_null.fileno(), sys.stdout.fileno())
-        os.dup2(dev_null.fileno(), sys.stderr.fileno())
-        os.dup2(dev_null.fileno(), sys.stdin.fileno())
 
     def get_client(self, nickname):
         return self.nicknames.get(irc_lower(nickname))
@@ -764,15 +676,6 @@ class Server(object):
             channel = Channel(self, channelname)
             self.channels[irc_lower(channelname)] = channel
         return channel
-
-    def get_motd_lines(self):
-        if self.motdfile:
-            try:
-                return open(self.motdfile).readlines()
-            except IOError:
-                return ["Could not read MOTD file %r." % self.motdfile]
-        else:
-            return []
 
     def print_info(self, msg):
         if self.verbose:
@@ -819,8 +722,7 @@ class Server(object):
     def start(self):
         serversockets = []
         for port in self.ports:
-            s = socket.socket(socket.AF_INET6 if self.ipv6 else socket.AF_INET,
-                              socket.SOCK_STREAM)
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             try:
                 s.bind((self.address, port))
@@ -831,16 +733,6 @@ class Server(object):
             serversockets.append(s)
             del s
             self.print_info("Listening on port %d." % port)
-        if self.chroot:
-            os.chdir(self.chroot)
-            os.chroot(self.chroot)
-            self.print_info("Changed root directory to %s" % self.chroot)
-        if self.setuid:
-            os.setgid(self.setuid[1])
-            os.setuid(self.setuid[0])
-            self.print_info("Setting uid:gid to %s:%s"
-                            % (self.setuid[0], self.setuid[1]))
-
         self.init_logging()
         try:
             self.run(serversockets)
@@ -883,18 +775,6 @@ class Server(object):
                     self.clients[x].socket_readable_notification()
                 else:
                     (conn, addr) = x.accept()
-                    if self.ssl_pem_file:
-                        try:
-                            conn = self.ssl.wrap_socket(
-                                conn,
-                                server_side=True,
-                                certfile=self.ssl_pem_file,
-                                keyfile=self.ssl_pem_file)
-                        except Exception as e:
-                            self.print_error(
-                                "SSL error for connection from %s:%s: %s" % (
-                                    addr[0], addr[1], e))
-                            continue
                     try:
                         self.clients[conn] = Client(self, conn)
                         self.print_info("Accepted connection from %s:%s." % (
@@ -932,14 +812,6 @@ def main(argv):
         metavar="X",
         help="store channel log in directory X")
     op.add_option(
-        "-d", "--daemon",
-        action="store_true",
-        help="fork and become a daemon")
-    op.add_option(
-        "--ipv6",
-        action="store_true",
-        help="use IPv6")
-    op.add_option(
         "--debug",
         action="store_true",
         help="print debug messages to stdout")
@@ -960,31 +832,9 @@ def main(argv):
         metavar="X", default=10, type="int",
         help="set maximum log file size to X MiB; default: %default MiB")
     op.add_option(
-        "--motd",
-        metavar="X",
-        help="display file X as message of the day")
-    op.add_option(
-        "--pid-file",
-        metavar="X",
-        help="write PID to file X")
-    op.add_option(
-        "-p", "--password",
-        metavar="X",
-        help="require connection password X; default: no password")
-    op.add_option(
-        "--password-file",
-        metavar="X",
-        help=("require connection password stored in file X;"
-              " default: no password"))
-    op.add_option(
         "--ports",
         metavar="X",
-        help="listen to ports X (a list separated by comma or whitespace);"
-             " default: 6667 or 6697 if SSL is enabled")
-    op.add_option(
-        "-s", "--ssl-pem-file",
-        metavar="FILE",
-        help="enable SSL and use FILE as the .pem certificate+key")
+        help="listen to ports X (a list separated by comma or whitespace);")
     op.add_option(
         "--state-dir",
         metavar="X",
@@ -993,52 +843,12 @@ def main(argv):
         "--verbose",
         action="store_true",
         help="be verbose (print some progress messages to stdout)")
-    if os.name == "posix":
-        op.add_option(
-            "--chroot",
-            metavar="X",
-            help="change filesystem root to directory X after startup"
-                 " (requires root)")
-        op.add_option(
-            "--setuid",
-            metavar="U[:G]",
-            help="change process user (and optionally group) after startup"
-                 " (requires root)")
 
     (options, args) = op.parse_args(argv[1:])
-    if os.name != "posix":
-        options.chroot = False
-        options.setuid = False
     if options.debug:
         options.verbose = True
     if options.ports is None:
-        if options.ssl_pem_file is None:
-            options.ports = "6667"
-        else:
-            options.ports = "6697"
-    if options.chroot and os.getuid() != 0:
-        op.error("Must be root to use --chroot")
-    if options.setuid:
-        from pwd import getpwnam
-        from grp import getgrnam
-        if os.getuid() != 0:
-            op.error("Must be root to use --setuid")
-        matches = options.setuid.split(":")
-        if len(matches) == 2:
-            options.setuid = (getpwnam(matches[0]).pw_uid,
-                              getgrnam(matches[1]).gr_gid)
-        elif len(matches) == 1:
-            options.setuid = (getpwnam(matches[0]).pw_uid,
-                              getpwnam(matches[0]).pw_gid)
-        else:
-            op.error("Specify a user, or user and group separated by a colon,"
-                     " e.g. --setuid daemon, --setuid nobody:nobody")
-    if os.name == "posix" and not options.setuid \
-            and (os.getuid() == 0 or os.getgid() == 0):
-        op.error("Running this service as root is not recommended. Use the"
-                 " --setuid option to switch to an unprivileged account after"
-                 " startup. If you really intend to run as root, use"
-                 " \"--setuid root\".")
+        options.ports = "6667"
 
     ports = []
     for port in re.split(r"[,\s]+", options.ports):
@@ -1048,10 +858,6 @@ def main(argv):
             op.error("bad port: %r" % port)
     options.ports = ports
     server = Server(options)
-    if options.daemon:
-        server.daemonize()
-    if options.pid_file:
-        server.make_pid_file(options.pid_file)
     try:
         server.start()
     except KeyboardInterrupt:
