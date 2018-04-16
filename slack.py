@@ -55,7 +55,7 @@ class Channel(NamedTuple):
     name_normalized: str
     purpose: Topic
     topic: Topic
-    members: List[str]
+    members: List[str]  # List of user ids
 
     @property
     def name(self):
@@ -81,6 +81,13 @@ class MessageEdit(NamedTuple):
 
 class MessageDelete(Message):
     pass
+
+
+class User(NamedTuple):
+    id: str
+    name: str
+    real_name: str
+    is_admin: bool
 
 
 class Slack:
@@ -121,6 +128,20 @@ class Slack:
             if c.id == id_:
                 return c
         raise KeyError()
+
+    @lru_cache(maxsize=700)
+    def get_user(self, id_: str) -> User:
+        """
+        Returns a user object from a slack user id
+
+        raises KeyError if it does not exist
+        """
+        r = self.client.api_call("users.info", user=id_)
+        response = load(r, Response)
+        if response.ok:
+            return load(r['user'], User)
+        else:
+            raise KeyError(response)
 
 
     def events_iter(self):
