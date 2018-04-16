@@ -25,3 +25,8 @@ Contributors
 
 Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>
 Joel Rosdahl (for the IRC server)
+
+IRC Channel
+===========
+
+#localslackirc on oftc
