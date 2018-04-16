@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 # Hey, Emacs! This is -*-python-*-.
 #
 # Copyright (C) 2003-2017 Joel Rosdahl
@@ -36,20 +36,11 @@ from optparse import OptionParser
 VERSION = "1.2.1"
 
 
-PY3 = sys.version_info[0] >= 3
+def buffer_to_socket(msg):
+    return msg.encode()
 
-if PY3:
-    def buffer_to_socket(msg):
-        return msg.encode()
-
-    def socket_to_buffer(buf):
-        return buf.decode(errors="ignore")
-else:
-    def buffer_to_socket(msg):
-        return msg
-
-    def socket_to_buffer(buf):
-        return buf
+def socket_to_buffer(buf):
+    return buf.decode(errors="ignore")
 
 
 def create_directory(path):
@@ -923,8 +914,7 @@ class Server(object):
                 last_aliveness_check = now
 
 
-_maketrans = str.maketrans if PY3 else string.maketrans
-_ircstring_translation = _maketrans(
+_ircstring_translation = str.maketrans(
     string.ascii_lowercase.upper() + "[]\\^",
     string.ascii_lowercase + "{}|~")
 
