@@ -705,6 +705,13 @@ class Server:
             del s
             self.print_info("Listening on port %d." % port)
         self.init_logging()
+
+
+        for c in self.slack.channels():
+            new_chan = Channel(self, c.name)
+            new_chan.set_topic(c.real_topic)
+            self.channels[c.name] = new_chan
+
         try:
             self.run(serversockets)
         except:
