@@ -86,8 +86,8 @@ class MessageDelete(Message):
 class User(NamedTuple):
     id: str
     name: str
-    real_name: str
-    is_admin: bool
+    real_name: str = 'noname'
+    is_admin: bool = False
 
 
 class Slack:
