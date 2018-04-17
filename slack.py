@@ -20,7 +20,7 @@
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
 from functools import lru_cache
-from typing import Dict, List, NamedTuple, Union
+from typing import *
 
 from slackclient import SlackClient
 from typedload import load
@@ -83,9 +83,16 @@ class MessageDelete(Message):
     pass
 
 
+class Profile(NamedTuple):
+    real_name: str = 'noname'
+    email: Optional[str] = None
+    status_text: str = ''
+
+
 class User(NamedTuple):
     id: str
     name: str
+    profile: Profile
     real_name: str = 'noname'
     is_admin: bool = False
 
@@ -97,11 +104,12 @@ class Slack:
             token = f.readline().strip()
         self.client = SlackClient(token)
 
+    @lru_cache()
     def channels(self) -> List[Channel]:
         """
         Returns the list of slack channels
         """
-        result = []
+        result = []  # type: List[Channel]
         r = self.client.api_call("channels.list", exclude_archived=1)
         response = load(r, Response)
         if response.ok:
