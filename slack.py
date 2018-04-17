@@ -166,6 +166,18 @@ class Slack:
         else:
             raise KeyError(response)
 
+    def send_message(self, channel_id: str, msg: str) -> None:
+        r = self.client.api_call(
+            "chat.postMessage",
+            channel=channel_id,
+            text=msg,
+            as_user=True,
+        )
+        response = load(r, Response)
+        if response.ok:
+            return
+        raise ResponseException(response)
+
 
     def events_iter(self):
         """

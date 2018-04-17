@@ -76,7 +76,16 @@ class Client:
         #Unknown command:  b'PRIVMSG #cama :ciao mpare'
         #Unknown command:  b'PRIVMSG TAMARRO :qi'
         _, dest, msg = cmd.split(b' ', 2)
-        #TODO send this to slack
+        msg = msg[1:]
+
+        if dest.startswith(b'#'):
+            self.sl_client.send_message(
+                self.sl_client.get_channel_by_name(dest[1:].decode()).id,
+                msg.decode('utf8')
+            )
+        else:
+            #FIXME not implemented
+            print('Private messaging not implemented yet')
 
     def _listhandler(self, cmd: bytes) -> None:
         for c in self.sl_client.channels():
