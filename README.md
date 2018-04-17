@@ -20,12 +20,6 @@ Instructions for chromium, probably similar for other browsers.
 
 Now you can use localslackirc.
 
-Contributors
-============
-
-Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>
-Joel Rosdahl (for the IRC server)
-
 IRC Channel
 ===========
 
