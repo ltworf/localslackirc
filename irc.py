@@ -140,7 +140,6 @@ class Client:
         }
 
         if cmdid in handlers:
-            print('Known command: ', cmd)
             handlers[cmdid](cmd)
         else:
             print('Unknown command: ', cmd)
