@@ -105,8 +105,11 @@ class Client:
         ))
 
     def slack_event(self, sl_ev):
+        #TODO handle p2p messages
         if isinstance(sl_ev, slack.Message):
-            #TODO handle p2p messages
+            # Skip my own messages
+            if self.sl_client.get_user(sl_ev.user).name.encode('utf8') == self.nick:
+                return
             self.sendmsg(
                 self.sl_client.get_user(sl_ev.user).name.encode('utf8'),
                 b'#' + self.sl_client.get_channel(sl_ev.channel).name.encode('utf8'),
