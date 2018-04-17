@@ -34,7 +34,7 @@ from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from optparse import OptionParser
 
-from slack import Slack, Message, MessageDelete, MessageEdit
+import slack
 
 VERSION = "1.2.1"
 
@@ -56,6 +56,7 @@ class Channel:
         self.server = server
         self.name = name
         self.members = set()  # type: Set['Client']
+        self.users = set()  # type: Set[slack.User]
         self._topic = ""
         self._key = None
 
@@ -276,7 +277,7 @@ class Client:
             for channel in sorted_channels:
                 self.reply("322 %s %s %d :%s"
                            % (self.nickname, channel.name,
-                              len(channel.members), channel.topic))
+                              len(channel.users), channel.topic))
             self.reply("323 %s :End of LIST" % self.nickname)
 
         def lusers_handler():
@@ -618,7 +619,7 @@ class Server:
         self.log_max_bytes = options.log_max_size * 1024 * 1024
         self.log_count = options.log_count
         self.logger = None
-        self.slack = Slack()
+        self.slack = slack.Slack()
         self.slackevents = self.slack.events_iter()
 
         if options.listen:
@@ -706,11 +707,14 @@ class Server:
             self.print_info("Listening on port %d." % port)
         self.init_logging()
 
-
+        # Load all the channels
         for c in self.slack.channels():
-            new_chan = Channel(self, c.name)
+            new_chan = Channel(self, '#' + c.name)
             new_chan.set_topic(c.real_topic)
-            self.channels[c.name] = new_chan
+            for u in c.members:
+                print(self.slack.get_user(u))
+                new_chan.users.add(self.slack.get_user(u))
+            self.channels['#' + c.name] = new_chan
 
         try:
             self.run(serversockets)
@@ -748,9 +752,10 @@ class Server:
                 [],
                 0.3)
             slackev = next(self.slackevents)
-            if isinstance(slackev, Message):
+            if isinstance(slackev, slack.Message):
                 print(slackev)
                 print(self.slack.get_channel(slackev.channel))
+                print(self.slack.get_user(slackev.user))
 
             for x in iwtd:
                 if x in self.clients:
