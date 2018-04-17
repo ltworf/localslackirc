@@ -2,3 +2,5 @@ slackclient/
 token.txt
 __pycache__/
 .mypy_cache/
+.kdev4/
+localslackirc.kdev4
