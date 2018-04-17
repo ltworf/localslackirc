@@ -173,7 +173,12 @@ class Slack:
         """
         if self.client.rtm_connect(with_team_state=False):
             while True:
-                events = self.client.rtm_read()
+                try:
+                    events = self.client.rtm_read()
+                except BrokenPipeError:
+                    if not self.client.rtm_connect(with_team_state=False):
+                        raise
+                    events = []
                 for event in events:
                     print(event)
                     t = event.get('type')
