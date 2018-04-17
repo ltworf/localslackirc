@@ -93,8 +93,11 @@ class User(NamedTuple):
     id: str
     name: str
     profile: Profile
-    real_name: str = 'noname'
     is_admin: bool = False
+
+    @property
+    def real_name(self) -> str:
+        return self.profile.real_name
 
 
 class Slack:
