@@ -82,6 +82,10 @@ class MessageEdit(NamedTuple):
 class MessageDelete(Message):
     pass
 
+class UserTyping(NamedTuple):
+    channel: str  # Channel id
+    user: str  # User id
+
 
 class Profile(NamedTuple):
     real_name: str = 'noname'
@@ -187,12 +191,11 @@ class Slack:
             while True:
                 try:
                     events = self.client.rtm_read()
-                except BrokenPipeError:
+                except (BrokenPipeError, TimeoutError):
                     if not self.client.rtm_connect(with_team_state=False):
                         raise
                     events = []
                 for event in events:
-                    print(event)
                     t = event.get('type')
                     subt = event.get('subtype')
 
@@ -208,4 +211,10 @@ class Slack:
                     elif t == 'message' and subt == 'message_deleted':
                         event['previous_message']['channel'] = event['channel']
                         yield load(event['previous_message'], MessageDelete)
+                    elif t == 'user_typing':
+                        yield load(event, UserTyping)
+                    elif t == 'hello':
+                        pass # Stupid test event
+                    else:
+                        print(event)
                 yield None
