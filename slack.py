@@ -55,7 +55,7 @@ class Channel(NamedTuple):
     name_normalized: str
     purpose: Topic
     topic: Topic
-    members: List[str]  # List of user ids
+    members: Set[str]  # Set of user ids
 
     @property
     def name(self):
