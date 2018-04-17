@@ -673,7 +673,7 @@ class Server:
             del self.nicknames[irc_lower(oldnickname)]
         self.nicknames[irc_lower(client.nickname)] = client
 
-    def remove_member_from_channel(self, client, channelname):
+    def remove_member_from_channel(self, client, channelname: str) -> None:
         if irc_lower(channelname) in self.channels:
             channel = self.channels[irc_lower(channelname)]
             channel.remove_client(client)
@@ -692,7 +692,7 @@ class Server:
         del self.channels[irc_lower(channel.name)]
 
     def start(self) -> None:
-        serversockets = []
+        serversockets = []  # type: List[socket.socket]
         for port in self.ports:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
