@@ -197,10 +197,3 @@ class Slack:
                         event['previous_message']['channel'] = event['channel']
                         yield load(event['previous_message'], MessageDelete)
                 yield None
-
-
-if __name__ == '__main__':
-    s  = Slack()
-    print(s.channels())
-    for event in s.loop():
-        print(event)
