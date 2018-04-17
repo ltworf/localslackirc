@@ -135,7 +135,7 @@ def main():
     ircclient = Client(s, sl_client)
 
 
-    poller.register(s.fileno())
+    poller.register(s.fileno(), select.POLLIN)
 
     # Main loop
     while True:
