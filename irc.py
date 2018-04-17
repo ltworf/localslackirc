@@ -53,10 +53,23 @@ class Client:
 
     def _joinhandler(self, cmd: bytes) -> None:
         _, channel_name = cmd.split(b' ', 1)
-        #TODO do something with the channel name
+
+        slchan = self.sl_client.get_channel_by_name(channel_name[1:].decode())
+        userlist = []  # type List[bytes]
+        for i in slchan.members:
+            try:
+                u = self.sl_client.get_user(i)
+            except:
+                continue
+            name = u.name.encode('utf8')
+            prefix = b'@' if u.is_admin else b''
+            userlist.append(prefix + name)
+
+        users = b' '.join(userlist)
+
         self.s.send(b':%s!salvo@127.0.0.1 JOIN %s\n' % (self.nick, channel_name))
-        self.s.send(b':serenity 331 %s %s :No topic is set\n' % (self.nick, channel_name))
-        self.s.send(b':serenity 353 %s = %s :stomaselli davide camaro @TAMARRO\n' % (self.nick, channel_name))
+        self.s.send(b':serenity 331 %s %s :%s\n' % (self.nick, channel_name, slchan.real_topic.encode('utf8')))
+        self.s.send(b':serenity 353 %s = %s :%s\n' % (self.nick, channel_name, users))
         self.s.send(b':serenity 366 %s %s :End of NAMES list\n' % (self.nick, channel_name))
 
     def _privmsghandler(self, cmd: bytes) -> None:

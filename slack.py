@@ -140,6 +140,18 @@ class Slack:
                 return c
         raise KeyError()
 
+    @lru_cache()
+    def get_channel_by_name(self, name: str) -> Channel:
+        """
+        Returns a channel object from a slack channel id
+
+        raises KeyError if it doesn't exist.
+        """
+        for c in self.channels():
+            if c.name == name:
+                return c
+        raise KeyError()
+
     @lru_cache(maxsize=700)
     def get_user(self, id_: str) -> User:
         """
