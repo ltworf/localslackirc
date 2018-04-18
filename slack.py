@@ -87,7 +87,18 @@ class UserTyping(NamedTuple):
     user: str  # User id
 
 
-SlackEvent = Union[UserTyping, MessageDelete, MessageEdit, Message]
+class FileDeleted(NamedTuple):
+    file_id: str
+    channel_ids: List[str] = []
+
+
+SlackEvent = Union[
+    UserTyping,
+    MessageDelete,
+    MessageEdit,
+    Message,
+    FileDeleted,
+]
 
 
 class Profile(NamedTuple):
@@ -228,6 +239,8 @@ class Slack:
                         if u.id in self._usercache:
                             del self._usercache[u.id]
                         #TODO make an event for this
+                    elif t == 'file_deleted':
+                        yield load(event, FileDeleted)
                     elif t in {'channel_marked', 'group_marked', 'hello'}:
                         # Useless events
                         continue
