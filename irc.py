@@ -139,35 +139,36 @@ class Client:
             yield encoded
 
 
+    def _message(self, sl_ev: Union[slack.Message, slack.MessageFileShare, slack.MessageDelete, slack.MessageEdit], prefix: str=''):
+        try:
+            source = self.sl_client.get_user(sl_ev.user).name.encode('utf8')
+            dest = b'#' + self.sl_client.get_channel(sl_ev.channel).name.encode('utf8')
+        except Exception as e:
+            print('Error: ', e)
+            return
+        for msg in self.parse_message(prefix + sl_ev.text):
+            self.sendmsg(
+                source,
+                dest,
+                msg
+            )
+
     def slack_event(self, sl_ev):
         #TODO handle p2p messages
-        if isinstance(sl_ev, slack.Message) or isinstance(sl_ev, slack.MessageFileShare):
-            # Skip my own messages
-            if self.sl_client.get_user(sl_ev.user).name.encode('utf8') == self.nick:
-                return
-            if isinstance(sl_ev, slack.MessageFileShare):
-                self.sendmsg(
-                    self.sl_client.get_user(sl_ev.user).name.encode('utf8'),
-                    b'#' + self.sl_client.get_channel(sl_ev.channel).name.encode('utf8'),
-                    b'[File upload] %s %d %s' % (
-                        sl_ev.file.mimetype.encode('utf8'),
-                        sl_ev.file.size.encode('utf8'),
-                        sl_ev.file.url_private.encode('utf8'),
-                    ),
-                )
-            for msg in self.parse_message(sl_ev.text):
-                self.sendmsg(
-                    self.sl_client.get_user(sl_ev.user).name.encode('utf8'),
-                    b'#' + self.sl_client.get_channel(sl_ev.channel).name.encode('utf8'),
-                    msg
-                )
-        elif isinstance(sl_ev, slack.MessageDelete):
-            for msg in self.parse_message(sl_ev.text):
-                self.sendmsg(
-                    self.sl_client.get_user(sl_ev.user).name.encode('utf8'),
-                    b'#' + self.sl_client.get_channel(sl_ev.channel).name.encode('utf8'),
-                    b'[deleted]' + msg
-                )
+        if isinstance(sl_ev, slack.MessageDelete):
+            self._message(sl_ev, '[deleted]')
+        elif isinstance(sl_ev, slack.Message):
+            self._message(sl_ev)
+        elif isinstance(sl_ev, slack.MessageFileShare):
+            prefix ='[File upload] %s %d %s\n' % (
+                        sl_ev.file.mimetype,
+                        sl_ev.file.size,
+                        sl_ev.file.url_private,
+                    )
+            self._message(sl_ev, prefix)
+        elif isinstance(sl_ev, slack.MessageEdit):
+            self._message(sl_ev.current, '[edited]')
+
 
     def command(self, cmd: bytes) -> None:
         if b' ' in cmd:
