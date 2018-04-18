@@ -20,11 +20,16 @@
 #
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
+import re
 import select
 import socket
 from typing import *
 
 import slack
+
+
+# How slack expresses mentioning users
+_MENTIONS_REGEXP = re.compile(r'<(@[0-9A-Za-z]+)>')
 
 
 class Client:
@@ -108,6 +113,17 @@ class Client:
         for i in msg.split('\n'):
             if not i:
                 continue
+
+            # Replace all mentions with @user
+            while True:
+                mention = _MENTIONS_REGEXP.search(i)
+                if not mention:
+                    break
+                i = (
+                    i[0:mention.span()[0]] +
+                    self.sl_client.get_user(mention.groups[0]).name +
+                    i[mention.span()[1]:]
+                )
 
             i = i.replace('&gt;', '>')
             i = i.replace('&lt;', '<')
