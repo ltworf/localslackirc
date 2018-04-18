@@ -29,7 +29,7 @@ import slack
 
 
 # How slack expresses mentioning users
-_MENTIONS_REGEXP = re.compile(r'<(@[0-9A-Za-z]+)>')
+_MENTIONS_REGEXP = re.compile(r'<@([0-9A-Za-z]+)>')
 
 
 class Client:
@@ -124,7 +124,7 @@ class Client:
                     break
                 i = (
                     i[0:mention.span()[0]] +
-                    self.sl_client.get_user(mention.groups[0]).name +
+                    self.sl_client.get_user(mention.groups()[0]).name +
                     i[mention.span()[1]:]
                 )
 
