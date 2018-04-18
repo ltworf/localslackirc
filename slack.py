@@ -241,7 +241,7 @@ class Slack:
                         #TODO make an event for this
                     elif t == 'file_deleted':
                         yield load(event, FileDeleted)
-                    elif t in {'channel_marked', 'group_marked', 'hello'}:
+                    elif t in {'channel_marked', 'group_marked', 'hello', 'dnd_updated_user'}:
                         # Useless events
                         continue
                     else:
