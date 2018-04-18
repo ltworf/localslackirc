@@ -113,6 +113,7 @@ class Slack:
         with open('/home/salvo/.localslackcattoken') as f:
             token = f.readline().strip()
         self.client = SlackClient(token)
+        self._usercache = {}  # type: Dict[str, User]
 
     @lru_cache()
     def channels(self) -> List[Channel]:
@@ -159,17 +160,21 @@ class Slack:
                 return c
         raise KeyError()
 
-    @lru_cache(maxsize=700)
     def get_user(self, id_: str) -> User:
         """
         Returns a user object from a slack user id
 
         raises KeyError if it does not exist
         """
+        if id_ in self._usercache:
+            return self._usercache[id_]
+
         r = self.client.api_call("users.info", user=id_)
         response = load(r, Response)
         if response.ok:
-            return load(r['user'], User)
+            u = load(r['user'], User)
+            self._usercache[id_] = u
+            return u
         else:
             raise KeyError(response)
 
@@ -219,6 +224,12 @@ class Slack:
                         yield load(event, UserTyping)
                     elif t == 'hello':
                         pass # Stupid test event
+                    elif t == 'user_change':
+                        # Changes in the user, drop it from cache
+                        u = load(event['user'], User)
+                        if u.id in self._usercache:
+                            del self._usercache[u.id]
+                        #TODO make an event for this
                     else:
                         print(event)
                 yield None
