@@ -104,17 +104,34 @@ class Client:
             message,
         ))
 
+    def parse_message(self, msg: str) -> Iterator[bytes]:
+        for i in msg.split('\n'):
+            if not i:
+                continue
+
+            i = i.replace('&gt;', '>')
+            i = i.replace('&lt;', '<')
+
+            encoded = i.encode('utf8')
+
+            encoded = encoded.replace(b'<!here>', b'[YELLING]' + self.nick)
+            encoded = encoded.replace(b'<!channel>', b'[YELLING]' + self.nick)
+
+            yield encoded
+
+
     def slack_event(self, sl_ev):
         #TODO handle p2p messages
         if isinstance(sl_ev, slack.Message):
             # Skip my own messages
             if self.sl_client.get_user(sl_ev.user).name.encode('utf8') == self.nick:
                 return
-            self.sendmsg(
-                self.sl_client.get_user(sl_ev.user).name.encode('utf8'),
-                b'#' + self.sl_client.get_channel(sl_ev.channel).name.encode('utf8'),
-                sl_ev.text.encode('utf8')
-            )
+            for msg in self.parse_message(sl_ev.text):
+                self.sendmsg(
+                    self.sl_client.get_user(sl_ev.user).name.encode('utf8'),
+                    b'#' + self.sl_client.get_channel(sl_ev.channel).name.encode('utf8'),
+                    msg
+                )
 
     def command(self, cmd: bytes) -> None:
         if b' ' in cmd:
@@ -137,6 +154,7 @@ class Client:
             #Unknown command:  b'MODE #cama +b'
             #Unknown command:  b'TOPIC #cama :titolo del canale'
             #Unknown command:  b'whois TAMARRO'
+            #Unknown command:  b'PART #support-sdp :Konversation terminated!'
         }
 
         if cmdid in handlers:
