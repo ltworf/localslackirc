@@ -59,7 +59,10 @@ class Client:
     def _joinhandler(self, cmd: bytes) -> None:
         _, channel_name = cmd.split(b' ', 1)
 
-        slchan = self.sl_client.get_channel_by_name(channel_name[1:].decode())
+        try:
+            slchan = self.sl_client.get_channel_by_name(channel_name[1:].decode())
+        except:
+            return
         userlist = []  # type List[bytes]
         for i in slchan.members:
             try:
@@ -100,7 +103,7 @@ class Client:
                 len(c.members),
                 c.real_topic.encode('utf8'),
             ))
-        self.s.send(b':serenity 323 quno :End of LIST\n')
+        self.s.send(b':serenity 323 %s :End of LIST\n' % self.nick)
 
     def sendmsg(self, from_: bytes, to: bytes, message: bytes) -> None:
         self.s.send(b':%s!salvo@127.0.0.1 PRIVMSG %s :%s\n' % (
