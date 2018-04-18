@@ -140,11 +140,18 @@ class Client:
 
 
     def _message(self, sl_ev: Union[slack.Message, slack.MessageFileShare, slack.MessageDelete, slack.MessageEdit], prefix: str=''):
+        """
+        Sends a message to the irc client
+        """
+        source = self.sl_client.get_user(sl_ev.user).name.encode('utf8')
+        if source == self.nick:
+            return
         try:
-            source = self.sl_client.get_user(sl_ev.user).name.encode('utf8')
             dest = b'#' + self.sl_client.get_channel(sl_ev.channel).name.encode('utf8')
+        except KeyError:
+            dest = source
         except Exception as e:
-            print('Error: ', e)
+            print('Error: ', str(e))
             return
         for msg in self.parse_message(prefix + sl_ev.text):
             self.sendmsg(
