@@ -141,10 +141,20 @@ class Client:
 
     def slack_event(self, sl_ev):
         #TODO handle p2p messages
-        if isinstance(sl_ev, slack.Message):
+        if isinstance(sl_ev, slack.Message) or isinstance(sl_ev, slack.MessageFileShare):
             # Skip my own messages
             if self.sl_client.get_user(sl_ev.user).name.encode('utf8') == self.nick:
                 return
+            if isinstance(sl_ev, slack.MessageFileShare):
+                self.sendmsg(
+                    self.sl_client.get_user(sl_ev.user).name.encode('utf8'),
+                    b'#' + self.sl_client.get_channel(sl_ev.channel).name.encode('utf8'),
+                    b'[File upload] %s %d %s' % (
+                        sl_ev.file.mimetype.encode('utf8'),
+                        sl_ev.file.size.encode('utf8'),
+                        sl_ev.file.url_private.encode('utf8'),
+                    ),
+                )
             for msg in self.parse_message(sl_ev.text):
                 self.sendmsg(
                     self.sl_client.get_user(sl_ev.user).name.encode('utf8'),

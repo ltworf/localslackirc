@@ -82,6 +82,7 @@ class MessageEdit(NamedTuple):
 class MessageDelete(Message):
     pass
 
+
 class UserTyping(NamedTuple):
     channel: str  # Channel id
     user: str  # User id
@@ -92,19 +93,31 @@ class FileDeleted(NamedTuple):
     channel_ids: List[str] = []
 
 
-SlackEvent = Union[
-    UserTyping,
-    MessageDelete,
-    MessageEdit,
-    Message,
-    FileDeleted,
-]
-
-
 class Profile(NamedTuple):
     real_name: str = 'noname'
     email: Optional[str] = None
     status_text: str = ''
+    is_restricted: bool = False
+    is_ultra_restricted: bool = False
+
+
+class File(NamedTuple):
+    id: str
+    url_private: str
+    size: int
+    name: Optional[str] = None
+    title: Optional[str] = None
+    mimetype: Optional[str] = None
+
+
+class MessageFileShare(NamedTuple):
+    file: File
+    user: str
+    upload: bool
+    username: str
+    channel: str
+    user_profile: Optional[Profile] = None
+    text: str = ''
 
 
 class User(NamedTuple):
@@ -116,6 +129,16 @@ class User(NamedTuple):
     @property
     def real_name(self) -> str:
         return self.profile.real_name
+
+
+SlackEvent = Union[
+    UserTyping,
+    MessageDelete,
+    MessageEdit,
+    Message,
+    FileDeleted,
+    MessageFileShare,
+]
 
 
 class Slack:
@@ -221,6 +244,8 @@ class Slack:
 
                     if t == 'message' and not subt:
                         yield load(event, Message)
+                    elif t == 'message' and subt == 'file_share':
+                        yield load(event, MessageFileShare)
                     elif t == 'message' and subt == 'message_changed':
                         event['message']['channel'] = event['channel']
                         event['previous_message']['channel'] = event['channel']
