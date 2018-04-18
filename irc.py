@@ -161,6 +161,13 @@ class Client:
                     b'#' + self.sl_client.get_channel(sl_ev.channel).name.encode('utf8'),
                     msg
                 )
+        elif isinstance(sl_ev, slack.MessageDelete):
+            for msg in self.parse_message(sl_ev.text):
+                self.sendmsg(
+                    self.sl_client.get_user(sl_ev.user).name.encode('utf8'),
+                    b'#' + self.sl_client.get_channel(sl_ev.channel).name.encode('utf8'),
+                    b'[deleted]' + msg
+                )
 
     def command(self, cmd: bytes) -> None:
         if b' ' in cmd:
