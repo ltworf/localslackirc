@@ -87,6 +87,9 @@ class UserTyping(NamedTuple):
     user: str  # User id
 
 
+SlackEvent = Union[UserTyping, MessageDelete, MessageEdit, Message]
+
+
 class Profile(NamedTuple):
     real_name: str = 'noname'
     email: Optional[str] = None
@@ -183,7 +186,7 @@ class Slack:
         raise ResponseException(response)
 
 
-    def events_iter(self):
+    def events_iter(self) -> Iterator[Optional[SlackEvent]]:
         """
         This yields an event or None. Don't call it without sleeps
         """
@@ -195,6 +198,7 @@ class Slack:
                     if not self.client.rtm_connect(with_team_state=False):
                         raise
                     events = []
+
                 for event in events:
                     t = event.get('type')
                     subt = event.get('subtype')
