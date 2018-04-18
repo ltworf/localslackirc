@@ -81,19 +81,23 @@ class Client:
         self.s.send(b':serenity 366 %s %s :End of NAMES list\n' % (self.nick, channel_name))
 
     def _privmsghandler(self, cmd: bytes) -> None:
-        #Unknown command:  b'PRIVMSG #cama :ciao mpare'
-        #Unknown command:  b'PRIVMSG TAMARRO :qi'
         _, dest, msg = cmd.split(b' ', 2)
         msg = msg[1:]
+        message = msg.decode('utf8')
 
         if dest.startswith(b'#'):
             self.sl_client.send_message(
                 self.sl_client.get_channel_by_name(dest[1:].decode()).id,
-                msg.decode('utf8')
+                message
             )
         else:
-            #FIXME not implemented
-            print('Private messaging not implemented yet')
+            try:
+                self.sl_client.send_message_to_user(
+                    self.sl_client.get_user_by_name(dest.decode()).id,
+                    message
+                )
+            except:
+                print('Impossible to find user ', dest)
 
     def _listhandler(self, cmd: bytes) -> None:
         for c in self.sl_client.channels():

@@ -131,6 +131,11 @@ class User(NamedTuple):
         return self.profile.real_name
 
 
+class IM(NamedTuple):
+    id: str
+    user: str
+
+
 SlackEvent = Union[
     UserTyping,
     MessageDelete,
@@ -148,6 +153,7 @@ class Slack:
             token = f.readline().strip()
         self.client = SlackClient(token)
         self._usercache = {}  # type: Dict[str, User]
+        self._usermapcache = {}  # type: Dict[str, User]
 
     @lru_cache()
     def channels(self) -> List[Channel]:
@@ -194,6 +200,25 @@ class Slack:
                 return c
         raise KeyError()
 
+    def get_ims(self) -> List[IM]:
+        """
+        Returns a list of the IMs
+
+        Some bullshit slack invented because 1 to 1 conversations
+        need to have an ID to send to, you can't send directly to
+        a user.
+        """
+        r = self.client.api_call(
+            "im.list",
+        )
+        response = load(r, Response)
+        if response.ok:
+            return load(r['ims'], List[IM])
+        raise ResponseException(response)
+
+    def get_user_by_name(self, name) -> User:
+        return self._usermapcache[name]
+
     def get_user(self, id_: str) -> User:
         """
         Returns a user object from a slack user id
@@ -208,11 +233,15 @@ class Slack:
         if response.ok:
             u = load(r['user'], User)
             self._usercache[id_] = u
+            self._usermapcache[u.name] = u
             return u
         else:
             raise KeyError(response)
 
     def send_message(self, channel_id: str, msg: str) -> None:
+        """
+        Send a message to a channel or group or whatever
+        """
         r = self.client.api_call(
             "chat.postMessage",
             channel=channel_id,
@@ -223,6 +252,28 @@ class Slack:
         if response.ok:
             return
         raise ResponseException(response)
+
+    def send_message_to_user(self, user_id: str, msg: str):
+
+        # Find the channel id
+        channel_id = None
+        for i in self.get_ims():
+            if i.user == user_id:
+                channel_id = i.id
+                break
+
+        # A conversation does not exist, create one
+        if not channel_id:
+            r = self.client.api_call(
+                "im.open",
+                return_im=True,
+                user=user_id,
+            )
+            response = load(r, Response)
+            if not response.ok:
+                raise ResponseException(response)
+            channel_id = response['channel']['id']
+        self.send_message(channel_id, msg)
 
 
     def events_iter(self) -> Iterator[Optional[SlackEvent]]:
@@ -263,6 +314,7 @@ class Slack:
                         u = load(event['user'], User)
                         if u.id in self._usercache:
                             del self._usercache[u.id]
+                            #FIXME don't know if it is wise, maybe it gets lost forever del self._usermapcache[u.name]
                         #TODO make an event for this
                     elif t == 'file_deleted':
                         yield load(event, FileDeleted)
