@@ -222,14 +222,15 @@ class Slack:
                         yield load(event['previous_message'], MessageDelete)
                     elif t == 'user_typing':
                         yield load(event, UserTyping)
-                    elif t == 'hello':
-                        pass # Stupid test event
                     elif t == 'user_change':
                         # Changes in the user, drop it from cache
                         u = load(event['user'], User)
                         if u.id in self._usercache:
                             del self._usercache[u.id]
                         #TODO make an event for this
+                    elif t in {'channel_marked', 'group_marked', 'hello'}:
+                        # Useless events
+                        continue
                     else:
                         print(event)
                 yield None
