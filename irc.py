@@ -42,7 +42,7 @@ class Client:
         self.sl_client = sl_client
 
     def _nickhandler(self, cmd: bytes) -> None:
-        _, self.nick = cmd.split(b' ', 1)
+        _, self.nick = cmd.split(b' ', 1).strip()
 
     def _userhandler(self, cmd: bytes) -> None:
         #TODO USER salvo 8 * :Salvatore Tomaselli
