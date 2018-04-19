@@ -25,6 +25,7 @@ from typing import *
 from slackclient import SlackClient
 from typedload import load
 
+from os.path import expanduser
 
 class ResponseException(Exception):
     pass
@@ -148,9 +149,12 @@ SlackEvent = Union[
 
 class Slack:
     def __init__(self) -> None:
-        #FIXME open the token in a sensible way
-        with open('/home/salvo/.localslackcattoken') as f:
-            token = f.readline().strip()
+        home = expanduser("~")
+        try:
+            with open(home + '/.localslackcattoken') as f:
+                token = f.readline().strip()
+        except FileNotFoundError:
+            exit("Slack token file not found")
         self.client = SlackClient(token)
         self._usercache = {}  # type: Dict[str, User]
         self._usermapcache = {}  # type: Dict[str, User]

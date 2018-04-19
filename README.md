@@ -10,15 +10,24 @@ from IRC even after they shut down their IRC gateway.
 Obtaining token
 ===============
 
-Instructions for chromium, probably similar for other browsers.
+Instructions for chromium
 
 * In your browser, go to "Inspect" (developer mode) on an empty page
 * Select the "Network" tab.
 * Select WS (WebSockets)
 * Open your web slack client
 * Copy the 'token' parameter from the WebSocket connection URL.
+* Place the token inside '~/.localslackcattoken'
 
-Now you can use localslackirc.
+Instructions for firefox
+
+* In your browser, open the Slack web client
+* Press F12 to open the developer tools
+* Refresh the page (F5)
+* Select the 'Network' tab
+* Select the 'WS' tab
+* Copy the 'token' parameter from the WebSocket connection URL.
+* Place the token inside '~/.localslackcattoken'
 
 IRC Channel
 ===========
