@@ -121,6 +121,13 @@ class MessageFileShare(NamedTuple):
     text: str = ''
 
 
+class MessageBot(NamedTuple):
+    text: str
+    username: str
+    bot_id: str
+    channel: str
+
+
 class User(NamedTuple):
     id: str
     name: str
@@ -144,6 +151,7 @@ SlackEvent = Union[
     Message,
     FileDeleted,
     MessageFileShare,
+    MessageBot,
 ]
 
 
@@ -311,6 +319,8 @@ class Slack:
                     elif t == 'message' and subt == 'message_deleted':
                         event['previous_message']['channel'] = event['channel']
                         yield load(event['previous_message'], MessageDelete)
+                    elif t == 'message' and subt == 'bot_message':
+                        yield load(event, MessageBot)
                     elif t == 'user_typing':
                         yield load(event, UserTyping)
                     elif t == 'user_change':

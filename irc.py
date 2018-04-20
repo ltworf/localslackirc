@@ -144,13 +144,16 @@ class Client:
             yield encoded
 
 
-    def _message(self, sl_ev: Union[slack.Message, slack.MessageFileShare, slack.MessageDelete, slack.MessageEdit], prefix: str=''):
+    def _message(self, sl_ev: Union[slack.Message, slack.MessageFileShare, slack.MessageDelete, slack.MessageEdit, slack.MessageBot], prefix: str=''):
         """
         Sends a message to the irc client
         """
-        source = self.sl_client.get_user(sl_ev.user).name.encode('utf8')
-        if source == self.nick:
-            return
+        if hasattr(sl_ev, 'user'):
+            source = self.sl_client.get_user(sl_ev.user).name.encode('utf8')
+            if source == self.nick:
+                return
+        else:
+            source = b'bot'
         try:
             dest = b'#' + self.sl_client.get_channel(sl_ev.channel).name.encode('utf8')
         except KeyError:
@@ -180,6 +183,8 @@ class Client:
             self._message(sl_ev, prefix)
         elif isinstance(sl_ev, slack.MessageEdit):
             self._message(sl_ev.current, '[edited]')
+        elif isinstance(sl_ev, slack.MessageBot):
+            self._message(sl_ev, '[%s]' % sl_ev.username)
 
 
     def command(self, cmd: bytes) -> None:
