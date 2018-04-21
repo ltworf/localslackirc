@@ -65,7 +65,7 @@ class Client:
         except:
             return
         userlist = []  # type List[bytes]
-        for i in slchan.members:
+        for i in self.sl_client.get_members(slchan.id):
             try:
                 u = self.sl_client.get_user(i)
             except:
@@ -105,7 +105,7 @@ class Client:
             self.s.send(b':serenity 322 %s %s %d :%s\n' % (
                 self.nick,
                 b'#' + c.name.encode('utf8'),
-                len(c.members),
+                c.num_members,
                 c.real_topic.encode('utf8'),
             ))
         self.s.send(b':serenity 323 %s :End of LIST\n' % self.nick)

@@ -56,7 +56,7 @@ class Channel(NamedTuple):
     name_normalized: str
     purpose: Topic
     topic: Topic
-    members: Set[str]  # Set of user ids
+    num_members: int = 0
 
     @property
     def name(self):
@@ -168,19 +168,27 @@ class Slack:
         self._usermapcache = {}  # type: Dict[str, User]
 
     @lru_cache()
+    def get_members(self, id_: str) -> List[str]:
+        r = self.client.api_call('conversations.members', channel=id_, limit=5000)
+        response = load(r, Response)
+        if response.ok:
+            return load(r['members'], List[str])
+        raise ResponseException(response)
+
+    @lru_cache()
     def channels(self) -> List[Channel]:
         """
         Returns the list of slack channels
         """
         result = []  # type: List[Channel]
-        r = self.client.api_call("channels.list", exclude_archived=1)
+        r = self.client.api_call("channels.list", exclude_archived=True, exclude_members=True)
         response = load(r, Response)
         if response.ok:
             result.extend(load(r['channels'], List[Channel]))
         else:
             raise ResponseException(response)
 
-        r = self.client.api_call("groups.list", exclude_archived=1)
+        r = self.client.api_call("groups.list", exclude_archived=True, exclude_members=True)
         response = load(r, Response)
         if response.ok:
             result.extend(load(r['groups'], List[Channel]))
