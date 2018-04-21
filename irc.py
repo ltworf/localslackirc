@@ -183,7 +183,7 @@ class Client:
             yield encoded
 
 
-    def _message(self, sl_ev: Union[slack.Message, slack.MessageFileShare, slack.MessageDelete, slack.MessageEdit, slack.MessageBot], prefix: str=''):
+    def _message(self, sl_ev: Union[slack.Message, slack.MessageFileShare, slack.MessageDelete, slack.MessageBot], prefix: str=''):
         """
         Sends a message to the irc client
         """
