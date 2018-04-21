@@ -167,6 +167,7 @@ class Client:
 
             i = i.replace('&gt;', '>')
             i = i.replace('&lt;', '<')
+            i = i.replace('&amp;', '&')
 
             encoded = i.encode('utf8')
 
