@@ -307,7 +307,7 @@ class Slack:
             while True:
                 try:
                     events = self.client.rtm_read()
-                except (BrokenPipeError, TimeoutError):
+                except:
                     if not self.client.rtm_connect(with_team_state=False):
                         raise
                     events = []
