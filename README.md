@@ -32,8 +32,15 @@ Instructions for firefox
 Running localslackirc
 =====================
 Make sure the following Python dependencies are installed:
-* slackclient - pip install slackclient --user
-* typedload - pip install typedload --user
+* slackclient
+
+```
+pip install slackclient --user
+```
+* typedload
+```
+pip install typedload --user
+```
 
 Ensure your token has been obtained and placed inside '~/.localslackcattoken'
 
