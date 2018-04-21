@@ -147,6 +147,15 @@ class Client:
         msg = msg.replace('@yell', '<!channel>')
         msg = msg.replace('@shout', '<!channel>')
         msg = msg.replace('@attention', '<!channel>')
+
+        # Extremely inefficient code to generate mentions
+        # Just doing them client-side on the receiving end is too mainstream
+        for username in self.sl_client.get_usernames():
+            if username in msg:
+                msg = msg.replace(
+                    username,
+                    '<@%s>' % self.sl_client.get_user_by_name(username).id
+                )
         return msg
 
     def parse_message(self, msg: str) -> Iterator[bytes]:

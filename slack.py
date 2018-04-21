@@ -239,6 +239,9 @@ class Slack:
     def get_user_by_name(self, name) -> User:
         return self._usermapcache[name]
 
+    def get_usernames(self) -> List[str]:
+        return list(self._usermapcache.keys())
+
     def get_user(self, id_: str) -> User:
         """
         Returns a user object from a slack user id
