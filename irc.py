@@ -121,8 +121,8 @@ class Client:
             self.s.send(b':serenity 352 %s %s salvo 127.0.0.1 serenity %s H :0 %s\n' % (
                 self.nick,
                 name,
-                user.name,
-                user.real_name
+                user.name.encode('utf8'),
+                user.real_name.encode('utf8'),
             ))
         self.s.send(b':serenity 315 %s %s :End of WHO list\n' % (self.nick, name))
 
