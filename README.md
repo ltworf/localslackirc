@@ -32,8 +32,8 @@ Instructions for firefox
 Running localslackirc
 =====================
 Make sure the following Python dependencies are installed:
-* slackclient - sudo pip install slackclient
-* typedload - sudo pip install typedload
+* slackclient - pip install slackclient --user
+* typedload - pip install typedload --user
 
 Ensure your token has been obtained and placed inside '~/.localslackcattoken'
 
@@ -42,7 +42,7 @@ Run localslackirc using
 ./irc.py
 ```
 
-Connect your IRC client to 127.0.01 port 9007
+Connect your IRC client to 127.0.0.1 port 9007
 
 List the available channels using /list and /join the ones desired, localslackirc wont autojoin you.
 
