@@ -124,8 +124,8 @@ class MessageFileShare(NamedTuple):
 class MessageBot(NamedTuple):
     text: str
     username: str
-    bot_id: str
     channel: str
+    bot_id: Optional[str] = None
 
 
 class User(NamedTuple):
