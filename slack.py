@@ -292,7 +292,7 @@ class Slack:
             response = load(r, Response)
             if not response.ok:
                 raise ResponseException(response)
-            channel_id = response['channel']['id']
+            channel_id = r['channel']['id']
         self.send_message(channel_id, msg)
 
 
