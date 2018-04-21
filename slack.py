@@ -1,7 +1,4 @@
 # localslackirc
-# This module is the inverse of dataloader. It converts typed
-# data structures to things that json can treat.
-
 # Copyright (C) 2018 Salvo "LtWorf" Tomaselli
 #
 # localslackirc is free software: you can redistribute it and/or modify
