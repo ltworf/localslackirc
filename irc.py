@@ -230,6 +230,7 @@ class Client:
         if cmdid in handlers:
             handlers[cmdid](cmd)
         else:
+            self.s.send(b':serenity 421 %s %s :Unknown command\n' % (self.nick, cmdid))
             print('Unknown command: ', cmd)
 
 
