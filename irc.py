@@ -269,28 +269,29 @@ def main():
     serversocket.listen(1)
 
     poller = select.poll()
-    s, _ = serversocket.accept()
-    ircclient = Client(s, sl_client)
 
-
-    poller.register(s.fileno(), select.POLLIN)
-
-    # Main loop
     while True:
-        s_event = poller.poll(0.1)  # type: List[Tuple[int,int]]
-        sl_event = next(sl_events)
+        s, _ = serversocket.accept()
+        ircclient = Client(s, sl_client)
 
-        if s_event:
-            text = s.recv(1024)
-            #FIXME handle the case when there is more to be read
-            for i in text.split(b'\n')[:-1]:
-                ircclient.command(i)
+        poller.register(s.fileno(), select.POLLIN)
 
-        if sl_event:
-            print(sl_event)
-            ircclient.slack_event(sl_event)
+        # Main loop
+        while True:
+            s_event = poller.poll(0.1)  # type: List[Tuple[int,int]]
+            sl_event = next(sl_events)
 
+            if s_event:
+                text = s.recv(1024)
+                if len(text) == 0:
+                    break
+                #FIXME handle the case when there is more to be read
+                for i in text.split(b'\n')[:-1]:
+                    ircclient.command(i)
 
+            if sl_event:
+                print(sl_event)
+                ircclient.slack_event(sl_event)
 
 if __name__ == '__main__':
     try:
