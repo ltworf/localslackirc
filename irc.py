@@ -110,6 +110,22 @@ class Client:
             ))
         self.s.send(b':serenity 323 %s :End of LIST\n' % self.nick)
 
+    def _whohandler(self, cmd: bytes) -> None:
+        _, name = cmd.split(b' ', 1)
+        if not name.startswith(b'#'):
+            print('WHO not supported on ', name)
+            return
+        channel = self.sl_client.get_channel_by_name(name.decode()[1:])
+        for i in self.sl_client.get_members(channel.id):
+            user = self.sl_client.get_user(i)
+            self.s.send(b':serenity 352 %s %s salvo 127.0.0.1 serenity %s H :0 %s\n' % (
+                self.nick,
+                name,
+                user.name,
+                user.real_name
+            ))
+        self.s.send(b':serenity 315 %s %s :End of WHO list\n' % (self.nick, name))
+
     def sendmsg(self, from_: bytes, to: bytes, message: bytes) -> None:
         self.s.send(b':%s!salvo@127.0.0.1 PRIVMSG %s :%s\n' % (
             from_,
@@ -200,9 +216,9 @@ class Client:
             b'JOIN': self._joinhandler,
             b'PRIVMSG': self._privmsghandler,
             b'LIST': self._listhandler,
+            b'WHO': self._whohandler,
             #QUIT
             #CAP LS
-            #WHO
             #USERHOST
             #Unknown command:  b'MODE #cama'
             #Unknown command:  b'MODE #cama +b'
