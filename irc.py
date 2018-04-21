@@ -84,7 +84,7 @@ class Client:
     def _privmsghandler(self, cmd: bytes) -> None:
         _, dest, msg = cmd.split(b' ', 2)
         msg = msg[1:]
-        message = msg.decode('utf8')
+        message = self._addmagic(msg.decode('utf8'))
 
         if dest.startswith(b'#'):
             self.sl_client.send_message(
@@ -136,6 +136,18 @@ class Client:
             to, #private message, or a channel
             message,
         ))
+
+    def _addmagic(self, msg: str) -> str:
+        """
+        Adds magic codes and various things to
+        outgoing messages
+        """
+        msg = msg.replace('@here', '<!here>')
+        msg = msg.replace('@channel', '<!channel>')
+        msg = msg.replace('@yell', '<!channel>')
+        msg = msg.replace('@shout', '<!channel>')
+        msg = msg.replace('@attention', '<!channel>')
+        return msg
 
     def parse_message(self, msg: str) -> Iterator[bytes]:
         for i in msg.split('\n'):
