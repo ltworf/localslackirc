@@ -110,6 +110,10 @@ class Client:
             ))
         self.s.send(b':serenity 323 %s :End of LIST\n' % self.nick)
 
+    def _modehandler(self, cmd: bytes) -> None:
+        params = cmd.split(b' ', 2)
+        self.s.send(b':serenity 324 %s %s +\n' % (self.nick, params[1]))
+
     def _whohandler(self, cmd: bytes) -> None:
         _, name = cmd.split(b' ', 1)
         if not name.startswith(b'#'):
@@ -217,11 +221,10 @@ class Client:
             b'PRIVMSG': self._privmsghandler,
             b'LIST': self._listhandler,
             b'WHO': self._whohandler,
+            b'MODE': self._modehandler,
             #QUIT
             #CAP LS
             #USERHOST
-            #Unknown command:  b'MODE #cama'
-            #Unknown command:  b'MODE #cama +b'
             #Unknown command:  b'TOPIC #cama :titolo del canale'
             #Unknown command:  b'whois TAMARRO'
             #Unknown command:  b'PART #support-sdp :Konversation terminated!'
