@@ -26,6 +26,15 @@ from typedload import load, dump
 from diff import seddiff
 
 
+USELESS_EVENTS = {
+    'channel_marked',
+    'group_marked',
+    'hello',
+    'dnd_updated_user',
+    'reaction_added',
+}
+
+
 class ResponseException(Exception):
     pass
 
@@ -352,7 +361,7 @@ class Slack:
                         #TODO make an event for this
                     elif t == 'file_deleted':
                         yield load(event, FileDeleted)
-                    elif t in {'channel_marked', 'group_marked', 'hello', 'dnd_updated_user', 'reaction_added'}:
+                    elif t in USELESS_EVENTS:
                         # Useless events
                         continue
                     else:
