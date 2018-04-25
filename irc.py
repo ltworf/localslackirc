@@ -221,7 +221,8 @@ class Client:
                     )
             self._message(sl_ev, prefix)
         elif isinstance(sl_ev, slack.MessageEdit):
-            self._message(sl_ev.current, '[edited]')
+            if sl_ev.is_changed:
+                self._message(sl_ev.diffmsg)
         elif isinstance(sl_ev, slack.MessageBot):
             self._message(sl_ev, '[%s]' % sl_ev.username)
 

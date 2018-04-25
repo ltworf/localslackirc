@@ -17,12 +17,14 @@
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
 from functools import lru_cache
+from os.path import expanduser
 from typing import *
 
 from slackclient import SlackClient
-from typedload import load
+from typedload import load, dump
 
-from os.path import expanduser
+from diff import seddiff
+
 
 class ResponseException(Exception):
     pass
@@ -75,6 +77,16 @@ class Message(NamedTuple):
 class MessageEdit(NamedTuple):
     previous: Message
     current: Message
+
+    @property
+    def is_changed(self) -> bool:
+        return self.previous.text != self.current.text
+
+    @property
+    def diffmsg(self) -> Message:
+        m = dump(self.current)
+        m['text'] = seddiff(self.previous.text, self.current.text)
+        return load(m, Message)
 
 
 class MessageDelete(Message):
