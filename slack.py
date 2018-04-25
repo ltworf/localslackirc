@@ -32,6 +32,7 @@ USELESS_EVENTS = {
     'hello',
     'dnd_updated_user',
     'reaction_added',
+    'user_typing',
 }
 
 
@@ -102,11 +103,6 @@ class MessageDelete(Message):
     pass
 
 
-class UserTyping(NamedTuple):
-    channel: str  # Channel id
-    user: str  # User id
-
-
 class FileDeleted(NamedTuple):
     file_id: str
     channel_ids: List[str] = []
@@ -163,7 +159,6 @@ class IM(NamedTuple):
 
 
 SlackEvent = Union[
-    UserTyping,
     MessageDelete,
     MessageEdit,
     Message,
@@ -350,8 +345,6 @@ class Slack:
                         yield load(event['previous_message'], MessageDelete)
                     elif t == 'message' and subt == 'bot_message':
                         yield load(event, MessageBot)
-                    elif t == 'user_typing':
-                        yield load(event, UserTyping)
                     elif t == 'user_change':
                         # Changes in the user, drop it from cache
                         u = load(event['user'], User)
