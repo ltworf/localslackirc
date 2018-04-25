@@ -275,8 +275,9 @@ def main():
         poller.register(s.fileno(), select.POLLIN)
 
         # Main loop
+        timeout = 0.1
         while True:
-            s_event = poller.poll(0.1)  # type: List[Tuple[int,int]]
+            s_event = poller.poll(timeout)  # type: List[Tuple[int,int]]
             sl_event = next(sl_events)
 
             if s_event:
@@ -290,6 +291,9 @@ def main():
             if sl_event:
                 print(sl_event)
                 ircclient.slack_event(sl_event)
+                timeout = 0.1
+            else:
+                timeout = 7
 
 if __name__ == '__main__':
     try:
