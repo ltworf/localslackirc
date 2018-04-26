@@ -36,6 +36,14 @@ USELESS_EVENTS = {
 }
 
 
+def _loadwrapper(value, type_):
+    try:
+        return load(value, type_)
+    except Exception as e:
+        print(e)
+        pass
+
+
 class ResponseException(Exception):
     pass
 
@@ -330,9 +338,9 @@ class Slack:
                     subt = event.get('subtype')
 
                     if t == 'message' and not subt:
-                        yield load(event, Message)
+                        yield _loadwrapper(event, Message)
                     elif t == 'message' and subt == 'file_share':
-                        yield load(event, MessageFileShare)
+                        yield _loadwrapper(event, MessageFileShare)
                     elif t == 'message' and subt == 'message_changed':
                         event['message']['channel'] = event['channel']
                         event['previous_message']['channel'] = event['channel']
@@ -342,9 +350,9 @@ class Slack:
                         )
                     elif t == 'message' and subt == 'message_deleted':
                         event['previous_message']['channel'] = event['channel']
-                        yield load(event['previous_message'], MessageDelete)
+                        yield _loadwrapper(event['previous_message'], MessageDelete)
                     elif t == 'message' and subt == 'bot_message':
-                        yield load(event, MessageBot)
+                        yield _loadwrapper(event, MessageBot)
                     elif t == 'user_change':
                         # Changes in the user, drop it from cache
                         u = load(event['user'], User)
@@ -353,9 +361,8 @@ class Slack:
                             #FIXME don't know if it is wise, maybe it gets lost forever del self._usermapcache[u.name]
                         #TODO make an event for this
                     elif t == 'file_deleted':
-                        yield load(event, FileDeleted)
+                        yield _loadwrapper(event, FileDeleted)
                     elif t in USELESS_EVENTS:
-                        # Useless events
                         continue
                     else:
                         print(event)
