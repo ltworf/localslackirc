@@ -29,6 +29,30 @@ Instructions for firefox
 * Copy the 'token' parameter from the WebSocket connection URL.
 * Place the token inside '~/.localslackcattoken'
 
+Running localslackirc
+=====================
+Make sure the following Python dependencies are installed:
+* slackclient
+
+```
+pip install slackclient --user
+```
+* typedload
+```
+pip install typedload --user
+```
+
+Ensure your token has been obtained and placed inside '~/.localslackcattoken'
+
+Run localslackirc using
+```
+./irc.py
+```
+
+Connect your IRC client to 127.0.0.1 port 9007
+
+List the available channels using /list and /join the ones desired, localslackirc wont autojoin you.
+
 IRC Channel
 ===========
 
