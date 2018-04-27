@@ -286,7 +286,9 @@ def main():
                     break
                 #FIXME handle the case when there is more to be read
                 for i in text.split(b'\n')[:-1]:
-                    ircclient.command(i)
+                    i = i.strip()
+                    if i:
+                        ircclient.command(i)
 
             if sl_event:
                 print(sl_event)
