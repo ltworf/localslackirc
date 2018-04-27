@@ -29,6 +29,12 @@ Instructions for firefox
 * Copy the 'token' parameter from the WebSocket connection URL.
 * Place the token inside '~/.localslackcattoken'
 
+Requirements
+============
+
+* At least Python 3.6
+* The modules `slackclient` and `typedload`. You can use pip3 to get them.
+
 IRC Channel
 ===========
 
