@@ -273,6 +273,8 @@ def main():
         ircclient = Client(s, sl_client)
 
         poller.register(s.fileno(), select.POLLIN)
+        if sl_client.fileno is not None:
+            poller.register(sl_client.fileno, select.POLLIN)
 
         # Main loop
         timeout = 0.1

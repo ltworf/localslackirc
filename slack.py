@@ -241,6 +241,10 @@ class Slack:
                 return c
         raise KeyError()
 
+    @property
+    def fileno(self) -> Optional[int]:
+        return self.client.fileno
+
     def get_ims(self) -> List[IM]:
         """
         Returns a list of the IMs

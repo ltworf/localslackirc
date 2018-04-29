@@ -70,6 +70,10 @@ class SlackClient:
             LOG.warn("Failed RTM connect", exc_info=True)
             return False
 
+    @property
+    def fileno(self) -> Optional[int]:
+        return self.server.ws_fileno
+
     def api_call(self, method, timeout=None, **kwargs):
         '''
         Call the Slack Web API as documented here: https://api.slack.com/web

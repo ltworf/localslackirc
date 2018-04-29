@@ -65,6 +65,12 @@ class Server:
         if connect:
             self.rtm_connect()
 
+    @property
+    def ws_fileno(self) -> Optional[int]:
+        if self.websocket is not None:
+            return self.websocket.fileno()
+        return None
+
     def rtm_connect(self, reconnect=False, timeout=None, **kwargs) -> None:
         """
         Connects to the RTM API - https://api.slack.com/rtm
