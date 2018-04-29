@@ -23,6 +23,7 @@
 
 import json
 import logging
+from typing import Dict, Optional
 
 from .server import Server
 from .exceptions import *
@@ -30,7 +31,7 @@ from .exceptions import *
 LOG = logging.getLogger(__name__)
 
 
-class SlackClient(object):
+class SlackClient:
     '''
     The SlackClient makes API Calls to the `Slack Web API <https://api.slack.com/web>`_ as well as
     managing connections to the `Real-time Messaging API via websocket <https://api.slack.com/rtm>`_
@@ -49,7 +50,7 @@ class SlackClient(object):
             declare http and websocket proxies using {'http': 'http://127.0.0.1'},
             and https proxy using {'https': 'https://127.0.0.1:443'}
     '''
-    def __init__(self, token, proxies=None):
+    def __init__(self, token: str, proxies: Optional[Dict[str,str]] = None) -> None:
 
         self.token = token
         self.server = Server(self.token, False, proxies)
