@@ -22,6 +22,7 @@
 # to the changes made since it was copied.
 
 import json
+from typing import Dict, Optional
 
 import requests
 import six
@@ -31,7 +32,7 @@ class SlackRequest(object):
     def __init__(self, proxies=None):
         self.proxies = proxies
 
-    def do(self, token, request="?", post_data=None, domain="slack.com", timeout=None):
+    def do(self, token: str, request: str, post_data: Optional[Dict[str,str]] = None, domain: str = "slack.com", timeout: Optional[float] =None):
         """
         Perform a POST request to the Slack Web API
 
