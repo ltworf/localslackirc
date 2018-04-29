@@ -33,7 +33,7 @@ Requirements
 ============
 
 * At least Python 3.6
-* The modules `slackclient` and `typedload`. You can use pip3 to get them.
+* The modules indicated in `requirements.txt`
 
 IRC Channel
 ===========
