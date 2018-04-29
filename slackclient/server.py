@@ -41,7 +41,7 @@ class Server:
     The Server object owns the websocket connection and all attached channel information.
     """
 
-    def __init__(self, token: str, connect: bool = True, proxies: Optional[Dict[str,str]] = None):
+    def __init__(self, token: str, connect: bool = True, proxies: Optional[Dict[str,str]] = None) -> None:
         # Slack client configs
         self.token = token
         self.proxies = proxies
