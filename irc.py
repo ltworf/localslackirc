@@ -17,6 +17,9 @@
 #
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
+import struct
+import sys
+import getopt
 import re
 import select
 import socket
@@ -257,13 +260,52 @@ class Client:
             print('Unknown command: ', cmd)
 
 
+def ip2long(ip):
+    """
+   Convert an IP string to long
+   """
+    packedIP = socket.inet_aton(ip)
+    return struct.unpack("!L", packedIP)[0]
+
 
 def main():
+    ###############################
+    # t == token-filename
+    # i == IP-Address
+    # p == port-number
+    # u == no-userlist
+    ###############################
+    utoken=''
+    uip='127.0.0.1'
+    uport='9007'
+    uuser=''
+ 
+    # Read command line args
+    myopts, args = getopt.getopt(sys.argv[1:],"t:i:p:u:")
+ 
+    ###############################
+    # o == option
+    # a == argument passed to the o
+    ###############################
+    for o, a in myopts:
+        if o == '-t':
+            utoken=a
+        elif o == '-i':
+            uip=a
+        elif o == '-p':
+            uport=a
+        elif o == '-u':
+            uuser=a
+        else:
+            print("Usage: %s -t token-filename -i IP-address -p port-number -u no-userlist" % sys.argv[0])
+ 
+    nuip=ip2long(uip)
+    uip=socket.inet_ntoa(struct.pack('!L', nuip))
     sl_client = slack.Slack()
     sl_events = sl_client.events_iter()
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    serversocket.bind(('127.0.0.1', 9007))
+    serversocket.bind((uip, int(uport)))
     serversocket.listen(1)
 
     poller = select.poll()
