@@ -74,7 +74,7 @@ class Server:
     def __hash__(self):
         return hash(self.token)
 
-    def rtm_connect(self, reconnect=False, timeout=None, **kwargs):
+    def rtm_connect(self, reconnect=False, timeout=None, **kwargs) -> None:
         """
         Connects to the RTM API - https://api.slack.com/rtm
 
@@ -85,10 +85,6 @@ class Server:
             reconnect (boolean) Whether this method is being called to reconnect to RTM
             timeout (int): Stop waiting for Web API response after this many seconds
             https://api.slack.com/rtm#connecting_with_rtm.connect_vs._rtm.start
-
-        :Returns:
-            None
-
         """
 
         # rtm.start returns user and channel info, rtm.connect does not.
