@@ -21,11 +21,10 @@
 # But has been copied and relicensed under GPL. The copyright applies only
 # to the changes made since it was copied.
 
-import requests
 import json
+
+import requests
 import six
-import sys
-import platform
 
 
 class SlackRequest(object):
