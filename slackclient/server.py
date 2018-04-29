@@ -209,9 +209,6 @@ class Server(object):
 
         self.send_to_websocket(message_json)
 
-    def ping(self):
-        return self.send_to_websocket({"type": "ping"})
-
     def websocket_safe_read(self):
         """
         Returns data if available, otherwise ''. Newlines indicate multiple
@@ -240,19 +237,6 @@ class Server(object):
                 else:
                     raise SlackConnectionError("Unable to send due to closed RTM websocket")
             return data.rstrip()
-
-    def join_channel(self, name, timeout=None):
-        """
-        Join a channel by name.
-
-        Note: this action is not allowed by bots, they must be invited to channels.
-        """
-        response = self.api_call(
-            "channels.join",
-            channel=name,
-            timeout=timeout
-        )
-        return response
 
     def api_call(self, method, timeout=None, **kwargs):
         """
