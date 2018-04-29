@@ -169,21 +169,6 @@ class Server:
             self.connected = False
             raise SlackConnectionError(message=str(e))
 
-    def send_to_websocket(self, data):
-        """
-        Send a JSON message directly to the websocket. See
-        `RTM documentation <https://api.slack.com/rtm` for allowed types.
-
-        :Args:
-            data (dict) the key/values to send the websocket.
-
-        """
-        try:
-            data = json.dumps(data)
-            self.websocket.send(data)
-        except Exception:
-            self.rtm_connect(reconnect=True)
-
     def websocket_safe_read(self):
         """
         Returns data if available, otherwise ''. Newlines indicate multiple
