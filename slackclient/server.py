@@ -1,4 +1,26 @@
-from .channel import Channel
+# localslackirc
+# Copyright (C) 2018 Salvo "LtWorf" Tomaselli
+#
+# localslackirc is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
+#
+# This file was part of python-slackclient
+# (https://github.com/slackapi/python-slackclient)
+# But has been copied and relicensed under GPL. The copyright applies only
+# to the changes made since it was copied.
+
 from .exceptions import SlackClientError
 from .slackrequest import SlackRequest
 from .util import SearchList, SearchDict
@@ -30,7 +52,6 @@ class Server(object):
         self.username = None
         self.domain = None
         self.login_data = None
-        self.channels = SearchList()
 
         # RTM configs
         self.websocket = None
@@ -53,28 +74,6 @@ class Server(object):
 
     def __hash__(self):
         return hash(self.token)
-
-    def __str__(self):
-        """
-        Example Output::
-
-        username : None
-        domain : None
-        websocket : None
-        login_data : None
-        api_requester : <slackclient.slackrequest.SlackRequest
-        channels : []
-        token : xoxb-asdlfkyadsofii7asdf734lkasdjfllakjba7zbu
-        connected : False
-        ws_url : None
-        """
-        data = ""
-        for key in list(self.__dict__.keys()):
-            data += "{} : {}\n".format(key, str(self.__dict__[key])[:40])
-        return data
-
-    def __repr__(self):
-        return self.__str__()
 
     def append_user_agent(self, name, version):
         self.api_requester.append_user_agent(name, version)
