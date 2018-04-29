@@ -1,7 +1,6 @@
 from .channel import Channel
 from .exceptions import SlackClientError
 from .slackrequest import SlackRequest
-from .user import User
 from .util import SearchList, SearchDict
 
 import json
@@ -31,7 +30,6 @@ class Server(object):
         self.username = None
         self.domain = None
         self.login_data = None
-        self.users = SearchDict()
         self.channels = SearchList()
 
         # RTM configs
@@ -63,7 +61,6 @@ class Server(object):
         username : None
         domain : None
         websocket : None
-        users : []
         login_data : None
         api_requester : <slackclient.slackrequest.SlackRequest
         channels : []
@@ -82,7 +79,7 @@ class Server(object):
     def append_user_agent(self, name, version):
         self.api_requester.append_user_agent(name, version)
 
-    def rtm_connect(self, reconnect=False, timeout=None, use_rtm_start=True, **kwargs):
+    def rtm_connect(self, reconnect=False, timeout=None, **kwargs):
         """
         Connects to the RTM API - https://api.slack.com/rtm
 
@@ -92,8 +89,6 @@ class Server(object):
         :Args:
             reconnect (boolean) Whether this method is being called to reconnect to RTM
             timeout (int): Stop waiting for Web API response after this many seconds
-            use_rtm_start (boolean): `True` to connect using `rtm.start` or
-            `False` to connect using`rtm.connect`
             https://api.slack.com/rtm#connecting_with_rtm.connect_vs._rtm.start
 
         :Returns:
@@ -102,7 +97,7 @@ class Server(object):
         """
 
         # rtm.start returns user and channel info, rtm.connect does not.
-        connect_method = "rtm.start" if use_rtm_start else "rtm.connect"
+        connect_method = "rtm.connect"
 
         # If the `auto_reconnect` param was passed, set the server's `auto_reconnect` attr
         if 'auto_reconnect' in kwargs:
@@ -147,21 +142,14 @@ class Server(object):
                 self.ws_url = login_data['url']
                 self.connect_slack_websocket(self.ws_url)
                 if not reconnect:
-                    self.parse_slack_login_data(login_data, use_rtm_start)
+                    self.parse_slack_login_data(login_data)
             else:
                 raise SlackLoginError(reply=reply)
 
-    def parse_slack_login_data(self, login_data, use_rtm_start):
+    def parse_slack_login_data(self, login_data):
         self.login_data = login_data
         self.domain = self.login_data["team"]["domain"]
         self.username = self.login_data["self"]["name"]
-
-        # if the connection was made via rtm.start, update the server's state
-        if use_rtm_start:
-            self.parse_channel_data(login_data["channels"])
-            self.parse_channel_data(login_data["groups"])
-            self.parse_user_data(login_data["users"])
-            self.parse_channel_data(login_data["ims"])
 
     def connect_slack_websocket(self, ws_url):
         """Uses http proxy if available"""
@@ -185,30 +173,6 @@ class Server(object):
         except Exception as e:
             self.connected = False
             raise SlackConnectionError(message=str(e))
-
-    def parse_channel_data(self, channel_data):
-        for channel in channel_data:
-            if "name" not in channel:
-                channel["name"] = channel["id"]
-            if "members" not in channel:
-                channel["members"] = []
-            self.attach_channel(channel["name"],
-                                channel["id"],
-                                channel["members"])
-
-    def parse_user_data(self, user_data):
-        for user in user_data:
-            if "tz" not in user:
-                user["tz"] = "unknown"
-            if "real_name" not in user:
-                user["real_name"] = user["name"]
-            if "email" not in user["profile"]:
-                user["profile"]["email"] = ""
-            self.attach_user(user["name"],
-                             user["id"],
-                             user["real_name"],
-                             user["tz"],
-                             user["profile"]["email"])
 
     def send_to_websocket(self, data):
         """
@@ -281,15 +245,6 @@ class Server(object):
                 else:
                     raise SlackConnectionError("Unable to send due to closed RTM websocket")
             return data.rstrip()
-
-    def attach_user(self, name, user_id, real_name, tz, email):
-        self.users.update({user_id: User(self, name, user_id, real_name, tz, email)})
-
-    def attach_channel(self, name, channel_id, members=None):
-        if members is None:
-            members = []
-        if self.channels.find(channel_id) is None:
-            self.channels.append(Channel(self, name, channel_id, members))
 
     def join_channel(self, name, timeout=None):
         """

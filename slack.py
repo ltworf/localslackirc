@@ -324,7 +324,7 @@ class Slack:
         """
         This yields an event or None. Don't call it without sleeps
         """
-        if self.client.rtm_connect(with_team_state=False):
+        if self.client.rtm_connect():
             while True:
                 try:
                     events = self.client.rtm_read()
