@@ -23,7 +23,7 @@
 
 import json
 import logging
-from typing import Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from .server import Server
 from .exceptions import *
@@ -74,7 +74,7 @@ class SlackClient:
     def fileno(self) -> Optional[int]:
         return self.server.ws_fileno
 
-    def api_call(self, method, timeout=None, **kwargs):
+    def api_call(self, method: str, timeout=None, **kwargs):
         '''
         Call the Slack Web API as documented here: https://api.slack.com/web
 
@@ -119,17 +119,13 @@ class SlackClient:
                 self.server.parse_channel_data([result['channel']])
         return result
 
-    def rtm_read(self):
+    def rtm_read(self) -> List[Dict[str, Any]]:
         '''
         Reads from the RTM Websocket stream then calls `self.process_changes(item)` for each line
         in the returned data.
 
         Multiple events may be returned, always returns a list [], which is empty if there are no
         incoming messages.
-
-        :Args:
-            None
-
         :Returns:
             data (json) - The server response. For example::
 
