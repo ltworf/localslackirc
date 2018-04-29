@@ -74,7 +74,7 @@ class SlackClient:
     def fileno(self) -> Optional[int]:
         return self.server.ws_fileno
 
-    def api_call(self, method: str, timeout=None, **kwargs):
+    def api_call(self, method: str, timeout=None, **kwargs) -> Dict[str, Any]:
         '''
         Call the Slack Web API as documented here: https://api.slack.com/web
 
@@ -86,37 +86,17 @@ class SlackClient:
             requester as post_data and will be passed along to the API.
 
             Example::
-
                 sc.server.api_call(
                     "channels.setPurpose",
                     channel="CABC12345",
                     purpose="Writing some code!"
                 )
-
-        :Returns:
-            str -- returns the text of the HTTP response.
-
-            Examples::
-
-                u'{"ok":true,"purpose":"Testing bots"}'
-                or
-                u'{"ok":false,"error":"channel_not_found"}'
-
-            See here for more information on responses: https://api.slack.com/web
         '''
         response_body = self.server.api_call(method, timeout=timeout, **kwargs)
         try:
             result = json.loads(response_body)
         except ValueError as json_decode_error:
             raise ParseResponseError(response_body, json_decode_error)
-
-        if "ok" in result and result["ok"]:
-            if method == 'im.open':
-                self.server.attach_channel(kwargs["user"], result["channel"]["id"])
-            elif method in ('mpim.open', 'groups.create', 'groups.createchild'):
-                self.server.parse_channel_data([result['group']])
-            elif method in ('channels.create', 'channels.join'):
-                self.server.parse_channel_data([result['channel']])
         return result
 
     def rtm_read(self) -> List[Dict[str, Any]]:
