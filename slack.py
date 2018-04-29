@@ -333,7 +333,7 @@ class Slack:
                 try:
                     events = self.client.rtm_read()
                 except:
-                    if not self.client.rtm_connect(with_team_state=False):
+                    if not self.client.rtm_connect():
                         raise
                     events = []
 
