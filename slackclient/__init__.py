@@ -1,1 +1,1 @@
-from .client import SlackClient # noqa
+from .client import SlackClient
