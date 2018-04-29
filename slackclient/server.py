@@ -65,15 +65,6 @@ class Server:
         if connect:
             self.rtm_connect()
 
-    def __eq__(self, compare_str):
-        if compare_str == self.domain or compare_str == self.token:
-            return True
-        else:
-            return False
-
-    def __hash__(self):
-        return hash(self.token)
-
     def rtm_connect(self, reconnect=False, timeout=None, **kwargs) -> None:
         """
         Connects to the RTM API - https://api.slack.com/rtm
