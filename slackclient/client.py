@@ -54,9 +54,6 @@ class SlackClient(object):
         self.token = token
         self.server = Server(self.token, False, proxies)
 
-    def append_user_agent(self, name, version):
-        self.server.append_user_agent(name, version)
-
     def rtm_connect(self) -> bool:
         '''
         Connects to the RTM Websocket

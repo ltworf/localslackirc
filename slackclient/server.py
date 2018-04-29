@@ -75,9 +75,6 @@ class Server(object):
     def __hash__(self):
         return hash(self.token)
 
-    def append_user_agent(self, name, version):
-        self.api_requester.append_user_agent(name, version)
-
     def rtm_connect(self, reconnect=False, timeout=None, **kwargs):
         """
         Connects to the RTM API - https://api.slack.com/rtm

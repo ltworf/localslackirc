@@ -1,48 +1,36 @@
+# localslackirc
+# Copyright (C) 2018 Salvo "LtWorf" Tomaselli
+#
+# localslackirc is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
+#
+# This file was part of python-slackclient
+# (https://github.com/slackapi/python-slackclient)
+# But has been copied and relicensed under GPL. The copyright applies only
+# to the changes made since it was copied.
+
 import requests
 import json
 import six
 import sys
 import platform
-from .version import __version__
 
 
 class SlackRequest(object):
     def __init__(self, proxies=None):
-
-        # __name__ returns 'slackclient.slackrequest', we only want 'slackclient'
-        client_name = __name__.split('.')[0]
-        client_version = __version__  # Version is returned from version.py
-
-        # Construct the user-agent header with the package info, Python version and OS version.
-        self.default_user_agent = {
-            "client": "{0}/{1}".format(client_name, client_version),
-            "python": "Python/{v.major}.{v.minor}.{v.micro}".format(v=sys.version_info),
-            "system": "{0}/{1}".format(platform.system(), platform.release())
-        }
-
-        self.custom_user_agent = None
         self.proxies = proxies
-
-    def get_user_agent(self):
-        # Check for custom user-agent and append if found
-        if self.custom_user_agent:
-            custom_ua_list = ["/".join(client_info) for client_info in self.custom_user_agent]
-            custom_ua_string = " ".join(custom_ua_list)
-            self.default_user_agent['custom'] = custom_ua_string
-
-        # Concatenate and format the user-agent string to be passed into request headers
-        ua_string = []
-        for key, val in self.default_user_agent.items():
-            ua_string.append(val)
-
-        user_agent_string = " ".join(ua_string)
-        return user_agent_string
-
-    def append_user_agent(self, name, version):
-        if self.custom_user_agent:
-            self.custom_user_agent.append([name.replace("/", ":"), version.replace("/", ":")])
-        else:
-            self.custom_user_agent = [[name, version]]
 
     def do(self, token, request="?", post_data=None, domain="slack.com", timeout=None):
         """
@@ -66,7 +54,7 @@ class SlackRequest(object):
 
         # Set user-agent and auth headers
         headers = {
-            'user-agent': self.get_user_agent(),
+            'user-agent': 'localslackirc',
             'Authorization': 'Bearer {}'.format(token)
         }
 
