@@ -23,7 +23,6 @@
 
 from .exceptions import SlackClientError
 from .slackrequest import SlackRequest
-from .util import SearchList, SearchDict
 
 import json
 import logging
