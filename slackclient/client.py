@@ -146,29 +146,6 @@ class SlackClient:
             if json_data != '':
                 for d in json_data.split('\n'):
                     data.append(json.loads(d))
-            for item in data:
-                self.process_changes(item)
             return data
         else:
             raise SlackNotConnected
-
-    def process_changes(self, data):
-        '''
-        Internal method which processes RTM events and modifies the local data store
-        accordingly.
-
-        Stores new channels when joining a group (Multi-party DM), IM (DM) or channel.
-
-        Stores user data on a team join event.
-        '''
-        if "type" in data.keys():
-            if data["type"] in ('channel_created', 'group_joined'):
-                channel = data["channel"]
-                self.server.attach_channel(channel["name"], channel["id"], [])
-            if data["type"] == 'im_created':
-                channel = data["channel"]
-                self.server.attach_channel(channel["user"], channel["id"], [])
-            if data["type"] == "team_join":
-                user = data["user"]
-                self.server.parse_user_data([user])
-            pass
