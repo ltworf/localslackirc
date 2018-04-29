@@ -28,6 +28,7 @@ import json
 import logging
 import time
 import random
+from typing import Dict, Optional
 
 from requests.packages.urllib3.util.url import parse_url
 from ssl import SSLError
@@ -35,13 +36,12 @@ from websocket import create_connection
 from websocket._exceptions import WebSocketConnectionClosedException
 
 
-class Server(object):
+class Server:
     """
     The Server object owns the websocket connection and all attached channel information.
-
-
     """
-    def __init__(self, token, connect=True, proxies=None):
+
+    def __init__(self, token: str, connect: bool = True, proxies: Optional[Dict[str,str]] = None):
         # Slack client configs
         self.token = token
         self.proxies = proxies
