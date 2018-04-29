@@ -1,6 +1,3 @@
-#!/usr/bin/python
-# mostly a proxy object to abstract how some of this works
-
 import json
 import logging
 
