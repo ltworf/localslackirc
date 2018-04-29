@@ -148,35 +148,6 @@ class SlackClient:
         else:
             raise SlackNotConnected
 
-    def rtm_send_message(self, channel, message, thread=None, reply_broadcast=None):
-        '''
-        Sends a message to a given channel.
-
-        :Args:
-            channel (str) - the string identifier for a channel or channel name (e.g. 'C1234ABC',
-            'bot-test' or '#bot-test')
-            message (message) - the string you'd like to send to the channel
-            thread (str or None) - the parent message ID, if sending to a
-                thread
-            reply_broadcast (bool) - if messaging a thread, whether to
-                also send the message back to the channel
-
-        :Returns:
-            None
-
-        '''
-        # The `channel` argument can be a channel name or an ID. At first its assumed to be a
-        # name and an attempt is made to find the ID in the workspace state cache.
-        # If that lookup fails, the argument is used as the channel ID.
-        found_channel = self.server.channels.find(channel)
-        channel_id = found_channel.id if found_channel else channel
-        return self.server.rtm_send_message(
-            channel_id,
-            message,
-            thread,
-            reply_broadcast
-        )
-
     def process_changes(self, data):
         '''
         Internal method which processes RTM events and modifies the local data store
