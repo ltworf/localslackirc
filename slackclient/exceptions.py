@@ -56,3 +56,7 @@ class SlackLoginError(SlackClientError):
     def __init__(self, message='', reply=None):
         super(SlackLoginError, self).__init__(message)
         self.reply = reply
+
+
+class SlackNotConnected(Exception):
+    pass

@@ -25,7 +25,7 @@ import json
 import logging
 
 from .server import Server
-from .exceptions import ParseResponseError
+from .exceptions import *
 
 LOG = logging.getLogger(__name__)
 
@@ -196,7 +196,3 @@ class SlackClient(object):
                 user = data["user"]
                 self.server.parse_user_data([user])
             pass
-
-
-class SlackNotConnected(Exception):
-    pass
