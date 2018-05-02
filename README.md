@@ -36,7 +36,7 @@ Get a slack token from https://api.slack.com/docs/oauth-test-tokens
 Using token
 ===============
 
-* Place token inside a text file named '.localslackcattoken' in same directory as irc.py and slack.py
+* Place token inside a text file named '.localslackcattoken' in the same directory as irc.py and slack.py
 
 Requirements
 ============
