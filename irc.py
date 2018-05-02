@@ -186,7 +186,15 @@ class Client:
             i = i.replace('&gt;', '>')
             i = i.replace('&lt;', '<')
             i = i.replace('&amp;', '&')
-
+            
+            # Hack5190 - Add code to convert slack emoji to txt emoji
+            # https://www.webpagefx.com/tools/emoji-cheat-sheet/
+            i = i.replace(':slightly_smiling_face:', ':)')
+            i = i.replace(':frowning:', ':(')
+            i = i.replace(':stuck_out_tongue:', ':p')
+            i = i.replace(':wink:', ';)')
+            i = i.replace(':kissing:', ':*')
+            
             encoded = i.encode('utf8')
 
             encoded = encoded.replace(b'<!here>', b'[YELLING]' + self.nick)
