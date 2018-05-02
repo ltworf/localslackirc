@@ -28,7 +28,7 @@ import json
 import logging
 import time
 import random
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from requests.packages.urllib3.util.url import parse_url
 from ssl import SSLError
@@ -191,7 +191,7 @@ class Server:
                     raise SlackConnectionError("Unable to send due to closed RTM websocket")
             return data.rstrip()
 
-    def api_call(self, method, timeout=None, **kwargs):
+    def api_call(self, method: str, timeout: Optional[float], **kwargs) -> Dict[str, Any]:
         """
         Call the Slack Web API as documented here: https://api.slack.com/web
 
@@ -204,7 +204,6 @@ class Server:
                 and will be passed along to the API.
 
         Example::
-
             sc.server.api_call(
                 "channels.setPurpose",
                 channel="CABC12345",
@@ -222,7 +221,7 @@ class Server:
 
             See here for more information on responses: https://api.slack.com/web
         """
-        response = self.api_requester.do(self.token, method, kwargs, timeout=timeout)
+        response = self.api_requester.do(self.token, method, kwargs, timeout)
         response_json = json.loads(response.text)
         response_json["headers"] = dict(response.headers)
-        return json.dumps(response_json)
+        return response_json

@@ -32,7 +32,7 @@ class SlackRequest(object):
     def __init__(self, proxies=None):
         self.proxies = proxies
 
-    def do(self, token: str, request: str, post_data: Optional[Dict[str,str]] = None, domain: str = "slack.com", timeout: Optional[float] =None):
+    def do(self, token: str, request: str, post_data: Dict[str,str], timeout: Optional[float]):
         """
         Perform a POST request to the Slack Web API
 
@@ -45,12 +45,9 @@ class SlackRequest(object):
             domain (str): if for some reason you want to send your request to something other
                 than slack.com
         """
+        domain = "slack.com"
 
         url = 'https://{0}/api/{1}'.format(domain, request)
-
-        # Override token header if `token` is passed in post_data
-        if post_data is not None and "token" in post_data:
-            token = post_data['token']
 
         # Set user-agent and auth headers
         headers = {
@@ -61,7 +58,6 @@ class SlackRequest(object):
         # Pull file out so it isn't JSON encoded like normal fields.
         # Only do this for requests that are UPLOADING files; downloading files
         # use the 'file' argument to point to a File ID.
-        post_data = post_data or {}
 
         # Move singular file objects into `files`
         upload_requests = ['files.upload']

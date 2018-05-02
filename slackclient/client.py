@@ -74,7 +74,7 @@ class SlackClient:
     def fileno(self) -> Optional[int]:
         return self.server.ws_fileno
 
-    def api_call(self, method: str, timeout=None, **kwargs) -> Dict[str, Any]:
+    def api_call(self, method: str, timeout: Optional[float] = None, **kwargs) -> Dict[str, Any]:
         '''
         Call the Slack Web API as documented here: https://api.slack.com/web
 
@@ -94,7 +94,7 @@ class SlackClient:
         '''
         response_body = self.server.api_call(method, timeout=timeout, **kwargs)
         try:
-            result = json.loads(response_body)
+            result = response_body
         except ValueError as json_decode_error:
             raise ParseResponseError(response_body, json_decode_error)
         return result
