@@ -177,13 +177,12 @@ SlackEvent = Union[
 
 
 class Slack:
-    def __init__(self) -> None:
-        home = expanduser("~")
+    def __init__(self, args) -> None:
         try:
-            with open(home + '/.localslackcattoken') as f:
+            with open(args.tokenfile) as f:
                 token = f.readline().strip()
         except FileNotFoundError:
-            exit("Slack token file not found")
+            exit("Unable to open the token file {}".format(args.tokenfile))
         self.client = SlackClient(token)
         self._usercache = {}  # type: Dict[str, User]
         self._usermapcache = {}  # type: Dict[str, User]

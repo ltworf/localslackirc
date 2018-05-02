@@ -20,7 +20,9 @@
 import re
 import select
 import socket
+import argparse
 from typing import *
+from os.path import expanduser
 
 import slack
 
@@ -30,13 +32,15 @@ _MENTIONS_REGEXP = re.compile(r'<@([0-9A-Za-z]+)>')
 
 
 class Client:
-    def __init__(self, s, sl_client):
+    def __init__(self, s, sl_client, nouserlist):
         self.nick = b''
         self.username = b''
         self.realname = b''
 
         self.s = s
         self.sl_client = sl_client
+        
+        self.nouserlist = nouserlist
 
     def _nickhandler(self, cmd: bytes) -> None:
         _, nick = cmd.split(b' ', 1)
@@ -75,7 +79,7 @@ class Client:
 
         self.s.send(b':%s!salvo@127.0.0.1 JOIN %s\n' % (self.nick, channel_name))
         self.s.send(b':serenity 331 %s %s :%s\n' % (self.nick, channel_name, slchan.real_topic.encode('utf8')))
-        self.s.send(b':serenity 353 %s = %s :%s\n' % (self.nick, channel_name, users))
+        self.s.send(b':serenity 353 %s = %s :%s\n' % (self.nick, channel_name, b'0' if self.nouserlist else users))
         self.s.send(b':serenity 366 %s %s :End of NAMES list\n' % (self.nick, channel_name))
 
     def _privmsghandler(self, cmd: bytes) -> None:
@@ -257,20 +261,35 @@ class Client:
             print('Unknown command: ', cmd)
 
 
-
 def main():
-    sl_client = slack.Slack()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p', '--port', type=int, action='store', dest='port',
+                                default=9007, required=False,
+                                help='set port number')
+    parser.add_argument('-i', '--ip', type=str, action='store', dest='ip',
+                                default='127.0.0.1', required=False,
+                                help='set ip address')
+    parser.add_argument('-t', '--tokenfile', type=str, action='store', dest='tokenfile',
+                                default=expanduser('~')+'/.localslackcattoken',
+                                required=False,
+                                help='set the token file')
+    parser.add_argument('-u', '--nouserlist', action='store_true',
+                                dest='nouserlist', required=False,
+                                help='don\'t display userlist')
+    args = parser.parse_args()
+
+    sl_client = slack.Slack(args)
     sl_events = sl_client.events_iter()
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    serversocket.bind(('127.0.0.1', 9007))
+    serversocket.bind((args.ip, args.port))
     serversocket.listen(1)
 
     poller = select.poll()
 
     while True:
         s, _ = serversocket.accept()
-        ircclient = Client(s, sl_client)
+        ircclient = Client(s, sl_client, args.nouserlist)
 
         poller.register(s.fileno(), select.POLLIN)
         if sl_client.fileno is not None:
