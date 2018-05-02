@@ -1,10 +1,13 @@
 localslackirc
 =============
 
-The idea of this project is to create a localhost IRC server that
-functions as a gateway for one user of slack, that can connect
-to it with whatever IRC client they prefer and keep using slack
-from IRC even after they shut down their IRC gateway.
+The goal of this project is to keep using slack via IRC
+after slack cloes their official IRC gateway.
+
+localslackirc creates a localhost IRC server that
+functions as a gateway for a single slack user.  You
+connect with whatever IRC client you prefer or a
+bouncer such as ZNC.
 
 
 Obtaining token
@@ -28,6 +31,8 @@ Instructions for firefox
 * Select the 'WS' tab
 * Copy the 'token' parameter from the WebSocket connection URL.
 * Place the token inside '~/.localslackcattoken'
+
+Get a slack token from https://api.slack.com/docs/oauth-test-tokens
 
 Requirements
 ============
