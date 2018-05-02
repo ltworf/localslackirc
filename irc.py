@@ -121,14 +121,15 @@ class Client:
             print('WHO not supported on ', name)
             return
         channel = self.sl_client.get_channel_by_name(name.decode()[1:])
-        for i in self.sl_client.get_members(channel.id):
-            user = self.sl_client.get_user(i)
-            self.s.send(b':serenity 352 %s %s salvo 127.0.0.1 serenity %s H :0 %s\n' % (
-                self.nick,
-                name,
-                user.name.encode('utf8'),
-                user.real_name.encode('utf8'),
-            ))
+        if not self.nouserlist:
+            for i in self.sl_client.get_members(channel.id):
+                user = self.sl_client.get_user(i)
+                self.s.send(b':serenity 352 %s %s salvo 127.0.0.1 serenity %s H :0 %s\n' % (
+                    self.nick,
+                    name,
+                    user.name.encode('utf8'),
+                    user.real_name.encode('utf8'),
+                ))
         self.s.send(b':serenity 315 %s %s :End of WHO list\n' % (self.nick, name))
 
     def sendmsg(self, from_: bytes, to: bytes, message: bytes) -> None:
@@ -270,15 +271,24 @@ def main():
                                 default='127.0.0.1', required=False,
                                 help='set ip address')
     parser.add_argument('-t', '--tokenfile', type=str, action='store', dest='tokenfile',
-                                default=expanduser('~')+'/.localslackcattoken',
+                                default=expanduser('~')+'/.localslackirc',
                                 required=False,
                                 help='set the token file')
     parser.add_argument('-u', '--nouserlist', action='store_true',
                                 dest='nouserlist', required=False,
                                 help='don\'t display userlist')
-    args = parser.parse_args()
+    parser.add_argument('-o', '--override', action='store_true',
+                                dest='overridelocalip', required=False,
+                                help='allow non 127. addresses, this is potentially dangerous')
 
-    sl_client = slack.Slack(args)
+    args = parser.parse_args()
+    # Exit if their chosden ip isn't local. User can override with -o if they so dare
+    if not args.ip.startswith('127') and not args.overridelocalip:
+        exit('supplied ip isn\'t local\nlocalslackirc has no encryption or ' \
+                'authentication, it\'s recommended to only allow local connections\n' \
+                'you can override this with -o')
+
+    sl_client = slack.Slack(args.tokenfile)
     sl_events = sl_client.events_iter()
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
