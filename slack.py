@@ -17,7 +17,6 @@
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
 from functools import lru_cache
-from os.path import expanduser
 from typing import *
 
 from slackclient import SlackClient
