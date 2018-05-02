@@ -79,7 +79,7 @@ class Client:
 
         self.s.send(b':%s!salvo@127.0.0.1 JOIN %s\n' % (self.nick, channel_name))
         self.s.send(b':serenity 331 %s %s :%s\n' % (self.nick, channel_name, slchan.real_topic.encode('utf8')))
-        self.s.send(b':serenity 353 %s = %s :%s\n' % (self.nick, channel_name, b'0' if self.nouserlist else users))
+        self.s.send(b':serenity 353 %s = %s :%s\n' % (self.nick, channel_name, b'' if self.nouserlist else users))
         self.s.send(b':serenity 366 %s %s :End of NAMES list\n' % (self.nick, channel_name))
 
     def _privmsghandler(self, cmd: bytes) -> None:
