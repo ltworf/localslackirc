@@ -124,7 +124,7 @@ class Client:
         if not self.nouserlist:
             for i in self.sl_client.get_members(channel.id):
                 user = self.sl_client.get_user(i)
-                self.s.send(b':serenity 352 %s %s 127.0.0.1 serenity %s H :0 %s\n' % (
+                self.s.send(b':serenity 352 %s %s %s 127.0.0.1 serenity %s H :0 %s\n' % (
                     self.nick,
                     name,
                     user.name.encode('utf8'),
