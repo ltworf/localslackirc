@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+#!/usr/bin/env python3
 # localslackirc
 # Copyright (C) 2018 Salvo "LtWorf" Tomaselli
 #
@@ -40,6 +41,9 @@ class Client:
 
         self.s = s
         self.sl_client = sl_client
+
+     def _ignorehandler(self, cmd: bytes) -> None:
+         dummy=1
 
     def _nickhandler(self, cmd: bytes) -> None:
         _, nick = cmd.split(b' ', 1)
@@ -186,7 +190,7 @@ class Client:
             i = i.replace('&gt;', '>')
             i = i.replace('&lt;', '<')
             i = i.replace('&amp;', '&')
-            
+
             # Hack5190 - Add code to convert slack emoji to txt emoji
             # https://www.webpagefx.com/tools/emoji-cheat-sheet/
             i = i.replace(':slightly_smiling_face:', ':)')
@@ -262,6 +266,7 @@ class Client:
             b'LIST': self._listhandler,
             b'WHO': self._whohandler,
             b'MODE': self._modehandler,
+            b'ISON': self._ignorehandler,
             #QUIT
             #CAP LS
             #USERHOST
