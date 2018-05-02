@@ -16,8 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
+# modifications by Hack5190@gmail.com
 
-import struct
 import sys
 import getopt
 import re
@@ -47,11 +47,8 @@ class Client:
 
     def _userhandler(self, cmd: bytes) -> None:
         #TODO USER salvo 8 * :Salvatore Tomaselli
-        self.s.send(b':serenity 001 %s :Hi, welcome to IRC\n' % self.nick)
-        self.s.send(b':serenity 002 %s :Your host is serenity, running version miniircd-1.2.1\n' % self.nick)
-        self.s.send(b':serenity 003 %s :This server was created sometime\n' % self.nick)
-        self.s.send(b':serenity 004 %s serenity miniircd-1.2.1 o o\n' % self.nick)
-        self.s.send(b':serenity 251 %s :There are 1 users and 0 services on 1 server\n' % self.nick)
+        self.s.send(b':serenity 001 %s :Welcome to localslackirc, The IRC <-> SLACK Personal Bridge\n' % self.nick)
+        self.s.send(b':serenity 002 %s :Running version miniircd-1.2.1\n' % self.nick)
 
     def _pinghandler(self, cmd: bytes) -> None:
         _, lbl = cmd.split(b' ', 1)
@@ -64,21 +61,25 @@ class Client:
             slchan = self.sl_client.get_channel_by_name(channel_name[1:].decode())
         except:
             return
-        userlist = []  # type List[bytes]
-        for i in self.sl_client.get_members(slchan.id):
-            try:
-                u = self.sl_client.get_user(i)
-            except:
-                continue
-            name = u.name.encode('utf8')
-            prefix = b'@' if u.is_admin else b''
-            userlist.append(prefix + name)
+        # Hack5190 "-u no-userlist"
+        if uuser=='0':
+            userlist = []  # type List[bytes]
+            for i in self.sl_client.get_members(slchan.id):
+                try:
+                    u = self.sl_client.get_user(i)
+                except:
+                    continue
+                name = u.name.encode('utf8')
+                prefix = b'@' if u.is_admin else b''
+                userlist.append(prefix + name)
 
-        users = b' '.join(userlist)
+            users = b' '.join(userlist)
 
-        self.s.send(b':%s!salvo@127.0.0.1 JOIN %s\n' % (self.nick, channel_name))
+        self.s.send(b':%s!localslackirc@127.0.0.1 JOIN %s\n' % (self.nick, channel_name))
         self.s.send(b':serenity 331 %s %s :%s\n' % (self.nick, channel_name, slchan.real_topic.encode('utf8')))
-        self.s.send(b':serenity 353 %s = %s :%s\n' % (self.nick, channel_name, users))
+        # Hack5190 "-u no-userlist"
+        if uuser=='0':
+            self.s.send(b':serenity 353 %s = %s :%s\n' % (self.nick, channel_name, users))
         self.s.send(b':serenity 366 %s %s :End of NAMES list\n' % (self.nick, channel_name))
 
     def _privmsghandler(self, cmd: bytes) -> None:
@@ -122,7 +123,7 @@ class Client:
         channel = self.sl_client.get_channel_by_name(name.decode()[1:])
         for i in self.sl_client.get_members(channel.id):
             user = self.sl_client.get_user(i)
-            self.s.send(b':serenity 352 %s %s salvo 127.0.0.1 serenity %s H :0 %s\n' % (
+            self.s.send(b':serenity 352 %s %s --- ZNC-Bouncer serenity %s H :0 %s\n' % (
                 self.nick,
                 name,
                 user.name.encode('utf8'),
@@ -131,7 +132,7 @@ class Client:
         self.s.send(b':serenity 315 %s %s :End of WHO list\n' % (self.nick, name))
 
     def sendmsg(self, from_: bytes, to: bytes, message: bytes) -> None:
-        self.s.send(b':%s!salvo@127.0.0.1 PRIVMSG %s :%s\n' % (
+        self.s.send(b':%s!localslackirc@127.0.0.1 PRIVMSG %s :%s\n' % (
             from_,
             to, #private message, or a channel
             message,
@@ -147,6 +148,14 @@ class Client:
         msg = msg.replace('@yell', '<!channel>')
         msg = msg.replace('@shout', '<!channel>')
         msg = msg.replace('@attention', '<!channel>')
+
+        # Hack5190 - Code to convert txt emoji to Slack emoji
+        # https://www.webpagefx.com/tools/emoji-cheat-sheet/
+        msg = msg.replace(':)', ':smile:')
+        msg = msg.replace(':(', ':frowning:')
+        msg = msg.replace(':p', ':stuck_out_tongue:')
+        msg = msg.replace(';)', ':wink:')
+        msg = msg.replace(':*', ':kissing:')
 
         # Extremely inefficient code to generate mentions
         # Just doing them client-side on the receiving end is too mainstream
@@ -260,14 +269,6 @@ class Client:
             print('Unknown command: ', cmd)
 
 
-def ip2long(ip):
-    """
-   Convert an IP string to long
-   """
-    packedIP = socket.inet_aton(ip)
-    return struct.unpack("!L", packedIP)[0]
-
-
 def main():
     ###############################
     # t == token-filename
@@ -275,18 +276,20 @@ def main():
     # p == port-number
     # u == no-userlist
     ###############################
-    utoken=''
+    utoken='./localslackcattoken'
     uip='127.0.0.1'
     uport='9007'
-    uuser=''
- 
+    global uuser
+    uuser='0'
+
     # Read command line args
     myopts, args = getopt.getopt(sys.argv[1:],"t:i:p:u:")
- 
+
     ###############################
     # o == option
-    # a == argument passed to the o
+    # a == argument passed
     ###############################
+    #FIXME when option selected and no argument provided - CRASH!
     for o, a in myopts:
         if o == '-t':
             utoken=a
@@ -295,12 +298,11 @@ def main():
         elif o == '-p':
             uport=a
         elif o == '-u':
-            uuser=a
+            if a =='no-userlist':
+                uuser='1'
         else:
             print("Usage: %s -t token-filename -i IP-address -p port-number -u no-userlist" % sys.argv[0])
- 
-    nuip=ip2long(uip)
-    uip=socket.inet_ntoa(struct.pack('!L', nuip))
+
     sl_client = slack.Slack()
     sl_events = sl_client.events_iter()
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -315,8 +317,6 @@ def main():
         ircclient = Client(s, sl_client)
 
         poller.register(s.fileno(), select.POLLIN)
-        if sl_client.fileno is not None:
-            poller.register(sl_client.fileno, select.POLLIN)
 
         # Main loop
         timeout = 0.1
