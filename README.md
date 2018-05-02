@@ -20,7 +20,6 @@ Instructions for chromium
 * Select WS (WebSockets)
 * Open your web slack client
 * Copy the 'token' parameter from the WebSocket connection URL.
-* Place the token inside '~/.localslackcattoken'
 
 Instructions for firefox
 
@@ -30,9 +29,14 @@ Instructions for firefox
 * Select the 'Network' tab
 * Select the 'WS' tab
 * Copy the 'token' parameter from the WebSocket connection URL.
-* Place the token inside '~/.localslackcattoken'
 
 Get a slack token from https://api.slack.com/docs/oauth-test-tokens
+
+
+Using token
+===============
+
+* Place token inside a text file named '.localslackcattoken' in same directory as irc.py and slack.py
 
 Requirements
 ============
