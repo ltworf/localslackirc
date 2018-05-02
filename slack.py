@@ -180,7 +180,7 @@ class Slack:
     def __init__(self) -> None:
         home = expanduser("~")
         try:
-            with open(home + '/.localslackcattoken') as f:
+            with open('.localslackcattoken') as f:
                 token = f.readline().strip()
         except FileNotFoundError:
             exit("Slack token file not found")
