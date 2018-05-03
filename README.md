@@ -17,7 +17,7 @@ Instructions for chromium
 * Select WS (WebSockets)
 * Open your web slack client
 * Copy the 'token' parameter from the WebSocket connection URL.
-* Place the token inside '~/.localslackcattoken'
+* Place the token inside '~/.localslackirc'
 
 Instructions for firefox
 
@@ -27,7 +27,7 @@ Instructions for firefox
 * Select the 'Network' tab
 * Select the 'WS' tab
 * Copy the 'token' parameter from the WebSocket connection URL.
-* Place the token inside '~/.localslackcattoken'
+* Place the token inside '~/.localslackirc'
 
 Requirements
 ============
