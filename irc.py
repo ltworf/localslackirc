@@ -20,7 +20,9 @@
 import re
 import select
 import socket
+import argparse
 from typing import *
+from os.path import expanduser
 
 import slack
 
@@ -30,13 +32,15 @@ _MENTIONS_REGEXP = re.compile(r'<@([0-9A-Za-z]+)>')
 
 
 class Client:
-    def __init__(self, s, sl_client):
+    def __init__(self, s, sl_client, nouserlist):
         self.nick = b''
         self.username = b''
         self.realname = b''
 
         self.s = s
         self.sl_client = sl_client
+        
+        self.nouserlist = nouserlist
 
     def _nickhandler(self, cmd: bytes) -> None:
         _, nick = cmd.split(b' ', 1)
@@ -75,7 +79,7 @@ class Client:
 
         self.s.send(b':%s!salvo@127.0.0.1 JOIN %s\n' % (self.nick, channel_name))
         self.s.send(b':serenity 331 %s %s :%s\n' % (self.nick, channel_name, slchan.real_topic.encode('utf8')))
-        self.s.send(b':serenity 353 %s = %s :%s\n' % (self.nick, channel_name, users))
+        self.s.send(b':serenity 353 %s = %s :%s\n' % (self.nick, channel_name, b'' if self.nouserlist else users))
         self.s.send(b':serenity 366 %s %s :End of NAMES list\n' % (self.nick, channel_name))
 
     def _privmsghandler(self, cmd: bytes) -> None:
@@ -117,15 +121,15 @@ class Client:
             print('WHO not supported on ', name)
             return
         channel = self.sl_client.get_channel_by_name(name.decode()[1:])
-        for i in self.sl_client.get_members(channel.id):
-            user = self.sl_client.get_user(i)
-            self.s.send(b':serenity 352 %s %s %s 127.0.0.1 serenity %s H :0 %s\n' % (
-                self.nick,
-                name,
-                user.name.encode('utf8'),
-                user.name.encode('utf8'),
-                user.real_name.encode('utf8'),
-            ))
+        if not self.nouserlist:
+            for i in self.sl_client.get_members(channel.id):
+                user = self.sl_client.get_user(i)
+                self.s.send(b':serenity 352 %s %s %s 127.0.0.1 serenity %s H :0 %s\n' % (
+                    self.nick,
+                    name,
+                    user.name.encode('utf8'),
+                    user.real_name.encode('utf8'),
+                ))
         self.s.send(b':serenity 315 %s %s :End of WHO list\n' % (self.nick, name))
 
     def sendmsg(self, from_: bytes, to: bytes, message: bytes) -> None:
@@ -258,20 +262,44 @@ class Client:
             print('Unknown command: ', cmd)
 
 
-
 def main():
-    sl_client = slack.Slack()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p', '--port', type=int, action='store', dest='port',
+                                default=9007, required=False,
+                                help='set port number')
+    parser.add_argument('-i', '--ip', type=str, action='store', dest='ip',
+                                default='127.0.0.1', required=False,
+                                help='set ip address')
+    parser.add_argument('-t', '--tokenfile', type=str, action='store', dest='tokenfile',
+                                default=expanduser('~')+'/.localslackirc',
+                                required=False,
+                                help='set the token file')
+    parser.add_argument('-u', '--nouserlist', action='store_true',
+                                dest='nouserlist', required=False,
+                                help='don\'t display userlist')
+    parser.add_argument('-o', '--override', action='store_true',
+                                dest='overridelocalip', required=False,
+                                help='allow non 127. addresses, this is potentially dangerous')
+
+    args = parser.parse_args()
+    # Exit if their chosden ip isn't local. User can override with -o if they so dare
+    if not args.ip.startswith('127') and not args.overridelocalip:
+        exit('supplied ip isn\'t local\nlocalslackirc has no encryption or ' \
+                'authentication, it\'s recommended to only allow local connections\n' \
+                'you can override this with -o')
+
+    sl_client = slack.Slack(args.tokenfile)
     sl_events = sl_client.events_iter()
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    serversocket.bind(('127.0.0.1', 9007))
+    serversocket.bind((args.ip, args.port))
     serversocket.listen(1)
 
     poller = select.poll()
 
     while True:
         s, _ = serversocket.accept()
-        ircclient = Client(s, sl_client)
+        ircclient = Client(s, sl_client, args.nouserlist)
 
         poller.register(s.fileno(), select.POLLIN)
         if sl_client.fileno is not None:

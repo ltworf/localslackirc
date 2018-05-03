@@ -17,7 +17,6 @@
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
 from functools import lru_cache
-from os.path import expanduser
 from typing import *
 
 from slackclient import SlackClient
@@ -177,13 +176,12 @@ SlackEvent = Union[
 
 
 class Slack:
-    def __init__(self) -> None:
-        home = expanduser("~")
+    def __init__(self, tokenfile) -> None:
         try:
-            with open(home + '/.localslackcattoken') as f:
+            with open(tokenfile) as f:
                 token = f.readline().strip()
         except FileNotFoundError:
-            exit("Slack token file not found")
+            exit("Unable to open the token file {}".format(tokenfile))
         self.client = SlackClient(token)
         self._usercache = {}  # type: Dict[str, User]
         self._usermapcache = {}  # type: Dict[str, User]
