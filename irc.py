@@ -128,6 +128,7 @@ class Client:
                     self.nick,
                     name,
                     user.name.encode('utf8'),
+                    user.name.encode('utf8'),
                     user.real_name.encode('utf8'),
                 ))
         self.s.send(b':serenity 315 %s %s :End of WHO list\n' % (self.nick, name))
