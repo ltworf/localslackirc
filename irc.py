@@ -65,17 +65,18 @@ class Client:
             slchan = self.sl_client.get_channel_by_name(channel_name[1:].decode())
         except:
             return
+        if not self.nouserlist:
         userlist = []  # type List[bytes]
-        for i in self.sl_client.get_members(slchan.id):
-            try:
-                u = self.sl_client.get_user(i)
-            except:
-                continue
-            name = u.name.encode('utf8')
-            prefix = b'@' if u.is_admin else b''
-            userlist.append(prefix + name)
+            for i in self.sl_client.get_members(slchan.id):
+                try:
+                    u = self.sl_client.get_user(i)
+                except:
+                    continue
+                name = u.name.encode('utf8')
+                prefix = b'@' if u.is_admin else b''
+                userlist.append(prefix + name)
 
-        users = b' '.join(userlist)
+            users = b' '.join(userlist)
 
         self.s.send(b':%s!salvo@127.0.0.1 JOIN %s\n' % (self.nick, channel_name))
         self.s.send(b':serenity 331 %s %s :%s\n' % (self.nick, channel_name, slchan.real_topic.encode('utf8')))
@@ -121,16 +122,16 @@ class Client:
             print('WHO not supported on ', name)
             return
         channel = self.sl_client.get_channel_by_name(name.decode()[1:])
-        if not self.nouserlist:
-            for i in self.sl_client.get_members(channel.id):
-                user = self.sl_client.get_user(i)
-                self.s.send(b':serenity 352 %s %s %s 127.0.0.1 serenity %s H :0 %s\n' % (
-                    self.nick,
-                    name,
-                    user.name.encode('utf8'),
-                    user.name.encode('utf8'),
-                    user.real_name.encode('utf8'),
-                ))
+
+        for i in self.sl_client.get_members(channel.id):
+            user = self.sl_client.get_user(i)
+            self.s.send(b':serenity 352 %s %s %s 127.0.0.1 serenity %s H :0 %s\n' % (
+                self.nick,
+                name,
+                user.name.encode('utf8'),
+                user.name.encode('utf8'),
+                user.real_name.encode('utf8'),
+            ))
         self.s.send(b':serenity 315 %s %s :End of WHO list\n' % (self.nick, name))
 
     def sendmsg(self, from_: bytes, to: bytes, message: bytes) -> None:
