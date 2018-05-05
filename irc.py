@@ -66,7 +66,7 @@ class Client:
         except:
             return
         if not self.nouserlist:
-        userlist = []  # type List[bytes]
+            userlist = []  # type List[bytes]
             for i in self.sl_client.get_members(slchan.id):
                 try:
                     u = self.sl_client.get_user(i)
