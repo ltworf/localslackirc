@@ -339,33 +339,36 @@ class Slack:
                     t = event.get('type')
                     subt = event.get('subtype')
 
-                    if t == 'message' and not subt:
-                        yield _loadwrapper(event, Message)
-                    elif t == 'message' and subt == 'file_share':
-                        yield _loadwrapper(event, MessageFileShare)
-                    elif t == 'message' and subt == 'message_changed':
-                        event['message']['channel'] = event['channel']
-                        event['previous_message']['channel'] = event['channel']
-                        yield MessageEdit(
-                            previous=load(event['previous_message'], Message),
-                            current=load(event['message'], Message)
-                        )
-                    elif t == 'message' and subt == 'message_deleted':
-                        event['previous_message']['channel'] = event['channel']
-                        yield _loadwrapper(event['previous_message'], MessageDelete)
-                    elif t == 'message' and subt == 'bot_message':
-                        yield _loadwrapper(event, MessageBot)
-                    elif t == 'user_change':
-                        # Changes in the user, drop it from cache
-                        u = load(event['user'], User)
-                        if u.id in self._usercache:
-                            del self._usercache[u.id]
-                            #FIXME don't know if it is wise, maybe it gets lost forever del self._usermapcache[u.name]
-                        #TODO make an event for this
-                    elif t == 'file_deleted':
-                        yield _loadwrapper(event, FileDeleted)
-                    elif t in USELESS_EVENTS:
-                        continue
-                    else:
-                        print(event)
+                    try:
+                        if t == 'message' and not subt:
+                            yield _loadwrapper(event, Message)
+                        elif t == 'message' and subt == 'file_share':
+                            yield _loadwrapper(event, MessageFileShare)
+                        elif t == 'message' and subt == 'message_changed':
+                            event['message']['channel'] = event['channel']
+                            event['previous_message']['channel'] = event['channel']
+                            yield MessageEdit(
+                                previous=load(event['previous_message'], Message),
+                                current=load(event['message'], Message)
+                            )
+                        elif t == 'message' and subt == 'message_deleted':
+                            event['previous_message']['channel'] = event['channel']
+                            yield _loadwrapper(event['previous_message'], MessageDelete)
+                        elif t == 'message' and subt == 'bot_message':
+                            yield _loadwrapper(event, MessageBot)
+                        elif t == 'user_change':
+                            # Changes in the user, drop it from cache
+                            u = load(event['user'], User)
+                            if u.id in self._usercache:
+                                del self._usercache[u.id]
+                                #FIXME don't know if it is wise, maybe it gets lost forever del self._usermapcache[u.name]
+                            #TODO make an event for this
+                        elif t == 'file_deleted':
+                            yield _loadwrapper(event, FileDeleted)
+                        elif t in USELESS_EVENTS:
+                            continue
+                        else:
+                            print(event)
+                    except Exception as e:
+                        print('Exception: %s' % e)
                 yield None
