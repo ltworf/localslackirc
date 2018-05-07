@@ -37,12 +37,6 @@ Using Token
 * Place the token inside '~/.localslackirc'
 
 
-Warning
-===========
-
-* A token provides access to your private data and that of your team. Keep all tokens to yourself, protect them as you would a password and do not share them with others!
-
-
 Requirements
 ============
 
