@@ -17,6 +17,7 @@
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
 from functools import lru_cache
+from time import sleep
 from typing import *
 
 from slackclient import SlackClient
@@ -332,7 +333,7 @@ class Slack:
                     events = self.client.rtm_read()
                 except:
                     if not self.client.rtm_connect():
-                        raise
+                        sleep(10)
                     events = []
 
                 for event in events:
