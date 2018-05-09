@@ -24,6 +24,9 @@ import argparse
 from typing import *
 from os.path import expanduser
 
+from logger import logger
+from logger import startlog
+from logger import searchlog
 import slack
 
 
@@ -88,6 +91,8 @@ class Client:
         msg = msg[1:]
         message = self._addmagic(msg.decode('utf8'))
 
+        # Save outgoing messages to log file.
+        logger(self.nick.decode('utf-8'), message)
         if dest.startswith(b'#'):
             self.sl_client.send_message(
                 self.sl_client.get_channel_by_name(dest[1:].decode()).id,
@@ -208,11 +213,22 @@ class Client:
             print('Error: ', str(e))
             return
         for msg in self.parse_message(prefix + sl_ev.text):
-            self.sendmsg(
-                source,
-                dest,
-                msg
-            )
+            if source != self.nick:
+                self.sendmsg(
+                    source,
+                    dest,
+                    msg
+                )
+            else:
+                # Review log file and see if this is a new message.
+                if searchlog(source.decode('utf-8'), msg.decode('utf-8')):
+                    return
+                else:
+                    self.sendmsg(
+                        source,
+                        dest,
+                        msg
+                    )
 
     def slack_event(self, sl_ev):
         #TODO handle p2p messages
@@ -299,6 +315,8 @@ def main():
 
     poller = select.poll()
 
+    # open a chat log file.
+    startlog()
     while True:
         s, _ = serversocket.accept()
         ircclient = Client(s, sl_client, args.nouserlist)
