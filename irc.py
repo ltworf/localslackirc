@@ -201,8 +201,6 @@ class Client:
         """
         if hasattr(sl_ev, 'user'):
             source = self.sl_client.get_user(sl_ev.user).name.encode('utf8')
-            if source == self.nick:
-                return
         else:
             source = b'bot'
         try:
