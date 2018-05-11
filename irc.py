@@ -27,8 +27,8 @@ from os.path import expanduser
 from logger import logger
 from logger import startlog
 from logger import searchlog
-import slack
 
+import slack
 
 # How slack expresses mentioning users
 _MENTIONS_REGEXP = re.compile(r'<@([0-9A-Za-z]+)>')
@@ -139,6 +139,9 @@ class Client:
             ))
         self.s.send(b':serenity 315 %s %s :End of WHO list\n' % (self.nick, name))
 
+    def _ignorehandler(self, cmd: bytes) -> None:
+        pass
+
     def sendmsg(self, from_: bytes, to: bytes, message: bytes) -> None:
         self.s.send(b':%s!salvo@127.0.0.1 PRIVMSG %s :%s\n' % (
             from_,
@@ -160,7 +163,7 @@ class Client:
         # Extremely inefficient code to generate mentions
         # Just doing them client-side on the receiving end is too mainstream
         for username in self.sl_client.get_usernames():
-            if username in msg:
+            if "{} ".format(username) in msg:
                 msg = msg.replace(
                     username,
                     '<@%s>' % self.sl_client.get_user_by_name(username).id
@@ -263,6 +266,8 @@ class Client:
             b'LIST': self._listhandler,
             b'WHO': self._whohandler,
             b'MODE': self._modehandler,
+            # ISON - Old command, successor is the WATCH command.
+            b'ISON': self._ignorehandler,
             #QUIT
             #CAP LS
             #USERHOST
