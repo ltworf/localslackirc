@@ -62,7 +62,7 @@ pip3 install websocket-client
 Using localslackirc
 ===========
 
-* point your irc client to localslackirc (127.0.0.1:9000) - login using use your Slack username 
+* point your irc client to localslackirc (127.0.0.1:9007) - login using use your Slack username 
 
 IRC Channel
 ===========
