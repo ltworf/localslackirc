@@ -62,10 +62,12 @@ pip3 install websocket-client
 Using localslackirc
 ===========
 
-* point your irc client to localslackirc (127.0.0.1:9007) - login using use your Slack username - when localslackirc starts you should see a connection message sililar to the this:
+* Start localslackirc - you should see a connection message sililar to the this:
 ```
 {'ok': True, 'url': 'wss://cerberus-xxxx.lb.slack-msgs.com/websocket/jhvbT8578765JHBfrewgsdy7', 'team': {'id': 'ZZZ789012', 'name': 'Some Team', 'domain': 'someteam'}, 'self': {'id': 'XXX123456', 'name': 'hack5190'}}
 ```
+
+* Now point your irc client to localslackirc (127.0.0.1:9007) - login to localslackirc using use your Slack username - after your connected list the channels in your irc client and select the ones to join, same as any irc network. 
 
 IRC Channel
 ===========
