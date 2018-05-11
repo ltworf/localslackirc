@@ -49,6 +49,13 @@ Requirements
 * At least Python 3.6
 * The modules indicated in `requirements.txt`
 
+* NOTE: websocket doesnt work in Ubuntu. websocket-client must be used instead.
+* Uninstall websocket and websocket-client (if you have it), and then install websocket-client only:
+  pip3 uninstall websocket
+  pip3 uninstall websocket-client
+  pip3 install websocket-client
+
+
 Using localslackirc
 ===========
 
