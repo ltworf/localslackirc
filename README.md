@@ -67,7 +67,7 @@ Using localslackirc
 {'ok': True, 'url': 'wss://cerberus-xxxx.lb.slack-msgs.com/websocket/jhvbT8578765JHBfrewgsdy7', 'team': {'id': 'ZZZ789012', 'name': 'Some Team', 'domain': 'someteam'}, 'self': {'id': 'XXX123456', 'name': 'hack5190'}}
 ```
 
-* Now point your irc client to localslackirc (127.0.0.1:9007) - login to localslackirc using use your Slack username - after your connected, list the channels in your irc client and select the ones to join, same as any irc network. 
+* Now point your irc client to localslackirc (127.0.0.1:9007) - login to localslackirc using use your Slack username - after your connected, list the channels in your irc client and select the ones to join. 
 
 IRC Channel
 ===========
