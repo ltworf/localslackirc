@@ -19,6 +19,7 @@ Options to Obtain token
 * Open your web slack client
 * Copy the 'token' parameter from the WebSocket connection URL.
 
+
 2) Instructions for firefox
 
 * In your browser, open the Slack web client
@@ -36,6 +37,53 @@ Using Token
 
 * Place the token inside '~/.localslackirc'
 
+Using localslackirc
+===================
+
+* Start localslackirc by running `python3 irc.py` - you should see a connection message similar to the this:
+```
+{'ok': True, 'url': 'wss://cerberus-xxxx.lb.slack-msgs.com/websocket/jhvbT8578765JHBfrewgsdy7', 'team': {'id': 'ZZZ789012', 'name': 'Some Team', 'domain': 'someteam'}, 'self': {'id': 'XXX123456', 'name': 'your name'}}
+```
+
+ 
+* Now point your irc client to localslackirc (127.0.0.1:9007)
+  * login to localslackirc using your Slack username
+  * after your connected, list the channels in your irc client and select the ones you want to join. 
+
+## Instructions for irssi
+
+If you need to refresh your memory about connecting in general, this is a good guide: https://pthree.org/2010/02/02/irssis-channel-network-server-and-connect-what-it-means/
+
+Here's a list of irssi commands to set up a network and a localhost server:
+
+```
+/network add -user <you> -realname "<your name>" -nick <your nick> <slackname>
+/server add -auto -port 9007 -network <slackname> localhost
+/save
+```
+
+Then, start localslackirc in your terminal if you haven't already. (Just type `python3 irc.py`).
+
+After localslackirc is running, and you have seen the connection
+message seen above, you can just connect to the localhost IRC network
+in irssi. Like this:
+
+```
+/connect <slackname>
+```
+
+And you should see the following message in your irssi:
+```
+22:15:35 [<slackname>] -!- Irssi: Looking up localhost
+22:15:35 [<slackname>] -!- Irssi: Connecting to localhost [127.0.0.1] port 9007
+22:15:35 [<slackname>] -!- Irssi: Connection to localhost established
+22:15:36 [<slackname>] -!- Hi, welcome to IRC
+22:15:36 [<slackname>] -!- Your host is serenity, running version miniircd-1.2.1
+22:15:36 [<slackname>] -!- This server was created sometime
+22:15:36 [<slackname>] -!- serenity miniircd-1.2.1 o o
+22:15:36 [<slackname>] -!- There are 1 users and 0 services on 1 server
+...
+```
 
 Requirements
 ============
