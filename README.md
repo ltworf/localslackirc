@@ -49,6 +49,11 @@ Requirements
 * At least Python 3.6
 * The modules indicated in `requirements.txt`
 
+Using localslackirc
+===========
+
+* point your irc client to localslackirc (127.0.0.1:9000) - login using use your Slack username 
+
 IRC Channel
 ===========
 
