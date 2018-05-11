@@ -35,6 +35,7 @@ Using Token
 ===========
 
 * Place the token inside '~/.localslackirc'
+* NOTE: do not include "token="
 
 
 Warning
