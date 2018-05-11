@@ -17,7 +17,7 @@ Options to Obtain token
 * Select the "Network" tab.
 * Select WS (WebSockets)
 * Open your web slack client
-* Copy the 'token' parameter from the WebSocket connection URL.
+* Copy the 'token' parameter from the WebSocket connection URL. [Picture](https://raw.githubusercontent.com/inariksit/localslackirc/master/doc/token-instructions.png)
 
 
 2) Instructions for firefox
