@@ -50,8 +50,9 @@ Requirements
 * The modules indicated in `requirements.txt`
 
 * NOTE: websocket doesnt work in Ubuntu. websocket-client must be used instead.
-* Uninstall websocket and websocket-client (if installed), then install 'only' websocket-client:
 ```
+Uninstall websocket and websocket-client (if installed), then install 'only' websocket-client:
+
 pip3 uninstall websocket
 pip3 uninstall websocket-client
 pip3 install websocket-client
