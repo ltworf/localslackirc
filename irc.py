@@ -32,7 +32,7 @@ _MENTIONS_REGEXP = re.compile(r'<@([0-9A-Za-z]+)>')
 
 
 class Client:
-    def __init__(self, s, sl_client, nouserlist):
+    def __init__(self, s, sl_client, *, nouserlist=False, autojoin=False):
         self.nick = b''
         self.username = b''
         self.realname = b''
@@ -41,6 +41,7 @@ class Client:
         self.sl_client = sl_client
 
         self.nouserlist = nouserlist
+        self.autojoin = autojoin
 
     def _nickhandler(self, cmd: bytes) -> None:
         _, nick = cmd.split(b' ', 1)
@@ -54,6 +55,17 @@ class Client:
         self.s.send(b':serenity 004 %s serenity miniircd-1.2.1 o o\n' % self.nick)
         self.s.send(b':serenity 251 %s :There are 1 users and 0 services on 1 server\n' % self.nick)
 
+        if self.autojoin:
+            for sl_chan in self.sl_client.channels():
+                if not sl_chan.is_member:
+                    continue
+
+                channel_name = '%(prefix)s%(name)s' % dict(
+                    prefix='#' if sl_chan.is_channel else '&',
+                    name=sl_chan.name_normalized,
+                )
+                self._send_chan_info(channel_name.encode('utf-8'), sl_chan)
+
     def _pinghandler(self, cmd: bytes) -> None:
         _, lbl = cmd.split(b' ', 1)
         self.s.send(b':serenity PONG serenity %s\n' % lbl)
@@ -65,6 +77,10 @@ class Client:
             slchan = self.sl_client.get_channel_by_name(channel_name[1:].decode())
         except:
             return
+
+        self._send_chan_info(channel_name, slchan)
+
+    def _send_chan_info(self, channel_name: bytes, slchan: slack.Channel):
         if not self.nouserlist:
             userlist = []  # type List[bytes]
             for i in self.sl_client.get_members(slchan.id):
@@ -280,6 +296,9 @@ def main():
     parser.add_argument('-u', '--nouserlist', action='store_true',
                                 dest='nouserlist', required=False,
                                 help='don\'t display userlist')
+    parser.add_argument('-j', '--autojoin', action='store_true',
+                                dest='autojoin', required=False,
+                                help="Automatically join all remote channels")
     parser.add_argument('-o', '--override', action='store_true',
                                 dest='overridelocalip', required=False,
                                 help='allow non 127. addresses, this is potentially dangerous')
@@ -302,7 +321,7 @@ def main():
 
     while True:
         s, _ = serversocket.accept()
-        ircclient = Client(s, sl_client, args.nouserlist)
+        ircclient = Client(s, sl_client, nouserlist=args.nouserlist, autojoin=args.autojoin)
 
         poller.register(s.fileno(), select.POLLIN)
         if sl_client.fileno is not None:

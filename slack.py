@@ -74,6 +74,13 @@ class Channel(NamedTuple):
     purpose: Topic
     topic: Topic
     num_members: int = 0
+    #: Membership: present on channels, not on groups - but True there.
+    is_member: bool = True
+
+    #: Object type. groups have is_group=True, channels is_channel=True
+    is_channel: bool = False
+    is_group: bool = False
+    is_mpim: bool = False
 
     @property
     def name(self):
