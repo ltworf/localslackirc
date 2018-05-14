@@ -60,6 +60,11 @@ class Client:
         self.s.send(b':serenity 004 %s serenity miniircd-1.2.1 o o\n' % self.nick)
         self.s.send(b':serenity 251 %s :There are 1 users and 0 services on 1 server\n' % self.nick)
 
+        if self.autojoin and not self.nouserlist:
+            # We're about to load many users for each chan; instead of requesting each
+            # profile on its own, batch load the full directory.
+            self.sl_client.prefetch_users()
+
         if self.autojoin:
 
             mpim_cutoff = datetime.datetime.utcnow() - MPIM_HIDE_DELAY
