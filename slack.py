@@ -301,6 +301,17 @@ class Slack:
     def get_usernames(self) -> List[str]:
         return list(self._usermapcache.keys())
 
+    def prefetch_users(self) -> None:
+        """
+        Prefetch all team members for the slack team.
+        """
+        r = self.client.api_call("users.list")
+        response = load(r, Response)
+        if response.ok:
+            for user in load(r['members'], List[User]):
+                self._usercache[user.id] = user
+                self._usermapcache[user.name] = user
+
     def get_user(self, id_: str) -> User:
         """
         Returns a user object from a slack user id
