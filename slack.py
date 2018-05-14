@@ -155,6 +155,7 @@ class User(NamedTuple):
     name: str
     profile: Profile
     is_admin: bool = False
+    deleted: bool = False
 
     @property
     def real_name(self) -> str:
