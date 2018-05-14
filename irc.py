@@ -72,6 +72,9 @@ class Client:
                     u = self.sl_client.get_user(i)
                 except:
                     continue
+                if u.deleted:
+                    # Disabled user, skip it
+                    continue
                 name = u.name.encode('utf8')
                 prefix = b'@' if u.is_admin else b''
                 userlist.append(prefix + name)
