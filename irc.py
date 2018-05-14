@@ -17,6 +17,7 @@
 #
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
+import datetime
 import re
 import select
 import socket
@@ -29,6 +30,10 @@ import slack
 
 # How slack expresses mentioning users
 _MENTIONS_REGEXP = re.compile(r'<@([0-9A-Za-z]+)>')
+
+
+#: Inactivity days to hide a MPIM
+MPIM_HIDE_DELAY = datetime.timedelta(days=50)
 
 
 class Client:
@@ -56,8 +61,14 @@ class Client:
         self.s.send(b':serenity 251 %s :There are 1 users and 0 services on 1 server\n' % self.nick)
 
         if self.autojoin:
+
+            mpim_cutoff = datetime.datetime.utcnow() - MPIM_HIDE_DELAY
+
             for sl_chan in self.sl_client.channels():
                 if not sl_chan.is_member:
+                    continue
+
+                if sl_chan.is_mpim and (sl_chan.latest is None or sl_chan.latest.timestamp < mpim_cutoff):
                     continue
 
                 channel_name = '%(prefix)s%(name)s' % dict(
