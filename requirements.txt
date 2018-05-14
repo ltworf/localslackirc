@@ -1,4 +1,4 @@
 requests
 six
 typedload
-websocket
+websocket-client
