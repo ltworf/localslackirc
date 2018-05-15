@@ -82,8 +82,10 @@ class Channel(NamedTuple):
     @property
     def real_topic(self) -> str:
         if self.topic.value:
-            return self.topic.value
-        return self.purpose.value
+            t = self.topic.value
+        else:
+            t = self.purpose.value
+        return t.replace('\n', ' | ')
 
 
 class Message(NamedTuple):
