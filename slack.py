@@ -16,6 +16,7 @@
 #
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
+import datetime
 from functools import lru_cache
 from time import sleep
 from typing import *
@@ -63,6 +64,16 @@ class Topic(NamedTuple):
     value: str
 
 
+class LatestMessage(NamedTuple):
+    user: str  # The user id
+    text: str
+    ts: str  # The message UNIX timestamp, as text
+
+    @property
+    def timestamp(self):
+        return datetime.datetime.utcfromtimestamp(float(self.ts))
+
+
 class Channel(NamedTuple):
     """
     A channel description.
@@ -74,6 +85,15 @@ class Channel(NamedTuple):
     purpose: Topic
     topic: Topic
     num_members: int = 0
+    #: Membership: present on channels, not on groups - but True there.
+    is_member: bool = True
+
+    #: Object type. groups have is_group=True, channels is_channel=True
+    is_channel: bool = False
+    is_group: bool = False
+    is_mpim: bool = False
+
+    latest: Optional[LatestMessage] = None
 
     @property
     def name(self):
@@ -209,10 +229,24 @@ class Slack:
         else:
             raise ResponseException(response)
 
+        # Multiparty IM appear as both groups and mpim.
+        # Fetch MPIM first, to exclude them in the list of groups.
+        r = self.client.api_call("mpim.list", exclude_archived=True, exclude_members=True)
+        response = load(r, Response)
+        if response.ok:
+            mpims = load(r['groups'], List[Channel])
+            result.extend(mpims)
+            mpim_ids = [mpim.id for mpim in mpims]
+        else:
+            raise ResponseException(response)
+
         r = self.client.api_call("groups.list", exclude_archived=True, exclude_members=True)
         response = load(r, Response)
         if response.ok:
-            result.extend(load(r['groups'], List[Channel]))
+            result.extend([
+                group for group in load(r['groups'], List[Channel])
+                if group.id not in mpim_ids
+            ])
         else:
             raise ResponseException(response)
         return result
@@ -266,6 +300,17 @@ class Slack:
 
     def get_usernames(self) -> List[str]:
         return list(self._usermapcache.keys())
+
+    def prefetch_users(self) -> None:
+        """
+        Prefetch all team members for the slack team.
+        """
+        r = self.client.api_call("users.list")
+        response = load(r, Response)
+        if response.ok:
+            for user in load(r['members'], List[User]):
+                self._usercache[user.id] = user
+                self._usermapcache[user.name] = user
 
     def get_user(self, id_: str) -> User:
         """
