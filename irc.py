@@ -76,10 +76,7 @@ class Client:
                 if sl_chan.is_mpim and (sl_chan.latest is None or sl_chan.latest.timestamp < mpim_cutoff):
                     continue
 
-                channel_name = '%(prefix)s%(name)s' % dict(
-                    prefix='#' if sl_chan.is_channel else '&',
-                    name=sl_chan.name_normalized,
-                )
+                channel_name = '#%s' % sl_chan.name_normalized
                 self._send_chan_info(channel_name.encode('utf-8'), sl_chan)
 
     def _pinghandler(self, cmd: bytes) -> None:
