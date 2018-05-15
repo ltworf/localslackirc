@@ -67,11 +67,11 @@ class Topic(NamedTuple):
 class LatestMessage(NamedTuple):
     user: str  # The user id
     text: str
-    ts: str  # The message UNIX timestamp, as text
+    ts: float
 
     @property
     def timestamp(self):
-        return datetime.datetime.utcfromtimestamp(float(self.ts))
+        return datetime.datetime.utcfromtimestamp(self.ts)
 
 
 class Channel(NamedTuple):
