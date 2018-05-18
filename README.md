@@ -91,6 +91,27 @@ Requirements
 * At least Python 3.6
 * The modules indicated in `requirements.txt`
 
+
+Using a docker container to run localslackirc
+=============================================
+
+Inside `docker` directory there is a dockerfile to generate a container that runs `localslackirc`.
+In order to use it follow the instructions:
+
+```
+# docker build -t localslackirc -f docker/Dockerfile .
+
+```
+
+If everything went fine you should have a new container running localslackirc.
+
+To start your new container:
+
+```
+docker run -d -p 9007:9007 --name=mylocalslackirc -e 'SLACKTOKEN=MYSLACKTOKEN' localslackirc
+```
+
+
 IRC Channel
 ===========
 
