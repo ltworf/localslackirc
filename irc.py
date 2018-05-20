@@ -30,6 +30,8 @@ import slack
 
 # How slack expresses mentioning users
 _MENTIONS_REGEXP = re.compile(r'<@([0-9A-Za-z]+)>')
+_CHANNEL_MENTIONS_REGEXP = re.compile(r'<#[A-Z0-9]+\|([A-Z0-9\-a-z]+)>')
+
 
 _SUBSTITUTIONS = [
     ('&amp;', '&'),
@@ -213,6 +215,18 @@ class Client:
                 i = (
                     i[0:mention.span()[0]] +
                     self.sl_client.get_user(mention.groups()[0]).name +
+                    i[mention.span()[1]:]
+                )
+
+            # Replace all channel mentions
+            while True:
+                mention = _CHANNEL_MENTIONS_REGEXP.search(i)
+                if not mention:
+                    break
+                i = (
+                    i[0:mention.span()[0]] +
+                    '#' +
+                    mention.groups()[0] +
                     i[mention.span()[1]:]
                 )
 
