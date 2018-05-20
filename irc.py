@@ -31,6 +31,12 @@ import slack
 # How slack expresses mentioning users
 _MENTIONS_REGEXP = re.compile(r'<@([0-9A-Za-z]+)>')
 
+SUBSTITUTIONS = [
+    ('&gt;', '>'),
+    ('&lt;', '<'),
+    ('&amp;', '&'),
+]
+
 
 #: Inactivity days to hide a MPIM
 MPIM_HIDE_DELAY = datetime.timedelta(days=50)
@@ -208,9 +214,8 @@ class Client:
                     i[mention.span()[1]:]
                 )
 
-            i = i.replace('&gt;', '>')
-            i = i.replace('&lt;', '<')
-            i = i.replace('&amp;', '&')
+            for s in SUBSTITUTIONS:
+                i = i.replace(s[0], s[1])
 
             encoded = i.encode('utf8')
 
