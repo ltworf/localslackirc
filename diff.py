@@ -46,7 +46,7 @@ def seddiff(a: str, b: str) -> str:
 
     postfix -= 1
     if postfix == 0:
-        postfix = None
+        px = None
     else:
-        postfix *= -1
-    return 's/%s/%s/' % (a[prefix:postfix], b[prefix:postfix])
+        px = postfix * -1
+    return 's/%s/%s/' % (a[prefix:px], b[prefix:px])
