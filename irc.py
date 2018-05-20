@@ -89,10 +89,10 @@ class Client:
     def _privmsghandler(self, cmd: bytes) -> None:
         _, dest, msg = cmd.split(b' ', 2)
         msg = msg[1:]
+        # Save outgoing messages to log file.
+        logger(self.nick.decode('utf-8'), msg.decode('utf8'))
         message = self._addmagic(msg.decode('utf8'))
 
-        # Save outgoing messages to log file.
-        logger(self.nick.decode('utf-8'), message)
         if dest.startswith(b'#'):
             self.sl_client.send_message(
                 self.sl_client.get_channel_by_name(dest[1:].decode()).id,
