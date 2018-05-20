@@ -32,9 +32,9 @@ import slack
 _MENTIONS_REGEXP = re.compile(r'<@([0-9A-Za-z]+)>')
 
 SUBSTITUTIONS = [
+    ('&amp;', '&'),
     ('&gt;', '>'),
     ('&lt;', '<'),
-    ('&amp;', '&'),
 ]
 
 
@@ -184,6 +184,8 @@ class Client:
         Adds magic codes and various things to
         outgoing messages
         """
+        for i in SUBSTITUTIONS:
+            msg = msg.replace(i[1], i[0])
         msg = msg.replace('@here', '<!here>')
         msg = msg.replace('@channel', '<!channel>')
         msg = msg.replace('@yell', '<!channel>')
