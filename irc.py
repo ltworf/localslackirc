@@ -31,7 +31,7 @@ import slack
 # How slack expresses mentioning users
 _MENTIONS_REGEXP = re.compile(r'<@([0-9A-Za-z]+)>')
 
-SUBSTITUTIONS = [
+_SUBSTITUTIONS = [
     ('&amp;', '&'),
     ('&gt;', '>'),
     ('&lt;', '<'),
@@ -184,7 +184,7 @@ class Client:
         Adds magic codes and various things to
         outgoing messages
         """
-        for i in SUBSTITUTIONS:
+        for i in _SUBSTITUTIONS:
             msg = msg.replace(i[1], i[0])
         msg = msg.replace('@here', '<!here>')
         msg = msg.replace('@channel', '<!channel>')
@@ -216,7 +216,7 @@ class Client:
                     i[mention.span()[1]:]
                 )
 
-            for s in SUBSTITUTIONS:
+            for s in _SUBSTITUTIONS:
                 i = i.replace(s[0], s[1])
 
             encoded = i.encode('utf8')
