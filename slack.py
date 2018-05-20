@@ -65,8 +65,6 @@ class Topic(NamedTuple):
 
 
 class LatestMessage(NamedTuple):
-    user: str  # The user id
-    text: str
     ts: float
 
     @property
