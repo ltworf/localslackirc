@@ -349,14 +349,15 @@ class Slack:
     def send_message_to_user(self, user_id: str, msg: str):
 
         # Find the channel id
-        channel_id = None
+        found = False
         for i in self.get_ims():
             if i.user == user_id:
                 channel_id = i.id
+                found = True
                 break
 
         # A conversation does not exist, create one
-        if not channel_id:
+        if not found:
             r = self.client.api_call(
                 "im.open",
                 return_im=True,
