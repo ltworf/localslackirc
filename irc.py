@@ -25,6 +25,10 @@ import argparse
 from typing import *
 from os.path import expanduser
 
+from logger import logger
+from logger import startlog
+from logger import searchlog
+
 import slack
 
 
@@ -126,6 +130,8 @@ class Client:
     def _privmsghandler(self, cmd: bytes) -> None:
         _, dest, msg = cmd.split(b' ', 2)
         msg = msg[1:]
+        # Save outgoing messages to log file.
+        logger(self.nick.decode('utf-8'), msg.decode('utf8'))
         message = self._addmagic(msg.decode('utf8'))
 
         if dest.startswith(b'#'):
@@ -173,6 +179,9 @@ class Client:
                 user.real_name.encode('utf8'),
             ))
         self.s.send(b':serenity 315 %s %s :End of WHO list\n' % (self.nick, name))
+
+    def _ignorehandler(self, cmd: bytes) -> None:
+        pass
 
     def sendmsg(self, from_: bytes, to: bytes, message: bytes) -> None:
         self.s.send(b':%s!salvo@127.0.0.1 PRIVMSG %s :%s\n' % (
@@ -247,8 +256,6 @@ class Client:
         """
         if hasattr(sl_ev, 'user'):
             source = self.sl_client.get_user(sl_ev.user).name.encode('utf8')  # type: ignore
-            if source == self.nick:
-                return
         else:
             source = b'bot'
         try:
@@ -259,11 +266,22 @@ class Client:
             print('Error: ', str(e))
             return
         for msg in self.parse_message(prefix + sl_ev.text):
-            self.sendmsg(
-                source,
-                dest,
-                msg
-            )
+            if source != self.nick:
+                self.sendmsg(
+                    source,
+                    dest,
+                    msg
+                )
+            else:
+                # Review log file and see if this is a new message.
+                if searchlog(source.decode('utf-8'), msg.decode('utf-8')):
+                    return
+                else:
+                    self.sendmsg(
+                        source,
+                        dest,
+                        msg
+                    )
 
     def slack_event(self, sl_ev):
         #TODO handle p2p messages
@@ -300,6 +318,8 @@ class Client:
             b'LIST': self._listhandler,
             b'WHO': self._whohandler,
             b'MODE': self._modehandler,
+            # ISON - Old command, successor is the WATCH command.
+            b'ISON': self._ignorehandler,
             #QUIT
             #CAP LS
             #USERHOST
@@ -353,6 +373,8 @@ def main():
 
     poller = select.poll()
 
+    # open a chat log file.
+    startlog()
     while True:
         s, _ = serversocket.accept()
         ircclient = Client(s, sl_client, nouserlist=args.nouserlist, autojoin=args.autojoin)
