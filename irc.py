@@ -17,6 +17,7 @@
 #
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
+import datetime
 import re
 import select
 import socket
@@ -30,20 +31,34 @@ from logger import searchlog
 
 import slack
 
+
 # How slack expresses mentioning users
 _MENTIONS_REGEXP = re.compile(r'<@([0-9A-Za-z]+)>')
+_CHANNEL_MENTIONS_REGEXP = re.compile(r'<#[A-Z0-9]+\|([A-Z0-9\-a-z]+)>')
+
+
+_SUBSTITUTIONS = [
+    ('&amp;', '&'),
+    ('&gt;', '>'),
+    ('&lt;', '<'),
+]
+
+
+#: Inactivity days to hide a MPIM
+MPIM_HIDE_DELAY = datetime.timedelta(days=50)
 
 
 class Client:
-    def __init__(self, s, sl_client, nouserlist):
+    def __init__(self, s, sl_client, *, nouserlist=False, autojoin=False):
         self.nick = b''
         self.username = b''
         self.realname = b''
 
         self.s = s
         self.sl_client = sl_client
-        
+
         self.nouserlist = nouserlist
+        self.autojoin = autojoin
 
     def _nickhandler(self, cmd: bytes) -> None:
         _, nick = cmd.split(b' ', 1)
@@ -57,6 +72,25 @@ class Client:
         self.s.send(b':serenity 004 %s serenity miniircd-1.2.1 o o\n' % self.nick)
         self.s.send(b':serenity 251 %s :There are 1 users and 0 services on 1 server\n' % self.nick)
 
+        if self.autojoin and not self.nouserlist:
+            # We're about to load many users for each chan; instead of requesting each
+            # profile on its own, batch load the full directory.
+            self.sl_client.prefetch_users()
+
+        if self.autojoin:
+
+            mpim_cutoff = datetime.datetime.utcnow() - MPIM_HIDE_DELAY
+
+            for sl_chan in self.sl_client.channels():
+                if not sl_chan.is_member:
+                    continue
+
+                if sl_chan.is_mpim and (sl_chan.latest is None or sl_chan.latest.timestamp < mpim_cutoff):
+                    continue
+
+                channel_name = '#%s' % sl_chan.name_normalized
+                self._send_chan_info(channel_name.encode('utf-8'), sl_chan)
+
     def _pinghandler(self, cmd: bytes) -> None:
         _, lbl = cmd.split(b' ', 1)
         self.s.send(b':serenity PONG serenity %s\n' % lbl)
@@ -68,12 +102,19 @@ class Client:
             slchan = self.sl_client.get_channel_by_name(channel_name[1:].decode())
         except:
             return
+
+        self._send_chan_info(channel_name, slchan)
+
+    def _send_chan_info(self, channel_name: bytes, slchan: slack.Channel):
         if not self.nouserlist:
             userlist = []  # type List[bytes]
             for i in self.sl_client.get_members(slchan.id):
                 try:
                     u = self.sl_client.get_user(i)
                 except:
+                    continue
+                if u.deleted:
+                    # Disabled user, skip it
                     continue
                 name = u.name.encode('utf8')
                 prefix = b'@' if u.is_admin else b''
@@ -154,6 +195,8 @@ class Client:
         Adds magic codes and various things to
         outgoing messages
         """
+        for i in _SUBSTITUTIONS:
+            msg = msg.replace(i[1], i[0])
         msg = msg.replace('@here', '<!here>')
         msg = msg.replace('@channel', '<!channel>')
         msg = msg.replace('@yell', '<!channel>')
@@ -163,11 +206,9 @@ class Client:
         # Extremely inefficient code to generate mentions
         # Just doing them client-side on the receiving end is too mainstream
         for username in self.sl_client.get_usernames():
-            if username in msg:
-                msg = msg.replace(
-                    username,
-                    '<@%s>' % self.sl_client.get_user_by_name(username).id
-                )
+            m = re.search(r'\b%s\b' % username, msg)
+            if m:
+                msg = msg[0:m.start()] + '<@%s>' % self.sl_client.get_user_by_name(username).id + msg[m.end():]
         return msg
 
     def parse_message(self, msg: str) -> Iterator[bytes]:
@@ -186,9 +227,20 @@ class Client:
                     i[mention.span()[1]:]
                 )
 
-            i = i.replace('&gt;', '>')
-            i = i.replace('&lt;', '<')
-            i = i.replace('&amp;', '&')
+            # Replace all channel mentions
+            while True:
+                mention = _CHANNEL_MENTIONS_REGEXP.search(i)
+                if not mention:
+                    break
+                i = (
+                    i[0:mention.span()[0]] +
+                    '#' +
+                    mention.groups()[0] +
+                    i[mention.span()[1]:]
+                )
+
+            for s in _SUBSTITUTIONS:
+                i = i.replace(s[0], s[1])
 
             encoded = i.encode('utf8')
 
@@ -203,7 +255,7 @@ class Client:
         Sends a message to the irc client
         """
         if hasattr(sl_ev, 'user'):
-            source = self.sl_client.get_user(sl_ev.user).name.encode('utf8')
+            source = self.sl_client.get_user(sl_ev.user).name.encode('utf8')  # type: ignore
         else:
             source = b'bot'
         try:
@@ -298,6 +350,9 @@ def main():
     parser.add_argument('-u', '--nouserlist', action='store_true',
                                 dest='nouserlist', required=False,
                                 help='don\'t display userlist')
+    parser.add_argument('-j', '--autojoin', action='store_true',
+                                dest='autojoin', required=False,
+                                help="Automatically join all remote channels")
     parser.add_argument('-o', '--override', action='store_true',
                                 dest='overridelocalip', required=False,
                                 help='allow non 127. addresses, this is potentially dangerous')
@@ -322,7 +377,7 @@ def main():
     startlog()
     while True:
         s, _ = serversocket.accept()
-        ircclient = Client(s, sl_client, args.nouserlist)
+        ircclient = Client(s, sl_client, nouserlist=args.nouserlist, autojoin=args.autojoin)
 
         poller.register(s.fileno(), select.POLLIN)
         if sl_client.fileno is not None:
