@@ -390,6 +390,8 @@ class Slack:
                     try:
                         if t == 'message' and not subt:
                             yield _loadwrapper(event, Message)
+                        if t == 'message' and subt == 'slackbot_response':
+                            yield _loadwrapper(event, Message)
                         elif t == 'message' and subt == 'file_share':
                             yield _loadwrapper(event, MessageFileShare)
                         elif t == 'message' and subt == 'message_changed':
