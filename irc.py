@@ -235,8 +235,8 @@ class Client:
 
             encoded = i.encode('utf8')
 
-            encoded = encoded.replace(b'<!here>', b'@here [%s]' % self.nick)
-            encoded = encoded.replace(b'<!channel>', b'@channel [%s]' % self.nick)
+            encoded = encoded.replace(b'<!here>', b'yelling [%s]' % self.nick)
+            encoded = encoded.replace(b'<!channel>', b'YELLING LOUDER [%s]' % self.nick)
 
             yield encoded
 
