@@ -125,7 +125,8 @@ class Client:
 
     def _privmsghandler(self, cmd: bytes) -> None:
         _, dest, msg = cmd.split(b' ', 2)
-        msg = msg[1:]
+        if msg.startswith(b':'):
+            msg = msg[1:]
         message = self._addmagic(msg.decode('utf8'))
 
         if dest.startswith(b'#'):
