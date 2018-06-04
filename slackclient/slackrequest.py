@@ -28,7 +28,7 @@ import requests
 import six
 
 
-class SlackRequest(object):
+class SlackRequest:
     def __init__(self, proxies=None):
         self.proxies = proxies
 
