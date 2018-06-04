@@ -6,4 +6,4 @@ install:
   - pip install mypy
 
 script:
-  - mypy --config-file mypy.conf irc.py
+  - MYPYPATH=./stubs mypy --config-file mypy.conf irc.py
