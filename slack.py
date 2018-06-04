@@ -198,7 +198,7 @@ SlackEvent = Union[
 
 
 class Slack:
-    def __init__(self, tokenfile) -> None:
+    def __init__(self, tokenfile: str) -> None:
         try:
             with open(tokenfile) as f:
                 token = f.readline().strip()
@@ -295,7 +295,7 @@ class Slack:
             return load(r['ims'], List[IM])
         raise ResponseException(response)
 
-    def get_user_by_name(self, name) -> User:
+    def get_user_by_name(self, name: str) -> User:
         return self._usermapcache[name]
 
     def get_usernames(self) -> List[str]:

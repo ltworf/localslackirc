@@ -316,7 +316,7 @@ class Client:
             print('Unknown command: ', cmd)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--port', type=int, action='store', dest='port',
                                 default=9007, required=False,
