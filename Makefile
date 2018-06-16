@@ -57,3 +57,7 @@ deb-pkg: dist
 	install -d deb-pkg
 	mv /tmp/localslackirc_* deb-pkg
 	$(RM) -r /tmp/localslackirc
+
+.PHONY: clean
+clean:
+	$(RM) -r deb-pkg
