@@ -3,3 +3,11 @@ __pycache__/
 .mypy_cache/
 .kdev4/
 localslackirc.kdev4
+debian/.debhelper/
+debian/debhelper-build-stamp
+debian/files
+debian/localslackirc.postinst.debhelper
+debian/localslackirc.prerm.debhelper
+debian/localslackirc.substvars
+debian/localslackirc/
+deb-pkg/
