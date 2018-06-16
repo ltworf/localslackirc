@@ -25,4 +25,35 @@ install:
 	install -d $${DESTDIR:-/}/usr/bin/
 	ln -s ../share/localslackirc/irc.py $${DESTDIR:-/}/usr/bin/localslackirc
 	# install extras
-	#TODO
+	install -m644 -D CHANGELOG $${DESTDIR:-/}/usr/share/doc/localslackirc/CHANGELOG
+
+.PHONY: dist
+dist:
+	cd ..; tar -czvvf localslackirc.tar.gz \
+		localslackirc/irc.py \
+		localslackirc/diff.py \
+		localslackirc/slack.py \
+		localslackirc/slackclient/__init__.py \
+		localslackirc/slackclient/client.py \
+		localslackirc/slackclient/exceptions.py \
+		localslackirc/slackclient/server.py \
+		localslackirc/slackclient/slackrequest.py \
+		localslackirc/Makefile \
+		localslackirc/CHANGELOG \
+		localslackirc/LICENSE \
+		localslackirc/README.md \
+		localslackirc/requirements.txt \
+		localslackirc/docker/Dockerfile \
+		localslackirc/mypy.conf \
+		localslackirc/stubs/
+	mv ../localslackirc.tar.gz localslackirc_`head -1 CHANGELOG`.orig.tar.gz
+	gpg --detach-sign -a *.orig.tar.gz
+
+deb-pkg: dist
+	mv localslackirc_`head -1 CHANGELOG`.orig.tar.gz* /tmp
+	cd /tmp; tar -xf localslackirc*.orig.tar.gz
+	cp -r debian /tmp/localslackirc/
+	cd /tmp/localslackirc/; dpkg-buildpackage
+	install -d deb-pkg
+	mv /tmp/localslackirc_* deb-pkg
+	$(RM) -r /tmp/localslackirc
