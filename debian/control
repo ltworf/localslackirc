@@ -11,7 +11,8 @@ Vcs-Browser: https://github.com/ltworf/localslackirc
 
 Package: localslackirc
 Architecture: all
-Depends: ${misc:Depends}, ${python3:Depends}
+Depends: ${misc:Depends}, ${python3:Depends}, python3-typedload,
+ python3-websocket, python3-requests, python3-six
 Description: IRC gateway for slack, running on localhost for one user
  This project is a replacement for slack's IRC gateway that they dropped.
  .
