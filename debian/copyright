@@ -1,0 +1,13 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Author: Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
+Source: https://github.com/ltworf/localslackirc
+
+Files: *
+Copyright: 2018 Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
+License: GPL-3
+ This software is released under the GNU General Public License 3.
+ .
+ On Debian systems, the complete text of the GNU General Public License
+ can be found in the /usr/share/common-licenses/GPL-3 file and the
+ complete text of the GNU Lesser General Public License can be found in
+ the /usr/share/common-licenses/LGPL-3 file.
