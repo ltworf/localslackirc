@@ -49,6 +49,7 @@ class Client:
         self.nick = b''
         self.username = b''
         self.realname = b''
+        self.parted_channels = set()  # type: Set[bytes]
 
         self.s = s
         self.sl_client = sl_client
@@ -93,6 +94,9 @@ class Client:
 
     def _joinhandler(self, cmd: bytes) -> None:
         _, channel_name = cmd.split(b' ', 1)
+
+        if channel_name in self.parted_channels:
+            self.parted_channels.remove(channel_name)
 
         try:
             slchan = self.sl_client.get_channel_by_name(channel_name[1:].decode())
@@ -156,6 +160,10 @@ class Client:
     def _modehandler(self, cmd: bytes) -> None:
         params = cmd.split(b' ', 2)
         self.s.send(b':serenity 324 %s %s +\n' % (self.nick, params[1]))
+
+    def _parthandler(self, cmd: bytes) -> None:
+        _, name = cmd.split(b' ', 1)
+        self.parted_channels.add(name)
 
     def _whohandler(self, cmd: bytes) -> None:
         _, name = cmd.split(b' ', 1)
@@ -259,6 +267,9 @@ class Client:
         except Exception as e:
             print('Error: ', str(e))
             return
+        if dest in self.parted_channels:
+            # Ignoring messages, channel was left on IRC
+            return
         for msg in self.parse_message(prefix + sl_ev.text):
             self.sendmsg(
                 source,
@@ -301,6 +312,7 @@ class Client:
             b'LIST': self._listhandler,
             b'WHO': self._whohandler,
             b'MODE': self._modehandler,
+            b'PART': self._parthandler,
             #QUIT
             #CAP LS
             #USERHOST
