@@ -208,6 +208,16 @@ class Slack:
         self._usercache = {}  # type: Dict[str, User]
         self._usermapcache = {}  # type: Dict[str, User]
 
+    def away(self, is_away: bool) -> None:
+        """
+        Forces the aways status or lets slack decide
+        """
+        status = 'away' if is_away else 'auto'
+        r = self.client.api_call('users.setPresence', presence=status)
+        response = load(r, Response)
+        if not response.ok:
+            raise ResponseException(response)
+
     @lru_cache()
     def get_members(self, id_: str) -> List[str]:
         r = self.client.api_call('conversations.members', channel=id_, limit=5000)

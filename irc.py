@@ -18,6 +18,7 @@
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
 import datetime
+from enum import Enum
 import re
 import select
 import socket
@@ -38,6 +39,11 @@ _SUBSTITUTIONS = [
     ('&gt;', '>'),
     ('&lt;', '<'),
 ]
+
+
+class Replies(Enum):
+    RPL_UNAWAY = 305
+    RPL_NOWAWAY = 306
 
 
 #: Inactivity days to hide a MPIM
@@ -164,6 +170,12 @@ class Client:
     def _parthandler(self, cmd: bytes) -> None:
         _, name = cmd.split(b' ', 1)
         self.parted_channels.add(name)
+
+    def _awayhandler(self, cmd: bytes) -> None:
+        is_away = b' ' in cmd
+        self.sl_client.away(is_away)
+        response = Replies.RPL_NOWAWAY if is_away else Replies.RPL_UNAWAY
+        self.s.send(b':serenity %d %s : Away status changed\n' % (response.value, self.nick))
 
     def _whohandler(self, cmd: bytes) -> None:
         _, name = cmd.split(b' ', 1)
@@ -313,6 +325,7 @@ class Client:
             b'WHO': self._whohandler,
             b'MODE': self._modehandler,
             b'PART': self._parthandler,
+            b'AWAY': self._awayhandler,
             #QUIT
             #CAP LS
             #USERHOST
