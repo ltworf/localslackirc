@@ -67,13 +67,15 @@ class Client:
         _, nick = cmd.split(b' ', 1)
         self.nick = nick.strip()
 
-    def _sendreply(self, code: Union[int,Replies], message: Union[str,bytes]) -> None:
+    def _sendreply(self, code: Union[int,Replies], message: Union[str,bytes], extratokens: List[Union[str,bytes]] = []) -> None:
         codeint = code if isinstance(code, int) else code.value
         bytemsg = message if isinstance(message, bytes) else message.encode('utf8')
 
+        extratokens.insert(0, self.nick)
+
         self.s.send(b':serenity %d %s :%s\n' % (
             codeint,
-            self.nick,
+            b' '.join(i if isinstance(i, bytes) else i.encode('utf8') for i in extratokens),
             bytemsg,
         ))
 
@@ -140,9 +142,9 @@ class Client:
             users = b' '.join(userlist)
 
         self.s.send(b':%s!salvo@127.0.0.1 JOIN %s\n' % (self.nick, channel_name))
-        self.s.send(b':serenity 332 %s %s :%s\n' % (self.nick, channel_name, slchan.real_topic.encode('utf8')))
-        self.s.send(b':serenity 353 %s = %s :%s\n' % (self.nick, channel_name, b'' if self.nouserlist else users))
-        self.s.send(b':serenity 366 %s %s :End of NAMES list\n' % (self.nick, channel_name))
+        self._sendreply(332, slchan.real_topic, [channel_name])
+        self._sendreply(353, b'' if self.nouserlist else users, ['=', channel_name])
+        self._sendreply(366, 'End of NAMES list', [channel_name])
 
     def _privmsghandler(self, cmd: bytes) -> None:
         _, dest, msg = cmd.split(b' ', 2)
@@ -166,12 +168,7 @@ class Client:
 
     def _listhandler(self, cmd: bytes) -> None:
         for c in self.sl_client.channels():
-            self.s.send(b':serenity 322 %s %s %d :%s\n' % (
-                self.nick,
-                b'#' + c.name.encode('utf8'),
-                c.num_members,
-                c.real_topic.encode('utf8'),
-            ))
+            self._sendreply(322, c.real_topic, [b'#' + c.name, str(c.num_members)])
         self._sendreply(323, 'End of LIST')
 
     def _modehandler(self, cmd: bytes) -> None:
@@ -204,7 +201,7 @@ class Client:
                 user.name.encode('utf8'),
                 user.real_name.encode('utf8'),
             ))
-        self.s.send(b':serenity 315 %s %s :End of WHO list\n' % (self.nick, name))
+        self._sendreply(315, 'End of WHO list', [name])
 
     def sendmsg(self, from_: bytes, to: bytes, message: bytes) -> None:
         self.s.send(b':%s!salvo@127.0.0.1 PRIVMSG %s :%s\n' % (
