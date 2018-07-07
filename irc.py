@@ -67,13 +67,26 @@ class Client:
         _, nick = cmd.split(b' ', 1)
         self.nick = nick.strip()
 
+    def _sendreply(self, code: Union[int,Replies], message: Union[str,bytes], extratokens: List[Union[str,bytes]] = []) -> None:
+        codeint = code if isinstance(code, int) else code.value
+        bytemsg = message if isinstance(message, bytes) else message.encode('utf8')
+
+        extratokens.insert(0, self.nick)
+
+        self.s.send(b':serenity %d %s :%s\n' % (
+            codeint,
+            b' '.join(i if isinstance(i, bytes) else i.encode('utf8') for i in extratokens),
+            bytemsg,
+        ))
+
+
     def _userhandler(self, cmd: bytes) -> None:
         #TODO USER salvo 8 * :Salvatore Tomaselli
-        self.s.send(b':serenity 001 %s :Hi, welcome to IRC\n' % self.nick)
-        self.s.send(b':serenity 002 %s :Your host is serenity, running version miniircd-1.2.1\n' % self.nick)
-        self.s.send(b':serenity 003 %s :This server was created sometime\n' % self.nick)
-        self.s.send(b':serenity 004 %s serenity miniircd-1.2.1 o o\n' % self.nick)
-        self.s.send(b':serenity 251 %s :There are 1 users and 0 services on 1 server\n' % self.nick)
+        self._sendreply(1, 'Hi, welcome to IRC')
+        self._sendreply(2, 'Your host is serenity, running version miniircd-1.2.1')
+        self._sendreply(3, 'This server was created sometime')
+        self._sendreply(4, 'serenity miniircd-1.2.1 o o')
+        self._sendreply(251, 'There are 1 users and 0 services on 1 server')
 
         if self.autojoin and not self.nouserlist:
             # We're about to load many users for each chan; instead of requesting each
@@ -129,9 +142,9 @@ class Client:
             users = b' '.join(userlist)
 
         self.s.send(b':%s!salvo@127.0.0.1 JOIN %s\n' % (self.nick, channel_name))
-        self.s.send(b':serenity 332 %s %s :%s\n' % (self.nick, channel_name, slchan.real_topic.encode('utf8')))
-        self.s.send(b':serenity 353 %s = %s :%s\n' % (self.nick, channel_name, b'' if self.nouserlist else users))
-        self.s.send(b':serenity 366 %s %s :End of NAMES list\n' % (self.nick, channel_name))
+        self._sendreply(332, slchan.real_topic, [channel_name])
+        self._sendreply(353, b'' if self.nouserlist else users, ['=', channel_name])
+        self._sendreply(366, 'End of NAMES list', [channel_name])
 
     def _privmsghandler(self, cmd: bytes) -> None:
         _, dest, msg = cmd.split(b' ', 2)
@@ -155,17 +168,12 @@ class Client:
 
     def _listhandler(self, cmd: bytes) -> None:
         for c in self.sl_client.channels():
-            self.s.send(b':serenity 322 %s %s %d :%s\n' % (
-                self.nick,
-                b'#' + c.name.encode('utf8'),
-                c.num_members,
-                c.real_topic.encode('utf8'),
-            ))
-        self.s.send(b':serenity 323 %s :End of LIST\n' % self.nick)
+            self._sendreply(322, c.real_topic, [b'#' + c.name, str(c.num_members)])
+        self._sendreply(323, 'End of LIST')
 
     def _modehandler(self, cmd: bytes) -> None:
         params = cmd.split(b' ', 2)
-        self.s.send(b':serenity 324 %s %s +\n' % (self.nick, params[1]))
+        self._sendreply(324, '', [params[1], '+'])
 
     def _parthandler(self, cmd: bytes) -> None:
         _, name = cmd.split(b' ', 1)
@@ -175,7 +183,7 @@ class Client:
         is_away = b' ' in cmd
         self.sl_client.away(is_away)
         response = Replies.RPL_NOWAWAY if is_away else Replies.RPL_UNAWAY
-        self.s.send(b':serenity %d %s : Away status changed\n' % (response.value, self.nick))
+        self._sendreply(response, 'Away status changed')
 
     def _whohandler(self, cmd: bytes) -> None:
         _, name = cmd.split(b' ', 1)
@@ -186,14 +194,8 @@ class Client:
 
         for i in self.sl_client.get_members(channel.id):
             user = self.sl_client.get_user(i)
-            self.s.send(b':serenity 352 %s %s %s 127.0.0.1 serenity %s H :0 %s\n' % (
-                self.nick,
-                name,
-                user.name.encode('utf8'),
-                user.name.encode('utf8'),
-                user.real_name.encode('utf8'),
-            ))
-        self.s.send(b':serenity 315 %s %s :End of WHO list\n' % (self.nick, name))
+            self._sendreply(352, '0 %s' % user.real_name, [name, user.name, '127.0.0.1 serenity', user.name, 'H'])
+        self._sendreply(315, 'End of WHO list', [name])
 
     def sendmsg(self, from_: bytes, to: bytes, message: bytes) -> None:
         self.s.send(b':%s!salvo@127.0.0.1 PRIVMSG %s :%s\n' % (
@@ -337,7 +339,7 @@ class Client:
         if cmdid in handlers:
             handlers[cmdid](cmd)
         else:
-            self.s.send(b':serenity 421 %s %s :Unknown command\n' % (self.nick, cmdid))
+            self._sendreply(421, 'Unknown command', [cmdid])
             print('Unknown command: ', cmd)
 
 
