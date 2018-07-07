@@ -173,7 +173,7 @@ class Client:
 
     def _modehandler(self, cmd: bytes) -> None:
         params = cmd.split(b' ', 2)
-        self.s.send(b':serenity 324 %s %s +\n' % (self.nick, params[1]))
+        self._sendreply(324, '', [params[1], '+'])
 
     def _parthandler(self, cmd: bytes) -> None:
         _, name = cmd.split(b' ', 1)
@@ -194,13 +194,7 @@ class Client:
 
         for i in self.sl_client.get_members(channel.id):
             user = self.sl_client.get_user(i)
-            self.s.send(b':serenity 352 %s %s %s 127.0.0.1 serenity %s H :0 %s\n' % (
-                self.nick,
-                name,
-                user.name.encode('utf8'),
-                user.name.encode('utf8'),
-                user.real_name.encode('utf8'),
-            ))
+            self._sendreply(352, '0 %s' % user.real_name, [name, user.name, '127.0.0.1 serenity', user.name, 'H'])
         self._sendreply(315, 'End of WHO list', [name])
 
     def sendmsg(self, from_: bytes, to: bytes, message: bytes) -> None:
@@ -345,7 +339,7 @@ class Client:
         if cmdid in handlers:
             handlers[cmdid](cmd)
         else:
-            self.s.send(b':serenity 421 %s %s :Unknown command\n' % (self.nick, cmdid))
+            self._sendreply(421, 'Unknown command', [cmdid])
             print('Unknown command: ', cmd)
 
 
