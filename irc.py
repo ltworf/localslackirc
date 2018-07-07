@@ -94,10 +94,7 @@ class Client:
 
     def _userhandler(self, cmd: bytes) -> None:
         #TODO USER salvo 8 * :Salvatore Tomaselli
-        self._sendreply(1, 'Hi, welcome to IRC')
-        self._sendreply(2, 'Your host is serenity, running version miniircd-1.2.1')
-        self._sendreply(3, 'This server was created sometime')
-        self._sendreply(4, 'serenity miniircd-1.2.1 o o')
+        self._sendreply(1, 'Welcome to localslackirc')
         self._sendreply(Replies.RPL_LUSERCLIENT, 'There are 1 users and 0 services on 1 server')
 
         if self.autojoin and not self.nouserlist:
