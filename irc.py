@@ -66,6 +66,7 @@ class Client:
         self.username = b''
         self.realname = b''
         self.parted_channels = set()  # type: Set[bytes]
+        self.hostname = b'serenity'
 
         self.s = s
         self.sl_client = sl_client
@@ -85,7 +86,8 @@ class Client:
 
         extratokens.insert(0, self.nick)
 
-        self.s.send(b':serenity %03d %s :%s\n' % (
+        self.s.send(b':%s %03d %s :%s\n' % (
+            self.hostname,
             codeint,
             b' '.join(i if isinstance(i, bytes) else i.encode('utf8') for i in extratokens),
             bytemsg,
@@ -118,7 +120,7 @@ class Client:
 
     def _pinghandler(self, cmd: bytes) -> None:
         _, lbl = cmd.split(b' ', 1)
-        self.s.send(b':serenity PONG serenity %s\n' % lbl)
+        self.s.send(b':%s PONG %s %s\n' % (self.hostname, self.hostname, lbl))
 
     def _joinhandler(self, cmd: bytes) -> None:
         _, channel_name = cmd.split(b' ', 1)
@@ -203,7 +205,7 @@ class Client:
 
         for i in self.sl_client.get_members(channel.id):
             user = self.sl_client.get_user(i)
-            self._sendreply(Replies.RPL_WHOREPLY, '0 %s' % user.real_name, [name, user.name, '127.0.0.1 serenity', user.name, 'H'])
+            self._sendreply(Replies.RPL_WHOREPLY, '0 %s' % user.real_name, [name, user.name, '127.0.0.1',self.hostname, user.name, 'H'])
         self._sendreply(Replies.RPL_ENDOFWHO, 'End of WHO list', [name])
 
     def sendmsg(self, from_: bytes, to: bytes, message: bytes) -> None:
