@@ -67,13 +67,24 @@ class Client:
         _, nick = cmd.split(b' ', 1)
         self.nick = nick.strip()
 
+    def _sendreply(self, code: Union[int,Replies], message: Union[str,bytes]) -> None:
+        codeint = code if isinstance(code, int) else code.value
+        bytemsg = message if isinstance(message, bytes) else message.encode('utf8')
+
+        self.s.send(b':serenity %d %s :%s\n' % (
+            codeint,
+            self.nick,
+            bytemsg,
+        ))
+
+
     def _userhandler(self, cmd: bytes) -> None:
         #TODO USER salvo 8 * :Salvatore Tomaselli
-        self.s.send(b':serenity 001 %s :Hi, welcome to IRC\n' % self.nick)
-        self.s.send(b':serenity 002 %s :Your host is serenity, running version miniircd-1.2.1\n' % self.nick)
-        self.s.send(b':serenity 003 %s :This server was created sometime\n' % self.nick)
-        self.s.send(b':serenity 004 %s serenity miniircd-1.2.1 o o\n' % self.nick)
-        self.s.send(b':serenity 251 %s :There are 1 users and 0 services on 1 server\n' % self.nick)
+        self._sendreply(1, 'Hi, welcome to IRC')
+        self._sendreply(2, 'Your host is serenity, running version miniircd-1.2.1')
+        self._sendreply(3, 'This server was created sometime')
+        self._sendreply(4, 'serenity miniircd-1.2.1 o o')
+        self._sendreply(251, 'There are 1 users and 0 services on 1 server')
 
         if self.autojoin and not self.nouserlist:
             # We're about to load many users for each chan; instead of requesting each
@@ -161,7 +172,7 @@ class Client:
                 c.num_members,
                 c.real_topic.encode('utf8'),
             ))
-        self.s.send(b':serenity 323 %s :End of LIST\n' % self.nick)
+        self._sendreply(323, 'End of LIST')
 
     def _modehandler(self, cmd: bytes) -> None:
         params = cmd.split(b' ', 2)
@@ -175,7 +186,7 @@ class Client:
         is_away = b' ' in cmd
         self.sl_client.away(is_away)
         response = Replies.RPL_NOWAWAY if is_away else Replies.RPL_UNAWAY
-        self.s.send(b':serenity %d %s : Away status changed\n' % (response.value, self.nick))
+        self._sendreply(response, 'Away status changed')
 
     def _whohandler(self, cmd: bytes) -> None:
         _, name = cmd.split(b' ', 1)
