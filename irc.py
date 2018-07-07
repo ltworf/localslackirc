@@ -345,7 +345,6 @@ class Client:
             #USERHOST
             #Unknown command:  b'TOPIC #cama :titolo del canale'
             #Unknown command:  b'whois TAMARRO'
-            #Unknown command:  b'PART #support-sdp :Konversation terminated!'
         }
 
         if cmdid in handlers:
