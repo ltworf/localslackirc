@@ -40,7 +40,7 @@ Using Token
 
 Your Slack token should be placed inside a file named '.localslackirc' (note the file starts with a . and has no file extension) inside your home directory. On a Linux/BSD machine your home directory will be located at /home/yourusername, on OSX it is /Users/yourusername and on a Windows machine it is C:\Users\yourusername. 
 
-If you'd prefer to store your token elsewhere you can open localslackirc with the '-t' argument giving it the new desired location. ```./irc.py -t /home/me/slack/token.txt``` 
+If you'd prefer to store your token elsewhere you can open localslackirc with the '-t' argument giving it the new desired location. ```python3 irc.py -t /home/me/slack/token.txt``` 
 
 Using localslackirc
 ===================
@@ -54,6 +54,10 @@ Using localslackirc
 * Now point your irc client to localslackirc (127.0.0.1:9007)
   * login to localslackirc using your Slack username
   * after your connected, list the channels in your irc client and select the ones you want to join. 
+
+Automatically joining channels
+==============================
+To automatically connect to every Slack channe lyou are in open localslackirc with the -j argument ```python3 irc.py -j```
 
 ## Instructions for irssi
 
