@@ -55,8 +55,7 @@ Using localslackirc
   * login to localslackirc using your Slack username
   * after your connected, list the channels in your irc client and select the ones you want to join. 
 
-Automatically joining channels
-==============================
+## Automatically joining channels
 To automatically connect to every Slack channe lyou are in open localslackirc with the -j argument ```python3 irc.py -j```
 
 ## Instructions for irssi
