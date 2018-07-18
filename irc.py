@@ -71,9 +71,11 @@ class Client:
         codeint = code if isinstance(code, int) else code.value
         bytemsg = message if isinstance(message, bytes) else message.encode('utf8')
 
+        extratokens = list(extratokens)
+
         extratokens.insert(0, self.nick)
 
-        self.s.send(b':serenity %d %s :%s\n' % (
+        self.s.send(b':serenity %03d %s :%s\n' % (
             codeint,
             b' '.join(i if isinstance(i, bytes) else i.encode('utf8') for i in extratokens),
             bytemsg,
