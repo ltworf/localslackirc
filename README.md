@@ -11,6 +11,10 @@ their IRC gateway.
 Options to Obtain token
 ===============
 
+* Retrieve a slack token from https://api.slack.com/docs/oauth-test-tokens
+
+Alternatively if this method fails you can get one from Slack's web client
+
 1) Instructions for chromium
 
 * In your browser, go to "Inspect" (developer mode) on an empty page
@@ -29,13 +33,14 @@ Options to Obtain token
 * Select the 'WS' tab
 * Copy the 'token' parameter from the WebSocket connection URL.
 
-3) Get a slack token from https://api.slack.com/docs/oauth-test-tokens
 
 
 Using Token
 ===========
 
-* Place the token inside '~/.localslackirc'
+Your Slack token should be placed inside a file named '.localslackirc' (note the file starts with a . and has no file extension) inside your home directory. On a Linux/BSD machine your home directory will be located at /home/yourusername, on OSX it is /Users/yourusername and on a Windows machine it is C:\Users\yourusername. 
+
+If you'd prefer to store your token elsewhere you can open localslackirc with the '-t' argument giving it the new desired location. ```python3 irc.py -t /home/me/slack/token.txt``` 
 
 Using localslackirc
 ===================
@@ -49,6 +54,10 @@ Using localslackirc
 * Now point your irc client to localslackirc (127.0.0.1:9007)
   * login to localslackirc using your Slack username
   * after your connected, list the channels in your irc client and select the ones you want to join. 
+
+## Automatically joining channels
+To automatically connect to the Slack channels you are in open localslackirc with the -j argument
+```python3 irc.py -j```
 
 ## Instructions for irssi
 
