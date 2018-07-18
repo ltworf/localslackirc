@@ -38,9 +38,9 @@ Alternatively if this method fails you can get one from Slack's web client
 Using Token
 ===========
 
-Your Slack token should be placed inside a file named '.localslackirc' (note the file starts with a . and has no file extension) inside your home directory. On a Linux/BSD machine your home directory will be located at /home/yourusername, on OSX it is /Users/yourusername and on a Windows machine it is C:\Users\yourusername. 
+Your Slack token should be placed inside a file named `.localslackirc` inside your home directory.
 
-If you'd prefer to store your token elsewhere you can open localslackirc with the '-t' argument giving it the new desired location. ```python3 irc.py -t /home/me/slack/token.txt``` 
+Any location works, with the '-t' argument to the desired location. eg: ```python3 irc.py -t /home/me/slack/token.txt```
 
 Using localslackirc
 ===================
@@ -50,10 +50,10 @@ Using localslackirc
 {'ok': True, 'url': 'wss://cerberus-xxxx.lb.slack-msgs.com/websocket/jhvbT8578765JHBfrewgsdy7', 'team': {'id': 'ZZZ789012', 'name': 'Some Team', 'domain': 'someteam'}, 'self': {'id': 'XXX123456', 'name': 'your name'}}
 ```
 
- 
+
 * Now point your irc client to localslackirc (127.0.0.1:9007)
   * login to localslackirc using your Slack username
-  * after your connected, list the channels in your irc client and select the ones you want to join. 
+  * after your connected, list the channels in your irc client and select the ones you want to join.
 
 ## Automatically joining channels
 To automatically connect to the Slack channels you are in open localslackirc with the -j argument
