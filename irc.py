@@ -180,7 +180,7 @@ class Client:
 
     def _listhandler(self, cmd: bytes) -> None:
         for c in self.sl_client.channels():
-            self._sendreply(Replies.RPL_LIST, c.real_topic, [b'#' + c.name, str(c.num_members)])
+            self._sendreply(Replies.RPL_LIST, c.real_topic, ['#' + c.name, str(c.num_members)])
         self._sendreply(Replies.RPL_LISTEND, 'End of LIST')
 
     def _modehandler(self, cmd: bytes) -> None:
