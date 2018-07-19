@@ -42,8 +42,18 @@ _SUBSTITUTIONS = [
 
 
 class Replies(Enum):
+    RPL_LUSERCLIENT = 251
     RPL_UNAWAY = 305
     RPL_NOWAWAY = 306
+    RPL_ENDOFWHO = 315
+    RPL_LIST = 322
+    RPL_LISTEND = 323
+    RPL_CHANNELMODEIS = 324
+    RPL_TOPIC = 332
+    RPL_WHOREPLY = 352
+    RPL_NAMREPLY = 353
+    RPL_ENDOFNAMES = 366
+    ERR_UNKNOWNCOMMAND = 421
 
 
 #: Inactivity days to hide a MPIM
@@ -88,7 +98,7 @@ class Client:
         self._sendreply(2, 'Your host is serenity, running version miniircd-1.2.1')
         self._sendreply(3, 'This server was created sometime')
         self._sendreply(4, 'serenity miniircd-1.2.1 o o')
-        self._sendreply(251, 'There are 1 users and 0 services on 1 server')
+        self._sendreply(Replies.RPL_LUSERCLIENT, 'There are 1 users and 0 services on 1 server')
 
         if self.autojoin and not self.nouserlist:
             # We're about to load many users for each chan; instead of requesting each
@@ -144,9 +154,9 @@ class Client:
             users = b' '.join(userlist)
 
         self.s.send(b':%s!salvo@127.0.0.1 JOIN %s\n' % (self.nick, channel_name))
-        self._sendreply(332, slchan.real_topic, [channel_name])
-        self._sendreply(353, b'' if self.nouserlist else users, ['=', channel_name])
-        self._sendreply(366, 'End of NAMES list', [channel_name])
+        self._sendreply(Replies.RPL_TOPIC, slchan.real_topic, [channel_name])
+        self._sendreply(Replies.RPL_NAMREPLY, b'' if self.nouserlist else users, ['=', channel_name])
+        self._sendreply(Replies.RPL_ENDOFNAMES, 'End of NAMES list', [channel_name])
 
     def _privmsghandler(self, cmd: bytes) -> None:
         _, dest, msg = cmd.split(b' ', 2)
@@ -170,12 +180,12 @@ class Client:
 
     def _listhandler(self, cmd: bytes) -> None:
         for c in self.sl_client.channels():
-            self._sendreply(322, c.real_topic, [b'#' + c.name, str(c.num_members)])
-        self._sendreply(323, 'End of LIST')
+            self._sendreply(Replies.RPL_LIST, c.real_topic, [b'#' + c.name, str(c.num_members)])
+        self._sendreply(Replies.RPL_LISTEND, 'End of LIST')
 
     def _modehandler(self, cmd: bytes) -> None:
         params = cmd.split(b' ', 2)
-        self._sendreply(324, '', [params[1], '+'])
+        self._sendreply(Replies.RPL_CHANNELMODEIS, '', [params[1], '+'])
 
     def _parthandler(self, cmd: bytes) -> None:
         _, name = cmd.split(b' ', 1)
@@ -196,8 +206,8 @@ class Client:
 
         for i in self.sl_client.get_members(channel.id):
             user = self.sl_client.get_user(i)
-            self._sendreply(352, '0 %s' % user.real_name, [name, user.name, '127.0.0.1 serenity', user.name, 'H'])
-        self._sendreply(315, 'End of WHO list', [name])
+            self._sendreply(Replies.RPL_WHOREPLY, '0 %s' % user.real_name, [name, user.name, '127.0.0.1 serenity', user.name, 'H'])
+        self._sendreply(Replies.RPL_ENDOFWHO, 'End of WHO list', [name])
 
     def sendmsg(self, from_: bytes, to: bytes, message: bytes) -> None:
         self.s.send(b':%s!salvo@127.0.0.1 PRIVMSG %s :%s\n' % (
@@ -341,7 +351,7 @@ class Client:
         if cmdid in handlers:
             handlers[cmdid](cmd)
         else:
-            self._sendreply(421, 'Unknown command', [cmdid])
+            self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Unknown command', [cmdid])
             print('Unknown command: ', cmd)
 
 
