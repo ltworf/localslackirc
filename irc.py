@@ -205,7 +205,7 @@ class Client:
         try:
             channel = self.sl_client.get_channel_by_name(name.decode()[1:])
         except KeyError:
-            return;
+            return
 
         for i in self.sl_client.get_members(channel.id):
             user = self.sl_client.get_user(i)
