@@ -25,6 +25,7 @@ import socket
 import argparse
 from typing import *
 from os.path import expanduser
+from socket import gethostname
 
 import slack
 
@@ -66,7 +67,7 @@ class Client:
         self.username = b''
         self.realname = b''
         self.parted_channels = set()  # type: Set[bytes]
-        self.hostname = b'serenity'
+        self.hostname = gethostname().encode('utf8')
 
         self.s = s
         self.sl_client = sl_client
