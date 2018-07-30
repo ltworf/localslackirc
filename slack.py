@@ -143,9 +143,12 @@ class File(NamedTuple):
     id: str
     url_private: str
     size: int
+    user: str
     name: Optional[str] = None
     title: Optional[str] = None
     mimetype: Optional[str] = None
+    channels: List[str] = list()
+    groups: List[str] = list()
 
 
 class FileShared(NamedTuple):
