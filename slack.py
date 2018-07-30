@@ -170,6 +170,7 @@ class File(NamedTuple):
 class FileShared(NamedTuple):
     file_id: str
     user_id: str
+    ts: float
 
 
 class MessageBot(NamedTuple):
@@ -442,7 +443,10 @@ class Slack:
                                 #FIXME don't know if it is wise, maybe it gets lost forever del self._usermapcache[u.name]
                             #TODO make an event for this
                         elif t == 'file_shared':
-                            yield _loadwrapper(event, FileShared)
+                            try: # slack idiocy workaround, they send the event twice, one time without the ts field
+                                yield _loadwrapper(event, FileShared)
+                            except ValueError:
+                                pass
                         elif t in USELESS_EVENTS:
                             continue
                         else:
