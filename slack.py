@@ -148,6 +148,11 @@ class File(NamedTuple):
     mimetype: Optional[str] = None
 
 
+class FileShared(NamedTuple):
+    file_id: str
+    user_id: str
+
+
 class MessageBot(NamedTuple):
     text: str
     username: str
@@ -177,6 +182,7 @@ SlackEvent = Union[
     MessageEdit,
     Message,
     MessageBot,
+    FileShared,
 ]
 
 
@@ -404,6 +410,8 @@ class Slack:
                                 del self._usercache[u.id]
                                 #FIXME don't know if it is wise, maybe it gets lost forever del self._usermapcache[u.name]
                             #TODO make an event for this
+                        elif t == 'file_shared':
+                            yield _loadwrapper(event, FileShared)
                         elif t in USELESS_EVENTS:
                             continue
                         else:
