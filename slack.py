@@ -131,11 +131,6 @@ class MessageDelete(Message):
     pass
 
 
-class FileDeleted(NamedTuple):
-    file_id: str
-    channel_ids: List[str] = []
-
-
 class Profile(NamedTuple):
     real_name: str = 'noname'
     email: Optional[str] = None
@@ -151,16 +146,6 @@ class File(NamedTuple):
     name: Optional[str] = None
     title: Optional[str] = None
     mimetype: Optional[str] = None
-
-
-class MessageFileShare(NamedTuple):
-    file: File
-    user: str
-    upload: bool
-    username: str
-    channel: str
-    user_profile: Optional[Profile] = None
-    text: str = ''
 
 
 class MessageBot(NamedTuple):
@@ -191,8 +176,6 @@ SlackEvent = Union[
     MessageDelete,
     MessageEdit,
     Message,
-    FileDeleted,
-    MessageFileShare,
     MessageBot,
 ]
 
@@ -402,8 +385,6 @@ class Slack:
                             yield _loadwrapper(event, Message)
                         elif t == 'message' and subt == 'slackbot_response':
                             yield _loadwrapper(event, Message)
-                        elif t == 'message' and subt == 'file_share':
-                            yield _loadwrapper(event, MessageFileShare)
                         elif t == 'message' and subt == 'message_changed':
                             event['message']['channel'] = event['channel']
                             event['previous_message']['channel'] = event['channel']
@@ -423,8 +404,6 @@ class Slack:
                                 del self._usercache[u.id]
                                 #FIXME don't know if it is wise, maybe it gets lost forever del self._usermapcache[u.name]
                             #TODO make an event for this
-                        elif t == 'file_deleted':
-                            yield _loadwrapper(event, FileDeleted)
                         elif t in USELESS_EVENTS:
                             continue
                         else:
