@@ -279,7 +279,7 @@ class Client:
             yield encoded
 
 
-    def _message(self, sl_ev: Union[slack.Message, slack.MessageFileShare, slack.MessageDelete, slack.MessageBot], prefix: str=''):
+    def _message(self, sl_ev: Union[slack.Message, slack.MessageDelete, slack.MessageBot], prefix: str=''):
         """
         Sends a message to the irc client
         """
@@ -312,19 +312,14 @@ class Client:
             self._message(sl_ev, '[deleted]')
         elif isinstance(sl_ev, slack.Message):
             self._message(sl_ev)
-        elif isinstance(sl_ev, slack.MessageFileShare):
-            prefix ='[File upload] %s %d %s\n' % (
-                        sl_ev.file.mimetype,
-                        sl_ev.file.size,
-                        sl_ev.file.url_private,
-                    )
-            self._message(sl_ev, prefix)
         elif isinstance(sl_ev, slack.MessageEdit):
             if sl_ev.is_changed:
                 self._message(sl_ev.diffmsg)
         elif isinstance(sl_ev, slack.MessageBot):
             self._message(sl_ev, '[%s]' % sl_ev.username)
-
+        elif isinstance(sl_ev, slack.FileShared):
+            f = self.sl_client.get_file(sl_ev)
+            self._message(f.announce())
 
     def command(self, cmd: bytes) -> None:
         if b' ' in cmd:

@@ -34,6 +34,7 @@ USELESS_EVENTS = {
     'dnd_updated_user',
     'reaction_added',
     'user_typing',
+    'file_deleted',
 }
 
 
@@ -131,11 +132,6 @@ class MessageDelete(Message):
     pass
 
 
-class FileDeleted(NamedTuple):
-    file_id: str
-    channel_ids: List[str] = []
-
-
 class Profile(NamedTuple):
     real_name: str = 'noname'
     email: Optional[str] = None
@@ -148,19 +144,33 @@ class File(NamedTuple):
     id: str
     url_private: str
     size: int
+    user: str
     name: Optional[str] = None
     title: Optional[str] = None
     mimetype: Optional[str] = None
+    channels: List[str] = list()
+    groups: List[str] = list()
+
+    def announce(self) -> Message:
+        """
+        Returns a message to announce this file.
+        """
+        return Message(
+            channel=(self.channels + self.groups).pop(),
+            user=self.user,
+            text='[file upload] %s\n%s %d bytes\n%s' % (
+                self.name,
+                self.mimetype,
+                self.size,
+                self.url_private
+            )
+        )
 
 
-class MessageFileShare(NamedTuple):
-    file: File
-    user: str
-    upload: bool
-    username: str
-    channel: str
-    user_profile: Optional[Profile] = None
-    text: str = ''
+class FileShared(NamedTuple):
+    file_id: str
+    user_id: str
+    ts: float
 
 
 class MessageBot(NamedTuple):
@@ -191,9 +201,8 @@ SlackEvent = Union[
     MessageDelete,
     MessageEdit,
     Message,
-    FileDeleted,
-    MessageFileShare,
     MessageBot,
+    FileShared,
 ]
 
 
@@ -341,6 +350,18 @@ class Slack:
         else:
             raise KeyError(response)
 
+    def get_file(self, f: Union[FileShared, str]) -> File:
+        """
+        Returns a file object
+        """
+        fileid = f if isinstance(f, str) else f.file_id
+        r = self.client.api_call("files.info", file=fileid)
+        response = load(r, Response)
+        if response.ok:
+            return load(r['file'], File)
+        else:
+            raise KeyError(response)
+
     def send_message(self, channel_id: str, msg: str) -> None:
         """
         Send a message to a channel or group or whatever
@@ -402,8 +423,6 @@ class Slack:
                             yield _loadwrapper(event, Message)
                         elif t == 'message' and subt == 'slackbot_response':
                             yield _loadwrapper(event, Message)
-                        elif t == 'message' and subt == 'file_share':
-                            yield _loadwrapper(event, MessageFileShare)
                         elif t == 'message' and subt == 'message_changed':
                             event['message']['channel'] = event['channel']
                             event['previous_message']['channel'] = event['channel']
@@ -423,8 +442,11 @@ class Slack:
                                 del self._usercache[u.id]
                                 #FIXME don't know if it is wise, maybe it gets lost forever del self._usermapcache[u.name]
                             #TODO make an event for this
-                        elif t == 'file_deleted':
-                            yield _loadwrapper(event, FileDeleted)
+                        elif t == 'file_shared':
+                            try: # slack idiocy workaround, they send the event twice, one time without the ts field
+                                yield _loadwrapper(event, FileShared)
+                            except ValueError:
+                                pass
                         elif t in USELESS_EVENTS:
                             continue
                         else:
