@@ -321,7 +321,6 @@ class Client:
             f = self.sl_client.get_file(sl_ev)
             self._message(f.announce())
 
-
     def command(self, cmd: bytes) -> None:
         if b' ' in cmd:
             cmdid, _ = cmd.split(b' ', 1)

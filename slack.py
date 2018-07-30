@@ -34,6 +34,7 @@ USELESS_EVENTS = {
     'dnd_updated_user',
     'reaction_added',
     'user_typing',
+    'file_deleted',
 }
 
 
