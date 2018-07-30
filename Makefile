@@ -26,6 +26,7 @@ install:
 	ln -s ../share/localslackirc/irc.py $${DESTDIR:-/}/usr/bin/localslackirc
 	# install extras
 	install -m644 -D CHANGELOG $${DESTDIR:-/}/usr/share/doc/localslackirc/CHANGELOG
+	install -m644 -D README.md $${DESTDIR:-/}/usr/share/doc/localslackirc/README.md
 
 .PHONY: dist
 dist:
