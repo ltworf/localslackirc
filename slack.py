@@ -333,6 +333,18 @@ class Slack:
         else:
             raise KeyError(response)
 
+    def get_file(self, f: Union[FileShared, str]) -> File:
+        """
+        Returns a file object
+        """
+        fileid = f if isinstance(f, str) else f.file_id
+        r = self.client.api_call("files.info", file=fileid)
+        response = load(r, Response)
+        if response.ok:
+            return load(r['file'], File)
+        else:
+            raise KeyError(response)
+
     def send_message(self, channel_id: str, msg: str) -> None:
         """
         Send a message to a channel or group or whatever
