@@ -150,7 +150,7 @@ class Client:
         replies = []  # type List[bytes]
         if not self.nouserlist:
             overhead = self._getreplyoverhead(Replies.RPL_NAMREPLY, ['=', channel_name])
-            reply = []
+            reply: List[bytes] = []
             for i in self.sl_client.get_members(slchan.id):
                 try:
                     u = self.sl_client.get_user(i)
