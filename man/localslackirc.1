@@ -1,0 +1,46 @@
+.TH localslackirc 1 "Jul 30, 2018" "IRC gateway for slack"
+.SH NAME
+localslackirc
+\- Creates an IRC server running locally, which acts as a gateway to slack for one user.
+
+.SH SYNOPSIS
+localslackirc [OPTIONS]
+
+.SH DESCRIPTION
+This command starts an IRC server running on 127.0.0.1:9007 which acts as a gateway to slack for one user.
+.br
+To connect to multiple slack instances it is necessary to run multiple instances of this software.
+.SH OPTIONS
+.SS
+.SS Options:
+.TP
+.B -h, --help
+Show the help message and exit.
+.TP
+.B -p PORT, --port PORT
+Set the port number. The default is 9007.
+.TP
+.B -i IP, --ip IP
+Set the IP (Ipv4 only) address to listen to. The default is 127.0.0.1.
+.TP
+.B -t TOKENFILE, --tokenfile TOKENFILE
+Set the token file. The default is ~/.localslackirc.
+.TP
+.B -u, --nouserlist
+Don't display userlist in the IRC client.
+.TP
+.B -j, --autojoin
+Automatically join all remote channels.
+.TP
+.B -o, --override
+Allow listening on addresses that do not start with 127.*
+.br
+This is potentially dangerous.
+.SH FILES
+The slack token is (unless specified otherwise) located in ~/.localslackirc
+.SH WEB
+.BR https://github.com/ltworf/localslackirc
+
+.SH AUTHOR
+.nf
+Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
