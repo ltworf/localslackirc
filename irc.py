@@ -41,6 +41,9 @@ _SUBSTITUTIONS = [
     ('&lt;', '<'),
 ]
 
+# Maximum length of an IRC reply line (RFC 2812)
+MAX_LINE_LEN = 512
+
 
 class Replies(Enum):
     RPL_LUSERCLIENT = 251
@@ -79,21 +82,25 @@ class Client:
         _, nick = cmd.split(b' ', 1)
         self.nick = nick.strip()
 
-    def _sendreply(self, code: Union[int,Replies], message: Union[str,bytes], extratokens: List[Union[str,bytes]] = []) -> None:
+    def _prepreply(self, code: Union[int,Replies], message: Union[str,bytes], extratokens: List[Union[str,bytes]] = []) -> bytes:
         codeint = code if isinstance(code, int) else code.value
         bytemsg = message if isinstance(message, bytes) else message.encode('utf8')
 
         extratokens = list(extratokens)
 
         extratokens.insert(0, self.nick)
-
-        self.s.send(b':%s %03d %s :%s\n' % (
+        return b':%s %03d %s :%s\n' % (
             self.hostname,
             codeint,
             b' '.join(i if isinstance(i, bytes) else i.encode('utf8') for i in extratokens),
             bytemsg,
-        ))
+        )
 
+    def _getreplyoverhead(self, code: Union[int,Replies], extratokens: List[Union[str,bytes]] = []) -> int:
+        return len(self._prepreply(code, b'', extratokens))
+
+    def _sendreply(self, code: Union[int,Replies], message: Union[str,bytes], extratokens: List[Union[str,bytes]] = []) -> None:
+        self.s.send(self._prepreply(code, message, extratokens))
 
     def _userhandler(self, cmd: bytes) -> None:
         #TODO USER salvo 8 * :Salvatore Tomaselli
@@ -137,8 +144,13 @@ class Client:
         self._send_chan_info(channel_name, slchan)
 
     def _send_chan_info(self, channel_name: bytes, slchan: slack.Channel):
+        self.s.send(b':%s!salvo@127.0.0.1 JOIN %s\n' % (self.nick, channel_name))
+        self._sendreply(Replies.RPL_TOPIC, slchan.real_topic, [channel_name])
+
+        replies = []  # type List[bytes]
         if not self.nouserlist:
-            userlist = []  # type List[bytes]
+            overhead = self._getreplyoverhead(Replies.RPL_NAMREPLY, ['=', channel_name])
+            reply = []
             for i in self.sl_client.get_members(slchan.id):
                 try:
                     u = self.sl_client.get_user(i)
@@ -149,13 +161,20 @@ class Client:
                     continue
                 name = u.name.encode('utf8')
                 prefix = b'@' if u.is_admin else b''
-                userlist.append(prefix + name)
+                replystr = b' '.join(reply)
+                if (len(replystr) + len(prefix + name + b' ') + overhead) > MAX_LINE_LEN:
+                    replies.append(replystr)
+                    reply = []
+                reply.append(prefix + name)
+            if reply:
+                replies.append(b' '.join(reply))
 
-            users = b' '.join(userlist)
+        if replies:
+            for line in replies:
+                self._sendreply(Replies.RPL_NAMREPLY, line, ['=', channel_name])
+        else:
+            self._sendreply(Replies.RPL_NAMREPLY, b'', ['=', channel_name])
 
-        self.s.send(b':%s!salvo@127.0.0.1 JOIN %s\n' % (self.nick, channel_name))
-        self._sendreply(Replies.RPL_TOPIC, slchan.real_topic, [channel_name])
-        self._sendreply(Replies.RPL_NAMREPLY, b'' if self.nouserlist else users, ['=', channel_name])
         self._sendreply(Replies.RPL_ENDOFNAMES, 'End of NAMES list', [channel_name])
 
     def _privmsghandler(self, cmd: bytes) -> None:
