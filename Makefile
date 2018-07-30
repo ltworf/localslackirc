@@ -27,6 +27,7 @@ install:
 	# install extras
 	install -m644 -D CHANGELOG $${DESTDIR:-/}/usr/share/doc/localslackirc/CHANGELOG
 	install -m644 -D README.md $${DESTDIR:-/}/usr/share/doc/localslackirc/README.md
+	install -m644 -D man/localslackirc.1 $${DESTDIR:-/}/usr/share/man/man1/localslackirc.1
 
 .PHONY: dist
 dist:
@@ -45,6 +46,7 @@ dist:
 		localslackirc/README.md \
 		localslackirc/requirements.txt \
 		localslackirc/docker/Dockerfile \
+		localslackirc/man \
 		localslackirc/mypy.conf \
 		localslackirc/stubs/
 	mv ../localslackirc.tar.gz localslackirc_`head -1 CHANGELOG`.orig.tar.gz
