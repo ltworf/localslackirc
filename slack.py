@@ -150,6 +150,21 @@ class File(NamedTuple):
     channels: List[str] = list()
     groups: List[str] = list()
 
+    def announce(self) -> Message:
+        """
+        Returns a message to announce this file.
+        """
+        return Message(
+            channel=(self.channels + self.groups).pop(),
+            user=self.user,
+            text='[file upload] %s\n%s %d bytes\n%s' % (
+                self.name,
+                self.mimetype,
+                self.size,
+                self.url_private
+            )
+        )
+
 
 class FileShared(NamedTuple):
     file_id: str

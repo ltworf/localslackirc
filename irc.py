@@ -317,6 +317,9 @@ class Client:
                 self._message(sl_ev.diffmsg)
         elif isinstance(sl_ev, slack.MessageBot):
             self._message(sl_ev, '[%s]' % sl_ev.username)
+        elif isinstance(sl_ev, slack.FileShared):
+            f = self.sl_client.get_file(sl_ev)
+            self._message(f.announce())
 
 
     def command(self, cmd: bytes) -> None:
