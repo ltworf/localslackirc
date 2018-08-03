@@ -174,7 +174,7 @@ class Server:
             self.connected = False
             raise SlackConnectionError(message=str(e))
 
-    def websocket_safe_read(self):
+    def websocket_safe_read(self) -> str:
         """
         Returns data if available, otherwise ''. Newlines indicate multiple
         messages
