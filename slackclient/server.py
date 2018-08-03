@@ -28,12 +28,29 @@ import json
 import logging
 import time
 import random
-from typing import Any, Dict, Optional
+from typing import Any, Dict, NamedTuple, Optional
 
 from requests.packages.urllib3.util.url import parse_url
 from ssl import SSLError
+from typedload import load
 from websocket import create_connection
 from websocket._exceptions import WebSocketConnectionClosedException
+
+
+class Team(NamedTuple):
+    id: str
+    name: str
+    domain: str
+
+
+class Self(NamedTuple):
+    id: str
+    name: str
+
+
+class LoginInfo(NamedTuple):
+    team: Team
+    self: Self
 
 
 class Server:
@@ -48,9 +65,7 @@ class Server:
         self.api_requester = SlackRequest(proxies=proxies)
 
         # Workspace metadata
-        self.username = None
-        self.domain = None
-        self.login_data = None
+        self.login_data = Optional[LoginInfo]
 
         # RTM configs
         self.websocket = None
@@ -125,7 +140,6 @@ class Server:
         else:
             self.rtm_connect_retries = 0
             login_data = reply.json()
-            print(login_data)
             if login_data["ok"]:
                 self.ws_url = login_data['url']
                 self.connect_slack_websocket(self.ws_url)
@@ -135,9 +149,7 @@ class Server:
                 raise SlackLoginError(reply=reply)
 
     def parse_slack_login_data(self, login_data):
-        self.login_data = login_data
-        self.domain = self.login_data["team"]["domain"]
-        self.username = self.login_data["self"]["name"]
+        self.login_data = load(login_data, LoginInfo)
 
     def connect_slack_websocket(self, ws_url):
         """Uses http proxy if available"""
