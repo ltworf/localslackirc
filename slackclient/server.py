@@ -142,16 +142,16 @@ class Server:
             login_data = reply.json()
             if login_data["ok"]:
                 self.ws_url = login_data['url']
-                self.connect_slack_websocket(self.ws_url)
+                self._connect_slack_websocket(self.ws_url)
                 if not reconnect:
-                    self.parse_slack_login_data(login_data)
+                    self._parse_slack_login_data(login_data)
             else:
                 raise SlackLoginError(reply=reply)
 
-    def parse_slack_login_data(self, login_data):
+    def _parse_slack_login_data(self, login_data):
         self.login_data = load(login_data, LoginInfo)
 
-    def connect_slack_websocket(self, ws_url):
+    def _connect_slack_websocket(self, ws_url):
         """Uses http proxy if available"""
         if self.proxies and 'http' in self.proxies:
             parts = parse_url(self.proxies['http'])
