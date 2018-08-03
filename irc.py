@@ -80,7 +80,7 @@ class Client:
         _, nick = cmd.split(b' ', 1)
         self.nick = nick.strip()
         if self.nick != self.sl_client.login_info.self.name.encode('ascii'):
-            self._sendreply(Replies.ERR_ERRONEUSNICKNAME, 'Incorrect nickname')
+            self._sendreply(Replies.ERR_ERRONEUSNICKNAME, 'Incorrect nickname, use %s' % self.sl_client.login_info.self.name)
 
     def _sendreply(self, code: Union[int,Replies], message: Union[str,bytes], extratokens: List[Union[str,bytes]] = []) -> None:
         codeint = code if isinstance(code, int) else code.value
