@@ -33,7 +33,7 @@ from typing import Any, Dict, NamedTuple, Optional
 from requests.packages.urllib3.util.url import parse_url
 from ssl import SSLError
 from typedload import load
-from websocket import create_connection
+from websocket import create_connection, WebSocket
 from websocket._exceptions import WebSocketConnectionClosedException
 
 
@@ -68,7 +68,7 @@ class Server:
         self.login_data = Optional[LoginInfo]
 
         # RTM configs
-        self.websocket = None
+        self.websocket = None  # type: Optional[WebSocket]
         self.ws_url = None
         self.connected = False
         self.auto_reconnect = False
@@ -179,8 +179,10 @@ class Server:
         Returns data if available, otherwise ''. Newlines indicate multiple
         messages
         """
+        if self.websocket is None:
+            return ''
 
-        data = ""
+        data = ''
         while True:
             try:
                 data += "{0}\n".format(self.websocket.recv())
