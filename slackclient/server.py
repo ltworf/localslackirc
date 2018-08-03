@@ -71,7 +71,7 @@ class Server:
         self._websocket = None  # type: Optional[WebSocket]
         self.ws_url = None
         self.connected = False
-        self.auto_reconnect = True
+        self._auto_reconnect = True
         self.last_connected_at = 0
         self.reconnect_count = 0
         self.rtm_connect_retries = 0
@@ -101,10 +101,10 @@ class Server:
 
         # rtm.start returns user and channel info, rtm.connect does not.
         connect_method = "rtm.connect"
-        self.auto_reconnect = kwargs.get('auto_reconnect', True)
+        self._auto_reconnect = kwargs.get('auto_reconnect', True)
 
         # If this is an auto reconnect, rate limit reconnect attempts
-        if self.auto_reconnect and reconnect:
+        if self._auto_reconnect and reconnect:
             # Raise a SlackConnectionError after 5 retries within 3 minutes
             recon_count = self.reconnect_count
             if recon_count == 5:
@@ -196,7 +196,7 @@ class Server:
             except WebSocketConnectionClosedException as e:
                 logging.debug("RTM disconnected")
                 self.connected = False
-                if self.auto_reconnect:
+                if self._auto_reconnect:
                     self.rtm_connect(reconnect=True)
                 else:
                     raise SlackConnectionError("Unable to send due to closed RTM websocket")
