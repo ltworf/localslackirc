@@ -68,7 +68,7 @@ class Server:
         self.login_data = Optional[LoginInfo]
 
         # RTM configs
-        self.websocket = None  # type: Optional[WebSocket]
+        self._websocket = None  # type: Optional[WebSocket]
         self.ws_url = None
         self.connected = False
         self.auto_reconnect = False
@@ -82,8 +82,8 @@ class Server:
 
     @property
     def ws_fileno(self) -> Optional[int]:
-        if self.websocket is not None:
-            return self.websocket.fileno()
+        if self._websocket is not None:
+            return self._websocket.fileno()
         return None
 
     def rtm_connect(self, reconnect=False, timeout=None, **kwargs) -> None:
@@ -162,14 +162,14 @@ class Server:
             proxy_auth, proxy_port, proxy_host = None, None, None
 
         try:
-            self.websocket = create_connection(ws_url,
+            self._websocket = create_connection(ws_url,
                                                http_proxy_host=proxy_host,
                                                http_proxy_port=proxy_port,
                                                http_proxy_auth=proxy_auth)
             self.connected = True
             self.last_connected_at = time.time()
             logging.debug("RTM connected")
-            self.websocket.sock.setblocking(0)
+            self._websocket.sock.setblocking(0)
         except Exception as e:
             self.connected = False
             raise SlackConnectionError(message=str(e))
@@ -179,13 +179,13 @@ class Server:
         Returns data if available, otherwise ''. Newlines indicate multiple
         messages
         """
-        if self.websocket is None:
+        if self._websocket is None:
             return ''
 
         data = ''
         while True:
             try:
-                data += "{0}\n".format(self.websocket.recv())
+                data += "{0}\n".format(self._websocket.recv())
             except SSLError as e:
                 if e.errno == 2:
                     # errno 2 occurs when trying to read or write data, but more
