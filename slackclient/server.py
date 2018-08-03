@@ -71,7 +71,7 @@ class Server:
         self._websocket = None  # type: Optional[WebSocket]
         self.ws_url = None
         self.connected = False
-        self.auto_reconnect = False
+        self.auto_reconnect = True
         self.last_connected_at = 0
         self.reconnect_count = 0
         self.rtm_connect_retries = 0
@@ -101,10 +101,7 @@ class Server:
 
         # rtm.start returns user and channel info, rtm.connect does not.
         connect_method = "rtm.connect"
-
-        # If the `auto_reconnect` param was passed, set the server's `auto_reconnect` attr
-        if 'auto_reconnect' in kwargs:
-            self.auto_reconnect = kwargs["auto_reconnect"]
+        self.auto_reconnect = kwargs.get('auto_reconnect', True)
 
         # If this is an auto reconnect, rate limit reconnect attempts
         if self.auto_reconnect and reconnect:
