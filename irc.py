@@ -98,6 +98,9 @@ class Client:
     def _userhandler(self, cmd: bytes) -> None:
         #TODO USER salvo 8 * :Salvatore Tomaselli
         self._sendreply(1, 'Welcome to localslackirc')
+        self._sendreply(2, 'Your team name is: %s' % self.sl_client.login_info.team.name)
+        self._sendreply(2, 'Your team domain is: %s' % self.sl_client.login_info.team.domain)
+        self._sendreply(2, 'Your nickname must be: %s' % self.sl_client.login_info.self.name)
         self._sendreply(Replies.RPL_LUSERCLIENT, 'There are 1 users and 0 services on 1 server')
 
         if self.autojoin and not self.nouserlist:
