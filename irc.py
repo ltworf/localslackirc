@@ -422,7 +422,10 @@ def main() -> None:
                 timeout = 7
 
 if __name__ == '__main__':
-    try:
-        main()
-    except KeyboardInterrupt:
-        pass
+    while True:
+        try:
+            main()
+        except KeyboardInterrupt:
+            break
+        except:
+            pass
