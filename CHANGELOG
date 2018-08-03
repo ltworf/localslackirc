@@ -1,6 +1,7 @@
 1.1
 * Added manpage
 * Improved debian packaging
+* Force correct IRC nickname
 
 1.0
 * Initial release
