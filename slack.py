@@ -35,6 +35,7 @@ USELESS_EVENTS = {
     'reaction_added',
     'user_typing',
     'file_deleted',
+    'file_public',
 }
 
 
