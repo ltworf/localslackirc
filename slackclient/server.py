@@ -28,12 +28,29 @@ import json
 import logging
 import time
 import random
-from typing import Any, Dict, Optional
+from typing import Any, Dict, NamedTuple, Optional
 
 from requests.packages.urllib3.util.url import parse_url
 from ssl import SSLError
-from websocket import create_connection
+from typedload import load
+from websocket import create_connection, WebSocket
 from websocket._exceptions import WebSocketConnectionClosedException
+
+
+class Team(NamedTuple):
+    id: str
+    name: str
+    domain: str
+
+
+class Self(NamedTuple):
+    id: str
+    name: str
+
+
+class LoginInfo(NamedTuple):
+    team: Team
+    self: Self
 
 
 class Server:
@@ -48,15 +65,13 @@ class Server:
         self.api_requester = SlackRequest(proxies=proxies)
 
         # Workspace metadata
-        self.username = None
-        self.domain = None
-        self.login_data = None
+        self.login_data = Optional[LoginInfo]
 
         # RTM configs
-        self.websocket = None
+        self._websocket = None  # type: Optional[WebSocket]
         self.ws_url = None
         self.connected = False
-        self.auto_reconnect = False
+        self._auto_reconnect = True
         self.last_connected_at = 0
         self.reconnect_count = 0
         self.rtm_connect_retries = 0
@@ -67,8 +82,8 @@ class Server:
 
     @property
     def ws_fileno(self) -> Optional[int]:
-        if self.websocket is not None:
-            return self.websocket.fileno()
+        if self._websocket is not None:
+            return self._websocket.fileno()
         return None
 
     def rtm_connect(self, reconnect=False, timeout=None, **kwargs) -> None:
@@ -86,13 +101,10 @@ class Server:
 
         # rtm.start returns user and channel info, rtm.connect does not.
         connect_method = "rtm.connect"
-
-        # If the `auto_reconnect` param was passed, set the server's `auto_reconnect` attr
-        if 'auto_reconnect' in kwargs:
-            self.auto_reconnect = kwargs["auto_reconnect"]
+        self._auto_reconnect = kwargs.get('auto_reconnect', True)
 
         # If this is an auto reconnect, rate limit reconnect attempts
-        if self.auto_reconnect and reconnect:
+        if self._auto_reconnect and reconnect:
             # Raise a SlackConnectionError after 5 retries within 3 minutes
             recon_count = self.reconnect_count
             if recon_count == 5:
@@ -125,21 +137,18 @@ class Server:
         else:
             self.rtm_connect_retries = 0
             login_data = reply.json()
-            print(login_data)
             if login_data["ok"]:
                 self.ws_url = login_data['url']
-                self.connect_slack_websocket(self.ws_url)
+                self._connect_slack_websocket(self.ws_url)
                 if not reconnect:
-                    self.parse_slack_login_data(login_data)
+                    self._parse_slack_login_data(login_data)
             else:
                 raise SlackLoginError(reply=reply)
 
-    def parse_slack_login_data(self, login_data):
-        self.login_data = login_data
-        self.domain = self.login_data["team"]["domain"]
-        self.username = self.login_data["self"]["name"]
+    def _parse_slack_login_data(self, login_data):
+        self.login_data = load(login_data, LoginInfo)
 
-    def connect_slack_websocket(self, ws_url):
+    def _connect_slack_websocket(self, ws_url):
         """Uses http proxy if available"""
         if self.proxies and 'http' in self.proxies:
             parts = parse_url(self.proxies['http'])
@@ -150,28 +159,30 @@ class Server:
             proxy_auth, proxy_port, proxy_host = None, None, None
 
         try:
-            self.websocket = create_connection(ws_url,
+            self._websocket = create_connection(ws_url,
                                                http_proxy_host=proxy_host,
                                                http_proxy_port=proxy_port,
                                                http_proxy_auth=proxy_auth)
             self.connected = True
             self.last_connected_at = time.time()
             logging.debug("RTM connected")
-            self.websocket.sock.setblocking(0)
+            self._websocket.sock.setblocking(0)
         except Exception as e:
             self.connected = False
             raise SlackConnectionError(message=str(e))
 
-    def websocket_safe_read(self):
+    def websocket_safe_read(self) -> str:
         """
         Returns data if available, otherwise ''. Newlines indicate multiple
         messages
         """
+        if self._websocket is None:
+            return ''
 
-        data = ""
+        data = ''
         while True:
             try:
-                data += "{0}\n".format(self.websocket.recv())
+                data += "{0}\n".format(self._websocket.recv())
             except SSLError as e:
                 if e.errno == 2:
                     # errno 2 occurs when trying to read or write data, but more
@@ -185,7 +196,7 @@ class Server:
             except WebSocketConnectionClosedException as e:
                 logging.debug("RTM disconnected")
                 self.connected = False
-                if self.auto_reconnect:
+                if self._auto_reconnect:
                     self.rtm_connect(reconnect=True)
                 else:
                     raise SlackConnectionError("Unable to send due to closed RTM websocket")

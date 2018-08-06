@@ -25,7 +25,7 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 
-from .server import Server
+from .server import Server, LoginInfo
 from .exceptions import *
 
 LOG = logging.getLogger(__name__)
@@ -55,20 +55,15 @@ class SlackClient:
         self.token = token
         self.server = Server(self.token, False, proxies)
 
-    def rtm_connect(self) -> bool:
+    def rtm_connect(self) -> LoginInfo:
         '''
         Connects to the RTM Websocket
 
         :Returns:
             False on exceptions
         '''
-
-        try:
-            self.server.rtm_connect()
-            return self.server.connected
-        except Exception as e:
-            LOG.warn("Failed RTM connect", exc_info=True)
-            return False
+        self.server.rtm_connect()
+        return self.server.login_data
 
     @property
     def fileno(self) -> Optional[int]:

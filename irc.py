@@ -55,6 +55,7 @@ class Replies(Enum):
     RPL_NAMREPLY = 353
     RPL_ENDOFNAMES = 366
     ERR_UNKNOWNCOMMAND = 421
+    ERR_ERRONEUSNICKNAME = 432
 
 
 #: Inactivity days to hide a MPIM
@@ -78,6 +79,8 @@ class Client:
     def _nickhandler(self, cmd: bytes) -> None:
         _, nick = cmd.split(b' ', 1)
         self.nick = nick.strip()
+        if self.nick != self.sl_client.login_info.self.name.encode('ascii'):
+            self._sendreply(Replies.ERR_ERRONEUSNICKNAME, 'Incorrect nickname, use %s' % self.sl_client.login_info.self.name)
 
     def _sendreply(self, code: Union[int,Replies], message: Union[str,bytes], extratokens: List[Union[str,bytes]] = []) -> None:
         codeint = code if isinstance(code, int) else code.value
@@ -98,6 +101,9 @@ class Client:
     def _userhandler(self, cmd: bytes) -> None:
         #TODO USER salvo 8 * :Salvatore Tomaselli
         self._sendreply(1, 'Welcome to localslackirc')
+        self._sendreply(2, 'Your team name is: %s' % self.sl_client.login_info.team.name)
+        self._sendreply(2, 'Your team domain is: %s' % self.sl_client.login_info.team.domain)
+        self._sendreply(2, 'Your nickname must be: %s' % self.sl_client.login_info.self.name)
         self._sendreply(Replies.RPL_LUSERCLIENT, 'There are 1 users and 0 services on 1 server')
 
         if self.autojoin and not self.nouserlist:
