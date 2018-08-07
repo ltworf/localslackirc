@@ -31,7 +31,7 @@ import random
 from typing import Any, Dict, NamedTuple, Optional
 
 from requests.packages.urllib3.util.url import parse_url
-from ssl import SSLError
+from ssl import SSLWantReadError
 from typedload import load
 from websocket import create_connection, WebSocket
 from websocket._exceptions import WebSocketConnectionClosedException
@@ -171,35 +171,28 @@ class Server:
             self.connected = False
             raise SlackConnectionError(message=str(e))
 
-    def websocket_safe_read(self) -> str:
+    def websocket_read(self) -> str:
         """
         Returns data if available, otherwise ''. Newlines indicate multiple
         messages
         """
         if self._websocket is None:
-            return ''
+            raise SlackConnectionError("Unable to send due to closed RTM websocket")
 
         data = ''
         while True:
             try:
                 data += "{0}\n".format(self._websocket.recv())
-            except SSLError as e:
-                if e.errno == 2:
-                    # errno 2 occurs when trying to read or write data, but more
-                    # data needs to be received on the underlying TCP transport
-                    # before the request can be fulfilled.
-                    #
-                    # Python 2.7.9+ and Python 3.3+ give this its own exception,
-                    # SSLWantReadError
-                    return ''
-                raise
-            except WebSocketConnectionClosedException as e:
-                logging.debug("RTM disconnected")
-                self.connected = False
-                if self._auto_reconnect:
-                    self.rtm_connect(reconnect=True)
-                else:
-                    raise SlackConnectionError("Unable to send due to closed RTM websocket")
+            except SSLWantReadError:
+                # errno 2 occurs when trying to read or write data, but more
+                # data needs to be received on the underlying TCP transport
+                # before the request can be fulfilled.
+                #
+                # Python 2.7.9+ and Python 3.3+ give this its own exception,
+                # SSLWantReadError
+                return ''
+            except WebSocketConnectionClosedException:
+                raise SlackConnectionError("Unable to send due to closed RTM websocket")
             return data.rstrip()
 
     def api_call(self, method: str, timeout: Optional[float], **kwargs) -> Dict[str, Any]:

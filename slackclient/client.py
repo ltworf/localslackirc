@@ -112,7 +112,7 @@ class SlackClient:
         # in the future, this should handle some events internally i.e. channel
         # creation
         if self.server:
-            json_data = self.server.websocket_safe_read()
+            json_data = self.server.websocket_read()
             data = []
             if json_data != '':
                 for d in json_data.split('\n'):
