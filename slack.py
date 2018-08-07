@@ -405,13 +405,15 @@ class Slack:
         """
         This yields an event or None. Don't call it without sleeps
         """
-        self.login_info = self.client.rtm_connect()
+        sleeptime = 0.1
+
         while True:
             try:
                 events = self.client.rtm_read()
             except:
-                if not self.client.rtm_connect():
-                    sleep(10)
+                sleep(sleeptime)
+                sleeptime = 10
+                self.login_info = self.client.rtm_connect()
                 events = []
 
             for event in events:
