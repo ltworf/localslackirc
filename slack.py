@@ -433,7 +433,9 @@ class Slack:
                         )
                     elif t == 'message' and subt == 'message_deleted':
                         event['previous_message']['channel'] = event['channel']
-                        yield _loadwrapper(event['previous_message'], MessageDelete)
+                        ev = _loadwrapper(event['previous_message'], MessageDelete)
+                        if ev.text:  # deleting files generates empty MessageDelete events
+                            yield ev
                     elif t == 'message' and subt == 'bot_message':
                         yield _loadwrapper(event, MessageBot)
                     elif t == 'user_change':
