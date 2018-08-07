@@ -124,6 +124,11 @@ class Client:
 
                 channel_name = '#%s' % sl_chan.name_normalized
                 self._send_chan_info(channel_name.encode('utf-8'), sl_chan)
+        else:
+            for sl_chan in self.sl_client.channels():
+                channel_name = '#%s' % sl_chan.name_normalized
+                self.parted_channels.add(channel_name.encode('utf-8'))
+
 
     def _pinghandler(self, cmd: bytes) -> None:
         _, lbl = cmd.split(b' ', 1)
