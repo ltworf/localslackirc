@@ -53,7 +53,7 @@ class SlackClient:
     def __init__(self, token: str, proxies: Optional[Dict[str,str]] = None) -> None:
 
         self.token = token
-        self.server = Server(self.token, False, proxies)
+        self.server = Server(self.token, proxies)
 
     def rtm_connect(self) -> LoginInfo:
         '''

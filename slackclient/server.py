@@ -58,7 +58,7 @@ class Server:
     The Server object owns the websocket connection and all attached channel information.
     """
 
-    def __init__(self, token: str, connect: bool = True, proxies: Optional[Dict[str,str]] = None) -> None:
+    def __init__(self, token: str, proxies: Optional[Dict[str,str]] = None) -> None:
         # Slack client configs
         self.token = token
         self.proxies = proxies
@@ -69,16 +69,6 @@ class Server:
 
         # RTM configs
         self._websocket = None  # type: Optional[WebSocket]
-        self.ws_url = None
-        self.connected = False
-        self._auto_reconnect = False
-        self.last_connected_at = 0
-        self.reconnect_count = 0
-        self.rtm_connect_retries = 0
-
-        # Connect to RTM on load
-        if connect:
-            self.rtm_connect()
 
     @property
     def ws_fileno(self) -> Optional[int]:
@@ -101,52 +91,17 @@ class Server:
 
         # rtm.start returns user and channel info, rtm.connect does not.
         connect_method = "rtm.connect"
-        self._auto_reconnect = kwargs.get('auto_reconnect', False)
-
-        # If this is an auto reconnect, rate limit reconnect attempts
-        if self._auto_reconnect and reconnect:
-            # Raise a SlackConnectionError after 5 retries within 3 minutes
-            recon_count = self.reconnect_count
-            if recon_count == 5:
-                logging.error("RTM connection failed, reached max reconnects.")
-                raise SlackConnectionError("RTM connection failed, reached max reconnects.")
-            # Wait to reconnect if the last reconnect was less than 3 minutes ago
-            if (time.time() - self.last_connected_at) < 180:
-                if recon_count > 0:
-                    # Back off after the the first attempt
-                    backoff_offset_multiplier = random.randint(1, 4)
-                    retry_timeout = (backoff_offset_multiplier * recon_count * recon_count)
-                    logging.debug("Reconnecting in %d seconds", retry_timeout)
-
-                    time.sleep(retry_timeout)
-                self.reconnect_count += 1
-            else:
-                self.reconnect_count = 0
-
         reply = self.api_requester.do(self.token, connect_method, timeout=timeout, post_data=kwargs)
 
         if reply.status_code != 200:
-            if self.rtm_connect_retries < 5 and reply.status_code == 429:
-                self.rtm_connect_retries += 1
-                retry_after = int(reply.headers.get('retry-after', 120))
-                logging.debug("HTTP 429: Rate limited. Retrying in %d seconds", retry_after)
-                time.sleep(retry_after)
-                self.rtm_connect(reconnect=reconnect, timeout=timeout)
-            else:
-                raise SlackConnectionError("RTM connection attempt was rate limited 5 times.")
-        else:
-            self.rtm_connect_retries = 0
-            login_data = reply.json()
-            if login_data["ok"]:
-                self.ws_url = login_data['url']
-                self._connect_slack_websocket(self.ws_url)
-                if not reconnect:
-                    self._parse_slack_login_data(login_data)
-            else:
-                raise SlackLoginError(reply=reply)
+            raise SlackConnectionError("RTM connection attempt failed")
 
-    def _parse_slack_login_data(self, login_data):
-        self.login_data = load(login_data, LoginInfo)
+        login_data = reply.json()
+        if login_data["ok"]:
+            self._connect_slack_websocket(login_data['url'])
+            self.login_data = load(login_data, LoginInfo)
+        else:
+            raise SlackLoginError(reply=reply)
 
     def _connect_slack_websocket(self, ws_url):
         """Uses http proxy if available"""
@@ -163,12 +118,8 @@ class Server:
                                                http_proxy_host=proxy_host,
                                                http_proxy_port=proxy_port,
                                                http_proxy_auth=proxy_auth)
-            self.connected = True
-            self.last_connected_at = time.time()
-            logging.debug("RTM connected")
             self._websocket.sock.setblocking(0)
         except Exception as e:
-            self.connected = False
             raise SlackConnectionError(message=str(e))
 
     def websocket_read(self) -> str:
