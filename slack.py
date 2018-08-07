@@ -406,14 +406,24 @@ class Slack:
         """
         This yields an event or None. Don't call it without sleeps
         """
-        self.login_info = self.client.rtm_connect()
+        sleeptime = 1
+
         while True:
             try:
                 events = self.client.rtm_read()
             except:
-                if not self.client.rtm_connect():
-                    sleep(10)
-                events = []
+                print('Connecting to slack...')
+                try:
+                    self.login_info = self.client.rtm_connect()
+                    sleeptime = 1
+                except:
+                    print('Connection to slack failed')
+                    sleep(sleeptime)
+                    if sleeptime <= 120:  # max reconnection interval at 2 minutes
+                        sleeptime *= 2
+                    continue
+                print('Connected to slack')
+                continue
 
             for event in events:
                 t = event.get('type')

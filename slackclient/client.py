@@ -53,7 +53,7 @@ class SlackClient:
     def __init__(self, token: str, proxies: Optional[Dict[str,str]] = None) -> None:
 
         self.token = token
-        self.server = Server(self.token, False, proxies)
+        self.server = Server(self.token, proxies)
 
     def rtm_connect(self) -> LoginInfo:
         '''
@@ -112,7 +112,7 @@ class SlackClient:
         # in the future, this should handle some events internally i.e. channel
         # creation
         if self.server:
-            json_data = self.server.websocket_safe_read()
+            json_data = self.server.websocket_read()
             data = []
             if json_data != '':
                 for d in json_data.split('\n'):
