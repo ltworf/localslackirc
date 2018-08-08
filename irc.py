@@ -54,7 +54,9 @@ class Replies(Enum):
     RPL_WHOREPLY = 352
     RPL_NAMREPLY = 353
     RPL_ENDOFNAMES = 366
+    ERR_NOSUCHCHANNEL = 403
     ERR_UNKNOWNCOMMAND = 421
+    ERR_FILEERROR = 424
     ERR_ERRONEUSNICKNAME = 432
 
 
@@ -197,6 +199,20 @@ class Client:
     def _modehandler(self, cmd: bytes) -> None:
         params = cmd.split(b' ', 2)
         self._sendreply(Replies.RPL_CHANNELMODEIS, '', [params[1], '+'])
+
+    def _sendfilehandler(self, cmd: bytes) -> None:
+        _, bchannel_name, bfilename = cmd.split(b' ', 2)
+        channel_name = bchannel_name.decode('utf8')
+        filename = bfilename.decode('utf8')
+        try:
+            channel = self.sl_client.get_channel_by_name(channel_name[1:])
+        except KeyError:
+            self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find channel: {channel_name}')
+
+        try:
+            self.sl_client.send_file(channel.id, filename)
+        except:
+            self._sendreply(Replies.ERR_FILEERROR, 'Unable to send file')
 
     def _parthandler(self, cmd: bytes) -> None:
         _, name = cmd.split(b' ', 1)
@@ -349,6 +365,7 @@ class Client:
             b'MODE': self._modehandler,
             b'PART': self._parthandler,
             b'AWAY': self._awayhandler,
+            b'sendfile': self._sendfilehandler,
             #QUIT
             #CAP LS
             #USERHOST
