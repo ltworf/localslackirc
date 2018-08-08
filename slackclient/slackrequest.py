@@ -52,19 +52,11 @@ class SlackRequest:
             'Authorization': f'Bearer {token}'
         }
 
-        # Pull file out so it isn't JSON encoded like normal fields.
-        # Only do this for requests that are UPLOADING files; downloading files
-        # use the 'file' argument to point to a File ID.
-        files = None
-        if request == 'files.upload':
-            files = {'file': post_data.pop('file')} if 'file' in post_data else None
-
         # Submit the request
         return requests.post(
             url,
             headers=headers,
             data=post_data,
-            files=files,
             timeout=timeout,
             proxies=self.proxies
         )
