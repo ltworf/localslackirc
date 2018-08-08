@@ -57,9 +57,9 @@ class SlackClient:
 
     def __init__(self, token: str, proxies: Optional[Dict[str,str]] = None) -> None:
         # Slack client configs
-        self.token = token
-        self.proxies = proxies
-        self.api_requester = SlackRequest(proxies=proxies)
+        self._token = token
+        self._proxies = proxies
+        self._api_requester = SlackRequest(proxies=proxies)
 
         # RTM configs
         self._websocket = None  # type: Optional[WebSocket]
@@ -79,7 +79,7 @@ class SlackClient:
 
         # rtm.start returns user and channel info, rtm.connect does not.
         connect_method = "rtm.connect"
-        reply = self.api_requester.do(self.token, connect_method, timeout=timeout, post_data=kwargs)
+        reply = self._api_requester.do(self._token, connect_method, timeout=timeout, post_data=kwargs)
 
         if reply.status_code != 200:
             raise SlackConnectionError("RTM connection attempt failed")
@@ -93,8 +93,8 @@ class SlackClient:
 
     def _connect_slack_websocket(self, ws_url):
         """Uses http proxy if available"""
-        if self.proxies and 'http' in self.proxies:
-            parts = parse_url(self.proxies['http'])
+        if self._proxies and 'http' in self._proxies:
+            parts = parse_url(self._proxies['http'])
             proxy_host, proxy_port = parts.host, parts.port
             auth = parts.auth
             proxy_auth = auth and auth.split(':')
@@ -110,7 +110,7 @@ class SlackClient:
         except Exception as e:
             raise SlackConnectionError(message=str(e))
 
-    def websocket_read(self) -> str:
+    def _websocket_read(self) -> str:
         """
         Returns data if available, otherwise ''. Newlines indicate multiple
         messages
@@ -164,13 +164,13 @@ class SlackClient:
 
             See here for more information on responses: https://api.slack.com/web
         """
-        response = self.api_requester.do(self.token, method, kwargs, timeout)
+        response = self._api_requester.do(self._token, method, kwargs, timeout)
         response_json = json.loads(response.text)
         response_json["headers"] = dict(response.headers)
         return response_json
 
     def rtm_read(self) -> List[Dict[str, Any]]:
-        json_data = self.websocket_read()
+        json_data = self._websocket_read()
         data = []
         if json_data != '':
             for d in json_data.split('\n'):
