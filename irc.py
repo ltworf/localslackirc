@@ -208,6 +208,7 @@ class Client:
             filename = params[2].decode('utf8')
         except IndexError:
             self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Syntax: /sendreply #channel filename')
+            return
 
         try:
             if channel_name.startswith('#'):
@@ -216,6 +217,7 @@ class Client:
                 dest = self.sl_client.get_user_by_name(channel_name).id
         except KeyError:
             self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find destination: {channel_name}')
+            return
 
         try:
             self.sl_client.send_file(dest, filename)
