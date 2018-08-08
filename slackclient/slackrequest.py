@@ -41,8 +41,6 @@ class SlackRequest:
             timeout (float): stop waiting for a response after a given number of seconds
             post_data (dict): key/value arguments to pass for the request. For example:
                 {'channel': 'CABC12345'}
-            domain (str): if for some reason you want to send your request to something other
-                than slack.com
         """
         domain = "slack.com"
 
