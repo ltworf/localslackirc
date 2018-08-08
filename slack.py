@@ -213,7 +213,7 @@ class Slack:
             with open(tokenfile) as f:
                 token = f.readline().strip()
         except FileNotFoundError:
-            exit("Unable to open the token file {}".format(tokenfile))
+            exit(f'Unable to open the token file {tokenfile}')
         self.client = SlackClient(token)
         self._usercache = {}  # type: Dict[str, User]
         self._usermapcache = {}  # type: Dict[str, User]
