@@ -40,12 +40,6 @@ class SlackClient:
         self.server = Server(token, proxies)
 
     def rtm_connect(self) -> LoginInfo:
-        '''
-        Connects to the RTM Websocket
-
-        :Returns:
-            False on exceptions
-        '''
         self.server.rtm_connect()
         if self.server.login_data is None:
             raise SlackConnectionError('No login data available')
