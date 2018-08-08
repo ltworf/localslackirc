@@ -50,28 +50,4 @@ class SlackClient:
         return self.server.api_call(method, timeout=timeout, **kwargs)
 
     def rtm_read(self) -> List[Dict[str, Any]]:
-        '''
-        Reads from the RTM Websocket stream then calls `self.process_changes(item)` for each line
-        in the returned data.
-
-        Multiple events may be returned, always returns a list [], which is empty if there are no
-        incoming messages.
-        :Returns:
-            data (json) - The server response. For example::
-
-                [{u'presence': u'active', u'type': u'presence_change', u'user': u'UABC1234'}]
-
-        :Raises:
-            SlackNotConnected if self.server is not defined.
-        '''
-        # in the future, this should handle some events internally i.e. channel
-        # creation
-        if self.server:
-            json_data = self.server.websocket_read()
-            data = []
-            if json_data != '':
-                for d in json_data.split('\n'):
-                    data.append(json.loads(d))
-            return data
-        else:
-            raise SlackNotConnected
+        return self.server.rtm_read()

@@ -25,7 +25,7 @@ from .exceptions import *
 from .slackrequest import SlackRequest
 
 import json
-from typing import Any, Dict, NamedTuple, Optional
+from typing import Any, Dict, List, NamedTuple, Optional
 
 from requests.packages.urllib3.util.url import parse_url
 from ssl import SSLWantReadError
@@ -174,3 +174,11 @@ class Server:
         response_json = json.loads(response.text)
         response_json["headers"] = dict(response.headers)
         return response_json
+
+    def rtm_read(self) -> List[Dict[str, Any]]:
+        json_data = self.websocket_read()
+        data = []
+        if json_data != '':
+            for d in json_data.split('\n'):
+                data.append(json.loads(d))
+        return data
