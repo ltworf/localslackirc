@@ -59,17 +59,6 @@ class SlackRequest:
         if request == 'files.upload':
             files = {'file': post_data.pop('file')} if 'file' in post_data else None
 
-        # Check for plural fields and convert them to comma-separated strings if needed
-        for field in {'channels', 'users', 'types'} & set(post_data.keys()):
-            if isinstance(post_data[field], list):
-                post_data[field] = ",".join(post_data[field])
-
-        # Convert any params which are list-like to JSON strings
-        # Example: `attachments` is a dict, and needs to be passed as JSON
-        for k, v in post_data.items():
-            if isinstance(v, (list, dict)):
-                post_data[k] = json.dumps(v)
-
         # Submit the request
         return requests.post(
             url,
