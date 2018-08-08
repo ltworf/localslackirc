@@ -50,9 +50,9 @@ class LoginInfo(NamedTuple):
     self: Self
 
 
-class Server:
+class SlackClient:
     """
-    The Server object owns the websocket connection and all attached channel information.
+    The SlackClient object owns the websocket connection and all attached channel information.
     """
 
     def __init__(self, token: str, proxies: Optional[Dict[str,str]] = None) -> None:
