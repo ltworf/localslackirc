@@ -40,10 +40,7 @@ class SlackClient:
         self.server = Server(token, proxies)
 
     def rtm_connect(self) -> LoginInfo:
-        self.server.rtm_connect()
-        if self.server.login_data is None:
-            raise SlackConnectionError('No login data available')
-        return self.server.login_data
+        return self.server.rtm_connect()
 
     @property
     def fileno(self) -> Optional[int]:

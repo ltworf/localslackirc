@@ -61,9 +61,6 @@ class Server:
         self.proxies = proxies
         self.api_requester = SlackRequest(proxies=proxies)
 
-        # Workspace metadata
-        self.login_data = None  # type: Optional[LoginInfo]
-
         # RTM configs
         self._websocket = None  # type: Optional[WebSocket]
 
@@ -73,7 +70,7 @@ class Server:
             return self._websocket.fileno()
         return None
 
-    def rtm_connect(self, reconnect=False, timeout=None, **kwargs) -> None:
+    def rtm_connect(self, reconnect=False, timeout=None, **kwargs) -> LoginInfo:
         """
         Connects to the RTM API - https://api.slack.com/rtm
 
@@ -96,7 +93,7 @@ class Server:
         login_data = reply.json()
         if login_data["ok"]:
             self._connect_slack_websocket(login_data['url'])
-            self.login_data = load(login_data, LoginInfo)
+            return load(login_data, LoginInfo)
         else:
             raise SlackLoginError(reply=reply)
 
