@@ -47,12 +47,12 @@ class SlackRequest:
         """
         domain = "slack.com"
 
-        url = 'https://{0}/api/{1}'.format(domain, request)
+        url = f'https://{domain}/api/{request}'
 
         # Set user-agent and auth headers
         headers = {
             'user-agent': 'localslackirc',
-            'Authorization': 'Bearer {}'.format(token)
+            'Authorization': f'Bearer {token}'
         }
 
         # Pull file out so it isn't JSON encoded like normal fields.
