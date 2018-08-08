@@ -21,104 +21,158 @@
 # But has been copied and relicensed under GPL. The copyright applies only
 # to the changes made since it was copied.
 
-import json
-import logging
-from typing import Any, Dict, List, Optional
-
-from .server import Server, LoginInfo
 from .exceptions import *
+from .slackrequest import SlackRequest
 
-LOG = logging.getLogger(__name__)
+import json
+from typing import Any, Dict, List, NamedTuple, Optional
+
+from requests.packages.urllib3.util.url import parse_url
+from ssl import SSLWantReadError
+from typedload import load
+from websocket import create_connection, WebSocket
+from websocket._exceptions import WebSocketConnectionClosedException
+
+
+class Team(NamedTuple):
+    id: str
+    name: str
+    domain: str
+
+
+class Self(NamedTuple):
+    id: str
+    name: str
+
+
+class LoginInfo(NamedTuple):
+    team: Team
+    self: Self
 
 
 class SlackClient:
-    '''
-    The SlackClient makes API Calls to the `Slack Web API <https://api.slack.com/web>`_ as well as
-    managing connections to the `Real-time Messaging API via websocket <https://api.slack.com/rtm>`_
+    """
+    The SlackClient object owns the websocket connection and all attached channel information.
+    """
 
-    It also manages some of the Client state for Channels that the associated token (User or Bot)
-    is associated with.
-
-    For more information, check out the `Slack API Docs <https://api.slack.com/>`_
-
-    Init:
-        :Args:
-            token (str): Your Slack Authentication token. You can find or generate a test token
-            `here <https://api.slack.com/docs/oauth-test-tokens>`_
-            Note: Be `careful with your token <https://api.slack.com/docs/oauth-safety>`_
-            proxies (dict): Proxies to use when create websocket or api calls,
-            declare http and websocket proxies using {'http': 'http://127.0.0.1'},
-            and https proxy using {'https': 'https://127.0.0.1:443'}
-    '''
     def __init__(self, token: str, proxies: Optional[Dict[str,str]] = None) -> None:
+        # Slack client configs
+        self._token = token
+        self._proxies = proxies
+        self._api_requester = SlackRequest(proxies=proxies)
 
-        self.token = token
-        self.server = Server(self.token, proxies)
-
-    def rtm_connect(self) -> LoginInfo:
-        '''
-        Connects to the RTM Websocket
-
-        :Returns:
-            False on exceptions
-        '''
-        self.server.rtm_connect()
-        if self.server.login_data is None:
-            raise SlackConnectionError('No login data available')
-        return self.server.login_data
+        # RTM configs
+        self._websocket = None  # type: Optional[WebSocket]
 
     @property
     def fileno(self) -> Optional[int]:
-        return self.server.ws_fileno
+        if self._websocket is not None:
+            return self._websocket.fileno()
+        return None
+
+    def rtm_connect(self, timeout: Optional[int] = None, **kwargs) -> LoginInfo:
+        """
+        Connects to the RTM API - https://api.slack.com/rtm
+        :Args:
+            timeout: in seconds
+        """
+
+        # rtm.start returns user and channel info, rtm.connect does not.
+        connect_method = "rtm.connect"
+        reply = self._api_requester.do(self._token, connect_method, timeout=timeout, post_data=kwargs)
+
+        if reply.status_code != 200:
+            raise SlackConnectionError("RTM connection attempt failed")
+
+        login_data = reply.json()
+        if login_data["ok"]:
+            self._connect_slack_websocket(login_data['url'])
+            return load(login_data, LoginInfo)
+        else:
+            raise SlackLoginError(reply=reply)
+
+    def _connect_slack_websocket(self, ws_url):
+        """Uses http proxy if available"""
+        if self._proxies and 'http' in self._proxies:
+            parts = parse_url(self._proxies['http'])
+            proxy_host, proxy_port = parts.host, parts.port
+            auth = parts.auth
+            proxy_auth = auth and auth.split(':')
+        else:
+            proxy_auth, proxy_port, proxy_host = None, None, None
+
+        try:
+            self._websocket = create_connection(ws_url,
+                                               http_proxy_host=proxy_host,
+                                               http_proxy_port=proxy_port,
+                                               http_proxy_auth=proxy_auth)
+            self._websocket.sock.setblocking(0)
+        except Exception as e:
+            raise SlackConnectionError(message=str(e))
+
+    def _websocket_read(self) -> str:
+        """
+        Returns data if available, otherwise ''. Newlines indicate multiple
+        messages
+        """
+        if self._websocket is None:
+            raise SlackConnectionError("Unable to send due to closed RTM websocket")
+
+        data = ''
+        while True:
+            try:
+                data += "{0}\n".format(self._websocket.recv())
+            except SSLWantReadError:
+                # errno 2 occurs when trying to read or write data, but more
+                # data needs to be received on the underlying TCP transport
+                # before the request can be fulfilled.
+                #
+                # Python 2.7.9+ and Python 3.3+ give this its own exception,
+                # SSLWantReadError
+                return ''
+            except WebSocketConnectionClosedException:
+                raise SlackConnectionError("Unable to send due to closed RTM websocket")
+            return data.rstrip()
 
     def api_call(self, method: str, timeout: Optional[float] = None, **kwargs) -> Dict[str, Any]:
-        '''
+        """
         Call the Slack Web API as documented here: https://api.slack.com/web
 
         :Args:
-            method (str): The API Method to call. See
-            `the full list here <https://api.slack.com/methods>`_
+            method (str): The API Method to call. See here for a list: https://api.slack.com/methods
         :Kwargs:
+            (optional) timeout: stop waiting for a response after a given number of seconds
             (optional) kwargs: any arguments passed here will be bundled and sent to the api
-            requester as post_data and will be passed along to the API.
+            requester as post_data
+                and will be passed along to the API.
 
-            Example::
-                sc.server.api_call(
-                    "channels.setPurpose",
-                    channel="CABC12345",
-                    purpose="Writing some code!"
-                )
-        '''
-        response_body = self.server.api_call(method, timeout=timeout, **kwargs)
-        try:
-            result = response_body
-        except ValueError as json_decode_error:
-            raise ParseResponseError(response_body, json_decode_error)
-        return result
+        Example::
+            sc.server.api_call(
+                "channels.setPurpose",
+                channel="CABC12345",
+                purpose="Writing some code!"
+            )
+
+        Returns:
+            str -- returns HTTP response text and headers as JSON.
+
+            Examples::
+
+                u'{"ok":true,"purpose":"Testing bots"}'
+                or
+                u'{"ok":false,"error":"channel_not_found"}'
+
+            See here for more information on responses: https://api.slack.com/web
+        """
+        response = self._api_requester.do(self._token, method, kwargs, timeout)
+        response_json = json.loads(response.text)
+        response_json["headers"] = dict(response.headers)
+        return response_json
 
     def rtm_read(self) -> List[Dict[str, Any]]:
-        '''
-        Reads from the RTM Websocket stream then calls `self.process_changes(item)` for each line
-        in the returned data.
-
-        Multiple events may be returned, always returns a list [], which is empty if there are no
-        incoming messages.
-        :Returns:
-            data (json) - The server response. For example::
-
-                [{u'presence': u'active', u'type': u'presence_change', u'user': u'UABC1234'}]
-
-        :Raises:
-            SlackNotConnected if self.server is not defined.
-        '''
-        # in the future, this should handle some events internally i.e. channel
-        # creation
-        if self.server:
-            json_data = self.server.websocket_read()
-            data = []
-            if json_data != '':
-                for d in json_data.split('\n'):
-                    data.append(json.loads(d))
-            return data
-        else:
-            raise SlackNotConnected
+        json_data = self._websocket_read()
+        data = []
+        if json_data != '':
+            for d in json_data.split('\n'):
+                data.append(json.loads(d))
+        return data
