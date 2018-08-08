@@ -25,9 +25,6 @@ from .exceptions import *
 from .slackrequest import SlackRequest
 
 import json
-import logging
-import time
-import random
 from typing import Any, Dict, NamedTuple, Optional
 
 from requests.packages.urllib3.util.url import parse_url
