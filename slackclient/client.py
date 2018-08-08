@@ -70,17 +70,11 @@ class SlackClient:
             return self._websocket.fileno()
         return None
 
-    def rtm_connect(self, reconnect=False, timeout=None, **kwargs) -> LoginInfo:
+    def rtm_connect(self, timeout: Optional[int] = None, **kwargs) -> LoginInfo:
         """
         Connects to the RTM API - https://api.slack.com/rtm
-
-        If `auto_reconnect` is set to `True` then the SlackClient is initialized, this method
-        will be used to reconnect on websocket read failures, which indicate disconnection
-
         :Args:
-            reconnect (boolean) Whether this method is being called to reconnect to RTM
-            timeout (int): Stop waiting for Web API response after this many seconds
-            https://api.slack.com/rtm#connecting_with_rtm.connect_vs._rtm.start
+            timeout: in seconds
         """
 
         # rtm.start returns user and channel info, rtm.connect does not.
