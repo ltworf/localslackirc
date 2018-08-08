@@ -62,7 +62,7 @@ class Server:
         self.api_requester = SlackRequest(proxies=proxies)
 
         # Workspace metadata
-        self.login_data = Optional[LoginInfo]
+        self.login_data = None  # type: Optional[LoginInfo]
 
         # RTM configs
         self._websocket = None  # type: Optional[WebSocket]
