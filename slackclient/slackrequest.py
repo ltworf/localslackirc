@@ -55,13 +55,8 @@ class SlackRequest:
         # Pull file out so it isn't JSON encoded like normal fields.
         # Only do this for requests that are UPLOADING files; downloading files
         # use the 'file' argument to point to a File ID.
-
-        # Move singular file objects into `files`
-        upload_requests = ['files.upload']
-
-        # Move file content into requests' `files` param
         files = None
-        if request in upload_requests:
+        if request == 'files.upload':
             files = {'file': post_data.pop('file')} if 'file' in post_data else None
 
         # Check for plural fields and convert them to comma-separated strings if needed
