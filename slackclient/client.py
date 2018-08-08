@@ -65,7 +65,7 @@ class SlackClient:
         self._websocket = None  # type: Optional[WebSocket]
 
     @property
-    def ws_fileno(self) -> Optional[int]:
+    def fileno(self) -> Optional[int]:
         if self._websocket is not None:
             return self._websocket.fileno()
         return None
@@ -140,7 +140,7 @@ class SlackClient:
                 raise SlackConnectionError("Unable to send due to closed RTM websocket")
             return data.rstrip()
 
-    def api_call(self, method: str, timeout: Optional[float], **kwargs) -> Dict[str, Any]:
+    def api_call(self, method: str, timeout: Optional[float] = None, **kwargs) -> Dict[str, Any]:
         """
         Call the Slack Web API as documented here: https://api.slack.com/web
 
