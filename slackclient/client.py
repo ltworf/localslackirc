@@ -47,29 +47,7 @@ class SlackClient:
         return self.server.ws_fileno
 
     def api_call(self, method: str, timeout: Optional[float] = None, **kwargs) -> Dict[str, Any]:
-        '''
-        Call the Slack Web API as documented here: https://api.slack.com/web
-
-        :Args:
-            method (str): The API Method to call. See
-            `the full list here <https://api.slack.com/methods>`_
-        :Kwargs:
-            (optional) kwargs: any arguments passed here will be bundled and sent to the api
-            requester as post_data and will be passed along to the API.
-
-            Example::
-                sc.server.api_call(
-                    "channels.setPurpose",
-                    channel="CABC12345",
-                    purpose="Writing some code!"
-                )
-        '''
-        response_body = self.server.api_call(method, timeout=timeout, **kwargs)
-        try:
-            result = response_body
-        except ValueError as json_decode_error:
-            raise ParseResponseError(response_body, json_decode_error)
-        return result
+        return self.server.api_call(method, timeout=timeout, **kwargs)
 
     def rtm_read(self) -> List[Dict[str, Any]]:
         '''
