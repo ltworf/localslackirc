@@ -201,17 +201,26 @@ class Client:
         self._sendreply(Replies.RPL_CHANNELMODEIS, '', [params[1], '+'])
 
     def _sendfilehandler(self, cmd: bytes) -> None:
-        _, bchannel_name, bfilename = cmd.split(b' ', 2)
-        channel_name = bchannel_name.decode('utf8')
-        filename = bfilename.decode('utf8')
+        #/sendfile #destination filename
+        params = cmd.split(b' ', 2)
         try:
-            channel = self.sl_client.get_channel_by_name(channel_name[1:])
-        except KeyError:
-            self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find channel: {channel_name}')
+            channel_name = params[1].decode('utf8')
+            filename = params[2].decode('utf8')
+        except IndexError:
+            self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Syntax: /sendreply #channel filename')
 
         try:
-            self.sl_client.send_file(channel.id, filename)
-        except:
+            if channel_name.startswith('#'):
+                dest = self.sl_client.get_channel_by_name(channel_name[1:]).id
+            else:
+                dest = self.sl_client.get_user_by_name(channel_name).id
+        except KeyError:
+            self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find destination: {channel_name}')
+
+        try:
+            self.sl_client.send_file(dest, filename)
+        except Exception as e:
+            print(e)
             self._sendreply(Replies.ERR_FILEERROR, 'Unable to send file')
 
     def _parthandler(self, cmd: bytes) -> None:
