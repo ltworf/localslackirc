@@ -25,7 +25,6 @@ import json
 from typing import Dict, Optional
 
 import requests
-import six
 
 
 class SlackRequest:
@@ -74,7 +73,7 @@ class SlackRequest:
 
         # Convert any params which are list-like to JSON strings
         # Example: `attachments` is a dict, and needs to be passed as JSON
-        for k, v in six.iteritems(post_data):
+        for k, v in post_data.items():
             if isinstance(v, (list, dict)):
                 post_data[k] = json.dumps(v)
 
