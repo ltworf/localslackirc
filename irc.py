@@ -54,7 +54,9 @@ class Replies(Enum):
     RPL_WHOREPLY = 352
     RPL_NAMREPLY = 353
     RPL_ENDOFNAMES = 366
+    ERR_NOSUCHCHANNEL = 403
     ERR_UNKNOWNCOMMAND = 421
+    ERR_FILEERROR = 424
     ERR_ERRONEUSNICKNAME = 432
 
 
@@ -197,6 +199,29 @@ class Client:
     def _modehandler(self, cmd: bytes) -> None:
         params = cmd.split(b' ', 2)
         self._sendreply(Replies.RPL_CHANNELMODEIS, '', [params[1], '+'])
+
+    def _sendfilehandler(self, cmd: bytes) -> None:
+        #/sendfile #destination filename
+        params = cmd.split(b' ', 2)
+        try:
+            channel_name = params[1].decode('utf8')
+            filename = params[2].decode('utf8')
+        except IndexError:
+            self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Syntax: /sendreply #channel filename')
+
+        try:
+            if channel_name.startswith('#'):
+                dest = self.sl_client.get_channel_by_name(channel_name[1:]).id
+            else:
+                dest = self.sl_client.get_user_by_name(channel_name).id
+        except KeyError:
+            self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find destination: {channel_name}')
+
+        try:
+            self.sl_client.send_file(dest, filename)
+        except Exception as e:
+            print(e)
+            self._sendreply(Replies.ERR_FILEERROR, 'Unable to send file')
 
     def _parthandler(self, cmd: bytes) -> None:
         _, name = cmd.split(b' ', 1)
@@ -349,6 +374,7 @@ class Client:
             b'MODE': self._modehandler,
             b'PART': self._parthandler,
             b'AWAY': self._awayhandler,
+            b'sendfile': self._sendfilehandler,
             #QUIT
             #CAP LS
             #USERHOST

@@ -79,7 +79,7 @@ class SlackClient:
 
         # rtm.start returns user and channel info, rtm.connect does not.
         connect_method = "rtm.connect"
-        reply = self._api_requester.do(self._token, connect_method, timeout=timeout, post_data=kwargs)
+        reply = self._api_requester.do(self._token, connect_method, timeout=timeout, post_data=kwargs, files=None)
 
         if reply.status_code != 200:
             raise SlackConnectionError("RTM connection attempt failed")
@@ -164,7 +164,11 @@ class SlackClient:
 
             See here for more information on responses: https://api.slack.com/web
         """
-        response = self._api_requester.do(self._token, method, kwargs, timeout)
+        if 'files' in kwargs:
+            files = kwargs.pop('files')
+        else:
+            files = None
+        response = self._api_requester.do(self._token, method, kwargs, timeout, files)
         response_json = json.loads(response.text)
         response_json["headers"] = dict(response.headers)
         return response_json

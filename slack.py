@@ -363,6 +363,23 @@ class Slack:
         else:
             raise KeyError(response)
 
+    def send_file(self, channel_id: str, filename: str) -> None:
+        """
+        Send a file to a channel or group or whatever
+        """
+        with open(filename, 'rb') as f:
+            files = {'file': f}
+
+            r = self.client.api_call(
+                'files.upload',
+                channels=channel_id,
+                files=files,
+            )
+        response = load(r, Response)
+        if response.ok:
+            return
+        raise ResponseException(response)
+
     def send_message(self, channel_id: str, msg: str) -> None:
         """
         Send a message to a channel or group or whatever

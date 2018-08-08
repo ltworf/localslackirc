@@ -2,6 +2,7 @@
 * Added manpage
 * Improved debian packaging
 * Force correct IRC nickname
+* Send files
 
 1.0
 * Initial release

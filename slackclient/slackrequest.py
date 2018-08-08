@@ -31,7 +31,7 @@ class SlackRequest:
     def __init__(self, proxies=None):
         self.proxies = proxies
 
-    def do(self, token: str, request: str, post_data: Dict[str,str], timeout: Optional[float]):
+    def do(self, token: str, request: str, post_data: Dict[str,str], timeout: Optional[float], files: Optional[Dict]):
         """
         Perform a POST request to the Slack Web API
 
@@ -58,5 +58,6 @@ class SlackRequest:
             headers=headers,
             data=post_data,
             timeout=timeout,
+            files=files,
             proxies=self.proxies
         )

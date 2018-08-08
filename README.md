@@ -59,6 +59,9 @@ Using localslackirc
 To automatically connect to the Slack channels you are in open localslackirc with the -j argument
 ```python3 irc.py -j```
 
+## Sending files
+You can use `/sendfile #destination filepath` to send files. Destination can be a channel or a user.
+
 ## Instructions for irssi
 
 If you need to refresh your memory about connecting in general, this is a good guide: https://pthree.org/2010/02/02/irssis-channel-network-server-and-connect-what-it-means/
