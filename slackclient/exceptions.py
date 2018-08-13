@@ -25,7 +25,7 @@ class SlackClientError(Exception):
     """
     Base exception for all errors raised by the SlackClient library
     """
-    def __init__(self, msg=None):
+    def __init__(self, msg=None) -> None:
         if msg is None:
             # default error message
             msg = "An error occurred in the SlackClient library"
@@ -36,7 +36,7 @@ class ParseResponseError(SlackClientError, ValueError):
     """
     Error raised when responses to Web API methods cannot be parsed as valid JSON
     """
-    def __init__(self, response_body, original_exception):
+    def __init__(self, response_body, original_exception) -> None:
         super(ParseResponseError, self).__init__(
             "Slack API response body could not be parsed: {0}. Original exception: {1}".format(
                 response_body, original_exception
@@ -47,13 +47,13 @@ class ParseResponseError(SlackClientError, ValueError):
 
 
 class SlackConnectionError(SlackClientError):
-    def __init__(self, message='', reply=None):
+    def __init__(self, message='', reply=None) -> None:
         super(SlackConnectionError, self).__init__(message)
         self.reply = reply
 
 
 class SlackLoginError(SlackClientError):
-    def __init__(self, message='', reply=None):
+    def __init__(self, message='', reply=None) -> None:
         super(SlackLoginError, self).__init__(message)
         self.reply = reply
 
