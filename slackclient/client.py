@@ -35,7 +35,7 @@ from websocket._exceptions import WebSocketConnectionClosedException
 
 
 class SlackRequest:
-    def __init__(self, proxies=None):
+    def __init__(self, proxies: Optional[Dict[str,str]] = None) -> None:
         self.proxies = proxies
 
     def do(self, token: str, request: str, post_data: Dict[str,str], timeout: Optional[float], files: Optional[Dict]):
