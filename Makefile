@@ -12,7 +12,6 @@ test: lint
 install:
 	#Install slackclient
 	install -d $${DESTDIR:-/}/usr/share/localslackirc/slackclient/
-	install -m644 slackclient/slackrequest.py $${DESTDIR:-/}/usr/share/localslackirc/slackclient/
 	install -m644 slackclient/exceptions.py $${DESTDIR:-/}/usr/share/localslackirc/slackclient/
 	install -m644 slackclient/client.py $${DESTDIR:-/}/usr/share/localslackirc/slackclient/
 	install -m644 slackclient/__init__.py $${DESTDIR:-/}/usr/share/localslackirc/slackclient/
@@ -37,7 +36,6 @@ dist:
 		localslackirc/slackclient/__init__.py \
 		localslackirc/slackclient/client.py \
 		localslackirc/slackclient/exceptions.py \
-		localslackirc/slackclient/slackrequest.py \
 		localslackirc/Makefile \
 		localslackirc/CHANGELOG \
 		localslackirc/LICENSE \
