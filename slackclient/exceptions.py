@@ -25,10 +25,7 @@ class SlackClientError(Exception):
     """
     Base exception for all errors raised by the SlackClient library
     """
-    def __init__(self, msg=None) -> None:
-        if msg is None:
-            # default error message
-            msg = "An error occurred in the SlackClient library"
+    def __init__(self, msg: str) -> None:
         super(SlackClientError, self).__init__(msg)
 
 
