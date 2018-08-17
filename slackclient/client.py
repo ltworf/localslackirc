@@ -22,16 +22,52 @@
 # to the changes made since it was copied.
 
 from .exceptions import *
-from .slackrequest import SlackRequest
 
 import json
 from typing import Any, Dict, List, NamedTuple, Optional
 
 from requests.packages.urllib3.util.url import parse_url
+import requests
 from ssl import SSLWantReadError
 from typedload import load
 from websocket import create_connection, WebSocket
 from websocket._exceptions import WebSocketConnectionClosedException
+
+
+class SlackRequest:
+    def __init__(self, proxies: Optional[Dict[str,str]] = None) -> None:
+        self.proxies = proxies
+
+    def do(self, token: str, request: str, post_data: Dict[str,str], timeout: Optional[float], files: Optional[Dict]):
+        """
+        Perform a POST request to the Slack Web API
+
+        Args:
+            token (str): your authentication token
+            request (str): the method to call from the Slack API. For example: 'channels.list'
+            timeout (float): stop waiting for a response after a given number of seconds
+            post_data (dict): key/value arguments to pass for the request. For example:
+                {'channel': 'CABC12345'}
+        """
+        domain = "slack.com"
+
+        url = f'https://{domain}/api/{request}'
+
+        # Set user-agent and auth headers
+        headers = {
+            'user-agent': 'localslackirc',
+            'Authorization': f'Bearer {token}'
+        }
+
+        # Submit the request
+        return requests.post(
+            url,
+            headers=headers,
+            data=post_data,
+            timeout=timeout,
+            files=files,
+            proxies=self.proxies
+        )
 
 
 class Team(NamedTuple):
