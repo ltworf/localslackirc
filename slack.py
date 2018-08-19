@@ -217,6 +217,7 @@ class Slack:
         self.client = SlackClient(token)
         self._usercache = {}  # type: Dict[str, User]
         self._usermapcache = {}  # type: Dict[str, User]
+        self._imcache = {}  # type: Dict[str, str]
 
     def away(self, is_away: bool) -> None:
         """
@@ -396,28 +397,41 @@ class Slack:
         raise ResponseException(response)
 
     def send_message_to_user(self, user_id: str, msg: str):
+        """
+        Send a message to a user, pass the user id
+        """
 
-        # Find the channel id
-        found = False
-        for i in self.get_ims():
-            if i.user == user_id:
-                channel_id = i.id
-                found = True
-                break
+        # 1 to 1 chats are like channels, but use a dedicated API,
+        # so to deliver a message to them, a channel id is required.
+        # Those are called IM.
 
-        # A conversation does not exist, create one
-        if not found:
-            r = self.client.api_call(
-                "im.open",
-                return_im=True,
-                user=user_id,
-            )
-            response = load(r, Response)
-            if not response.ok:
-                raise ResponseException(response)
-            channel_id = r['channel']['id']
+        if user_id in self._imcache:
+            # channel id is cached
+            channel_id = self._imcache[user_id]
+        else:
+            # Find the channel id
+            found = False
+            # Iterate over all the existing conversations
+            for i in self.get_ims():
+                if i.user == user_id:
+                    channel_id = i.id
+                    found = True
+                    break
+            # A conversation does not exist, create one
+            if not found:
+                r = self.client.api_call(
+                    "im.open",
+                    return_im=True,
+                    user=user_id,
+                )
+                response = load(r, Response)
+                if not response.ok:
+                    raise ResponseException(response)
+                channel_id = r['channel']['id']
+
+            self._imcache[user_id] = channel_id
+
         self.send_message(channel_id, msg)
-
 
     def events_iter(self) -> Iterator[Optional[SlackEvent]]:
         """
