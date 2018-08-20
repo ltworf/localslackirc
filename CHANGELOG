@@ -3,6 +3,7 @@
 * Improved debian packaging
 * Force correct IRC nickname
 * Send files
+* Faster query message send
 
 1.0
 * Initial release

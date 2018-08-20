@@ -345,7 +345,6 @@ class Client:
             )
 
     def slack_event(self, sl_ev):
-        #TODO handle p2p messages
         if isinstance(sl_ev, slack.MessageDelete):
             self._message(sl_ev, '[deleted]')
         elif isinstance(sl_ev, slack.Message):
