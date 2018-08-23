@@ -437,7 +437,7 @@ def main() -> None:
             poller.register(sl_client.fileno, select.POLLIN)
 
         # Main loop
-        timeout = 0.1
+        timeout = 7
         while True:
             s_event = poller.poll(timeout)  # type: List[Tuple[int,int]]
             sl_event = next(sl_events)
@@ -452,12 +452,10 @@ def main() -> None:
                     if i:
                         ircclient.command(i)
 
-            if sl_event:
+            while sl_event:
                 print(sl_event)
                 ircclient.slack_event(sl_event)
-                timeout = 0.1
-            else:
-                timeout = 7
+                sl_event = next(sl_events)
 
 if __name__ == '__main__':
     while True:
