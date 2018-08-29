@@ -198,6 +198,12 @@ class IM(NamedTuple):
     user: str
 
 
+class Join(NamedTuple):
+    user: str
+    channel: str
+    channel_type: str
+
+
 SlackEvent = Union[
     MessageDelete,
     MessageEdit,
@@ -479,6 +485,8 @@ class Slack:
                             yield ev
                     elif t == 'message' and subt == 'bot_message':
                         yield _loadwrapper(event, MessageBot)
+                    elif t == 'member_joined_channel':
+                        j = _loadwrapper(event, Join)
                     elif t == 'user_change':
                         # Changes in the user, drop it from cache
                         u = load(event['user'], User)
