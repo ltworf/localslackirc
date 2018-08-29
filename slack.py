@@ -226,6 +226,7 @@ class Slack:
         self._imcache = {}  # type: Dict[str, str]
         self._get_members_cache = {}  # type: Dict[str, Set[str]]
         self._get_members_cache_cursor = {}  # type: Dict[str, Optional[str]]
+        self._internalevents = []  # type: List[SlackEvent]
 
     def away(self, is_away: bool) -> None:
         """
@@ -467,6 +468,9 @@ class Slack:
         sleeptime = 1
 
         while True:
+            while self._internalevents:
+                yield self._internalevents.pop()
+
             try:
                 events = self.client.rtm_read()
             except:
