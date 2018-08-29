@@ -224,6 +224,8 @@ class Slack:
         self._usercache = {}  # type: Dict[str, User]
         self._usermapcache = {}  # type: Dict[str, User]
         self._imcache = {}  # type: Dict[str, str]
+        self._get_members_cache = {}  # type: Dict[str, Set[str]]
+        self._get_members_cache_cursor = {}  # type: Dict[str, Optional[str]]
 
     def away(self, is_away: bool) -> None:
         """
@@ -235,13 +237,23 @@ class Slack:
         if not response.ok:
             raise ResponseException(response)
 
-    @lru_cache()
-    def get_members(self, id_: str) -> List[str]:
-        r = self.client.api_call('conversations.members', channel=id_, limit=5000)
+    def get_members(self, id_: str) -> Set[str]:
+        cached = self._get_members_cache.get(id_, set())
+        cursor = self._get_members_cache_cursor.get(id_)
+        if cursor == '':
+            # The cursor is fully iterated
+            return cached
+        kwargs = {}
+        if cursor:
+            kwargs['cursor'] = cursor
+        r = self.client.api_call('conversations.members', channel=id_, limit=5000, **kwargs)
         response = load(r, Response)
-        if response.ok:
-            return load(r['members'], List[str])
-        raise ResponseException(response)
+        if not response.ok:
+            raise ResponseException(response)
+
+        self._get_members_cache[id_] = cached.union(load(r['members'], Set[str]))
+        self._get_members_cache_cursor[id_] = r.get('response_metadata', {}).get('next_cursor')
+        return self._get_members_cache[id_]
 
     @lru_cache()
     def channels(self) -> List[Channel]:
