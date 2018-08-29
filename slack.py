@@ -201,7 +201,6 @@ class IM(NamedTuple):
 class Join(NamedTuple):
     user: str
     channel: str
-    channel_type: str
 
 
 SlackEvent = Union[
