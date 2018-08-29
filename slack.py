@@ -209,6 +209,7 @@ SlackEvent = Union[
     Message,
     MessageBot,
     FileShared,
+    Join,
 ]
 
 
@@ -507,6 +508,7 @@ class Slack:
                         yield _loadwrapper(event, MessageBot)
                     elif t == 'member_joined_channel':
                         j = _loadwrapper(event, Join)
+                        self._get_members_cache[j.channel].add(j.user)
                     elif t == 'user_change':
                         # Changes in the user, drop it from cache
                         u = load(event['user'], User)
