@@ -238,6 +238,15 @@ class Slack:
             raise ResponseException(response)
 
     def get_members(self, id_: str) -> Set[str]:
+        """
+        Returns the list (as a set) of users in a channel.
+
+        It performs caching. Every time the function is called, a new batch is
+        requested, until all the users are cached, and then no new requests
+        are performed, and the same data is returned.
+
+        When events happen, the cache needs to be updated or cleared.
+        """
         cached = self._get_members_cache.get(id_, set())
         cursor = self._get_members_cache_cursor.get(id_)
         if cursor == '':
