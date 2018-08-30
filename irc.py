@@ -345,6 +345,22 @@ class Client:
                 msg
             )
 
+    def _joined(self, sl_ev: slack.Join) -> None:
+        """
+        Handle join events from slack, by sending a JOIN notification
+        to IRC.
+        """
+        user = self.sl_client.get_user(sl_ev.user)
+        if user.deleted:
+            return
+        channel = self.sl_client.get_channel(sl_ev.channel)
+        dest = b'#' + channel.name.encode('utf8')
+        if dest in self.parted_channels:
+            return
+        name = user.name.encode('utf8')
+        rname = user.real_name.encode('utf8')
+        self.s.send(b':%s!%s@127.0.0.1 JOIN :%s\n' % (name, rname, dest))
+
     def slack_event(self, sl_ev):
         if isinstance(sl_ev, slack.MessageDelete):
             self._message(sl_ev, '[deleted]')
@@ -358,6 +374,8 @@ class Client:
         elif isinstance(sl_ev, slack.FileShared):
             f = self.sl_client.get_file(sl_ev)
             self._message(f.announce())
+        elif isinstance(sl_ev, slack.Join):
+            self._joined(sl_ev)
 
     def command(self, cmd: bytes) -> None:
         if b' ' in cmd:
@@ -454,7 +472,8 @@ def main() -> None:
                         ircclient.command(i)
 
             while sl_event:
-                print(sl_event)
+                if not isinstance(sl_client, slack.Join):
+                    print(sl_event)
                 ircclient.slack_event(sl_event)
                 sl_event = next(sl_events)
 
