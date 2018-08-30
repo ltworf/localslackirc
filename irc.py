@@ -472,8 +472,7 @@ def main() -> None:
                         ircclient.command(i)
 
             while sl_event:
-                if not isinstance(sl_client, slack.Join):
-                    print(sl_event)
+                print(sl_event)
                 ircclient.slack_event(sl_event)
                 sl_event = next(sl_events)
 
