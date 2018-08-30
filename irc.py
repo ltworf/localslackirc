@@ -358,7 +358,7 @@ class Client:
         if dest in self.parted_channels:
             return
         name = user.name.encode('utf8')
-        rname = user.real_name.encode('utf8')
+        rname = user.real_name.replace(' ', '_').encode('utf8')
         self.s.send(b':%s!%s@127.0.0.1 JOIN :%s\n' % (name, rname, dest))
 
     def slack_event(self, sl_ev: slack.SlackEvent) -> None:
