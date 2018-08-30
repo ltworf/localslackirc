@@ -256,7 +256,7 @@ class Slack:
         kwargs = {}
         if cursor:
             kwargs['cursor'] = cursor
-        r = self.client.api_call('conversations.members', channel=id_, limit=5000, **kwargs)
+        r = self.client.api_call('conversations.members', channel=id_, limit=5000, **kwargs)  # type: ignore
         response = load(r, Response)
         if not response.ok:
             raise ResponseException(response)
