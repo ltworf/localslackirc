@@ -198,12 +198,18 @@ class IM(NamedTuple):
     user: str
 
 
+class Join(NamedTuple):
+    user: str
+    channel: str
+
+
 SlackEvent = Union[
     MessageDelete,
     MessageEdit,
     Message,
     MessageBot,
     FileShared,
+    Join,
 ]
 
 
@@ -218,6 +224,9 @@ class Slack:
         self._usercache = {}  # type: Dict[str, User]
         self._usermapcache = {}  # type: Dict[str, User]
         self._imcache = {}  # type: Dict[str, str]
+        self._get_members_cache = {}  # type: Dict[str, Set[str]]
+        self._get_members_cache_cursor = {}  # type: Dict[str, Optional[str]]
+        self._internalevents = []  # type: List[SlackEvent]
 
     def away(self, is_away: bool) -> None:
         """
@@ -229,13 +238,39 @@ class Slack:
         if not response.ok:
             raise ResponseException(response)
 
-    @lru_cache()
-    def get_members(self, id_: str) -> List[str]:
-        r = self.client.api_call('conversations.members', channel=id_, limit=5000)
+    def get_members(self, id_: str) -> Set[str]:
+        """
+        Returns the list (as a set) of users in a channel.
+
+        It performs caching. Every time the function is called, a new batch is
+        requested, until all the users are cached, and then no new requests
+        are performed, and the same data is returned.
+
+        When events happen, the cache needs to be updated or cleared.
+        """
+        cached = self._get_members_cache.get(id_, set())
+        cursor = self._get_members_cache_cursor.get(id_)
+        if cursor == '':
+            # The cursor is fully iterated
+            return cached
+        kwargs = {}
+        if cursor:
+            kwargs['cursor'] = cursor
+        r = self.client.api_call('conversations.members', channel=id_, limit=5000, **kwargs)  # type: ignore
         response = load(r, Response)
-        if response.ok:
-            return load(r['members'], List[str])
-        raise ResponseException(response)
+        if not response.ok:
+            raise ResponseException(response)
+
+        newusers = load(r['members'], Set[str])
+
+        # Generate all the Join events, if this is not the 1st iteration
+        if id_ in self._get_members_cache:
+            for i in newusers.difference(cached):
+                self._internalevents.append(Join(user=i, channel=id_))
+
+        self._get_members_cache[id_] = cached.union(newusers)
+        self._get_members_cache_cursor[id_] = r.get('response_metadata', {}).get('next_cursor')
+        return self._get_members_cache[id_]
 
     @lru_cache()
     def channels(self) -> List[Channel]:
@@ -440,6 +475,9 @@ class Slack:
         sleeptime = 1
 
         while True:
+            while self._internalevents:
+                yield self._internalevents.pop()
+
             try:
                 events = self.client.rtm_read()
             except:
@@ -479,6 +517,10 @@ class Slack:
                             yield ev
                     elif t == 'message' and subt == 'bot_message':
                         yield _loadwrapper(event, MessageBot)
+                    elif t == 'member_joined_channel':
+                        j = _loadwrapper(event, Join)
+                        self._get_members_cache[j.channel].add(j.user)
+                        yield j
                     elif t == 'user_change':
                         # Changes in the user, drop it from cache
                         u = load(event['user'], User)
