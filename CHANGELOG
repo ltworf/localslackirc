@@ -1,5 +1,8 @@
 1.2
 * Fixed issue with messages being shown with a delay
+* Notifications for user joins
+* Pagination for channels with several users
+* Do not hide errors in the main loop
 
 1.1
 * Added manpage
