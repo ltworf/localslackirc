@@ -439,25 +439,25 @@ def main() -> None:
                 'authentication, it\'s recommended to only allow local connections\n' \
                 'you can override this with -o')
 
-    if "PORT" in environ:
-        port = environ["PORT"]
+    if 'PORT' in environ:
+        port = int(environ['PORT'])
     else:
         port = args.port
 
-    if "TOKEN" in environ:
-        token = environ["TOKEN"]
+    if 'TOKEN' in environ:
+        token = environ['TOKEN']
     else:
         try:
             with open(args.tokenfile) as f:
                 token = f.readline().strip()
-        except FileNotFoundError:
+        except (FileNotFoundError, PermissionError):
             exit(f'Unable to open the token file {args.tokenfile}')
 
     sl_client = slack.Slack(token)
     sl_events = sl_client.events_iter()
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    serversocket.bind((args.ip, int(port)))
+    serversocket.bind((args.ip, port))
     serversocket.listen(1)
 
     poller = select.poll()

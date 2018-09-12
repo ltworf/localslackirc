@@ -214,7 +214,7 @@ SlackEvent = Union[
 
 
 class Slack:
-    def __init__(self, token) -> None:
+    def __init__(self, token: int) -> None:
         self.client = SlackClient(token)
         self._usercache = {}  # type: Dict[str, User]
         self._usermapcache = {}  # type: Dict[str, User]
