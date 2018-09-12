@@ -27,6 +27,7 @@ from typing import *
 from os import environ
 from os.path import expanduser
 from socket import gethostname
+import traceback
 
 import slack
 
@@ -497,5 +498,6 @@ if __name__ == '__main__':
             main()
         except KeyboardInterrupt:
             break
-        except:
+        except Exception as e:
+            traceback.print_last()
             pass
