@@ -451,7 +451,7 @@ def main() -> None:
             with open(args.tokenfile) as f:
                 token = f.readline().strip()
         except FileNotFoundError:
-            exit(f'Unable to open the token file {tokenfile}')
+            exit(f'Unable to open the token file {args.tokenfile}')
 
     sl_client = slack.Slack(token)
     sl_events = sl_client.events_iter()
