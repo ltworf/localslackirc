@@ -25,7 +25,7 @@ from typing import Any, Dict, List, Optional, Set, Union
 from websocket import create_connection, WebSocket
 from websocket._exceptions import WebSocketConnectionClosedException
 
-from slack import Channel, File, FileShared, IM, User
+from slack import Channel, File, FileShared, IM, SlackEvent, User
 
 
 CALL_TIMEOUT = 10
@@ -63,7 +63,7 @@ class Rocket:
         self.url = url
         self.token  = token
         self._call_id = 100
-        self._internalevents = []  # type: List[SlackEvent]
+        self._internalevents = []  # type: List[Dict[str, Any]]
         self._connect()
 
     def _update_channels(self) -> None:

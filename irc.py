@@ -30,6 +30,7 @@ from socket import gethostname
 import traceback
 
 import slack
+import rocket
 
 
 # How slack expresses mentioning users
