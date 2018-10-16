@@ -69,3 +69,7 @@ class Rocket:
         self._websocket.send(data2retard(
             {"msg":"method","method":"login","params":[{"resume": token}],"id":"1"}
         ))
+
+    @property
+    def fileno(self) -> Optional[int]:
+        return self._websocket.fileno()
