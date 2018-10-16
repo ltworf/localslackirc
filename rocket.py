@@ -19,12 +19,16 @@
 
 import json
 from ssl import SSLWantReadError
-from typing import Any, List, Optional, Set, Union
+from time import sleep, monotonic
+from typing import Any, Dict, List, Optional, Set, Union
 
 from websocket import create_connection, WebSocket
 from websocket._exceptions import WebSocketConnectionClosedException
 
 from slack import Channel, File, FileShared, IM, User
+
+
+CALL_TIMEOUT = 10
 
 
 def data2retard(data: Any) -> bytes:
@@ -58,9 +62,14 @@ class Rocket:
     def __init__(self, url: str, token: str) -> None:
         self.url = url
         self.token  = token
+        self._call_id = 100
+        self._internalevents = []  # type: List[SlackEvent]
         self._connect()
 
-    def _send_json(self, data: Any) -> None:
+    def _send_json(self, data: Dict[str, Any]) -> None:
+        """
+        Sends something raw over the websocket (normally a dictionary
+        """
         self._websocket.send(data2retard(data))
 
     def _connect(self) -> None:
@@ -78,9 +87,36 @@ class Rocket:
                 'support': ['1', 'pre1', 'pre2']
             }
         )
-        self._send_json(
-            {"msg":"method","method":"login","params":[{"resume": self.token}],"id":"1"}
-        )
+        self._call('login', [{"resume": self.token}], False)
+
+
+    def _call(self, method: str, params: List[Any], wait_return: bool) -> Optional[Any]:
+        """
+        Does a remote call.
+
+        if wait_return is true, it will wait for the response and
+        return it. Otherwise the response will be ignored.
+        """
+        self._call_id += 1
+        data = {
+            'msg':'method',
+            'method': method,
+            'params': params,
+            'id': str(self._call_id),
+        }
+        self._send_json(data)
+
+        if wait_return:
+            initial = monotonic()
+            while initial + CALL_TIMEOUT > monotonic():
+                r = self._read(str(self._call_id))
+                if r:
+                    return r
+                sleep(0.05)
+            raise TimeoutError()
+        else:
+            return None
+
 
     def away(self, is_away: bool) -> None:
         raise NotImplemented()
@@ -128,18 +164,36 @@ class Rocket:
     def fileno(self) -> Optional[int]:
         return self._websocket.fileno()
 
+    def _read(self, event_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        try:
+            _, raw_data = self._websocket.recv_data()
+        except SSLWantReadError:
+            return None
+        except:
+            self._connect()
+            return None
+        data = retard2data(raw_data)
+
+        if data is not None and event_id is not None:
+            if data.get('msg') == 'result' and data.get('id') == event_id:
+                return data
+            else:
+                self._internalevents.append(data)
+                return None
+        else:
+            return data
+
+
     def events_iter(self): # -> Iterator[Optional[SlackEvent]]:
         while True:
-            try:
-                _, raw_data = self._websocket.recv_data()
-            except SSLWantReadError:
-                yield None
-                continue
-            except:
-                self._connect()
+            if self._internalevents:
+                yield self._internalevents.pop()
                 continue
 
-            data = retard2data(raw_data)
+            data = self._read()
+            if not data:
+                yield None
+                continue
 
             # Handle the stupid ping thing directly here
             if data == {'msg': 'ping'}:
