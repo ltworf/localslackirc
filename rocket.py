@@ -56,6 +56,9 @@ class Rocket:
         self.token  = token
         self._connect()
 
+    def _send_json(self, data: Any) -> None:
+        self._websocket.send(data2retard(data))
+
     def _connect(self) -> None:
         self._websocket = create_connection(
             self.url,
@@ -64,16 +67,16 @@ class Rocket:
             ]
         )
         self._websocket.sock.setblocking(0)
-        self._websocket.send(data2retard(
+        self._send_json(
             {
                 'msg': 'connect',
                 'version': '1',
                 'support': ['1', 'pre1', 'pre2']
             }
-        ))
-        self._websocket.send(data2retard(
+        )
+        self._send_json(
             {"msg":"method","method":"login","params":[{"resume": self.token}],"id":"1"}
-        ))
+        )
 
     @property
     def fileno(self) -> Optional[int]:
