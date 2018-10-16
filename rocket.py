@@ -78,3 +78,9 @@ class Rocket:
     @property
     def fileno(self) -> Optional[int]:
         return self._websocket.fileno()
+
+    def events_iter(self): # -> Iterator[Optional[SlackEvent]]:
+        while True:
+            _, raw_data = self._websocket.recv_data()
+            data = retard2data(raw_data)
+            yield data
