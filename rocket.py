@@ -80,6 +80,48 @@ class Rocket:
             {"msg":"method","method":"login","params":[{"resume": self.token}],"id":"1"}
         )
 
+    def away(self, is_away: bool) -> None:
+        raise NotImplemented()
+
+    def get_members(self, id_: str) -> Set[str]:
+        raise NotImplemented()
+
+    def channels(self) -> List[Channel]:
+        raise NotImplemented()
+
+    def get_channel(self, id_: str) -> Channel:
+        raise NotImplemented()
+
+    def get_channel_by_name(self, name: str) -> Channel:
+        raise NotImplemented()
+
+    def get_ims(self) -> List[IM]:
+        raise NotImplemented()
+
+    def get_user_by_name(self, name: str) -> User:
+        raise NotImplemented()
+
+    def get_usernames(self) -> List[str]:
+        raise NotImplemented()
+
+    def prefetch_users(self) -> None:
+        raise NotImplemented()
+
+    def get_user(self, id_: str) -> User:
+        raise NotImplemented()
+
+    def get_file(self, f: Union[FileShared, str]) -> File:
+        raise NotImplemented()
+
+    def send_file(self, channel_id: str, filename: str) -> None:
+        raise NotImplemented()
+
+    def send_message(self, channel_id: str, msg: str) -> None:
+        raise NotImplemented()
+
+    def send_message_to_user(self, user_id: str, msg: str):
+        raise NotImplemented()
+
     @property
     def fileno(self) -> Optional[int]:
         return self._websocket.fileno()
