@@ -52,10 +52,15 @@ def retard2data(data: bytes) -> Optional[Any]:
 
 class Rocket:
     def __init__(self, url: str, token: str) -> None:
+        self.url = url
+        self.token  = token
+        self._connect()
+
+    def _connect(self) -> None:
         self._websocket = create_connection(
-            url,
+            self.url,
             headers=[
-                f'Cookie: rc_token={token}',
+                f'Cookie: rc_token={self.token}',
             ]
         )
         self._websocket.sock.setblocking(0)
@@ -67,7 +72,7 @@ class Rocket:
             }
         ))
         self._websocket.send(data2retard(
-            {"msg":"method","method":"login","params":[{"resume": token}],"id":"1"}
+            {"msg":"method","method":"login","params":[{"resume": self.token}],"id":"1"}
         ))
 
     @property
