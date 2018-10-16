@@ -66,6 +66,10 @@ class Rocket:
         self._internalevents = []  # type: List[SlackEvent]
         self._connect()
 
+    def _update_channels(self) -> None:
+        data = self._call('rooms/get', [], True)
+        #TODO
+
     def _send_json(self, data: Dict[str, Any]) -> None:
         """
         Sends something raw over the websocket (normally a dictionary
@@ -176,7 +180,7 @@ class Rocket:
 
         if data is not None and event_id is not None:
             if data.get('msg') == 'result' and data.get('id') == event_id:
-                return data
+                return data['result']
             else:
                 self._internalevents.append(data)
                 return None
