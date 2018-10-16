@@ -18,6 +18,7 @@
 
 
 import json
+from ssl import SSLWantReadError
 from typing import Any, Optional
 
 from websocket import create_connection, WebSocket
@@ -84,6 +85,9 @@ class Rocket:
 
     def events_iter(self): # -> Iterator[Optional[SlackEvent]]:
         while True:
-            _, raw_data = self._websocket.recv_data()
+            try:
+                _, raw_data = self._websocket.recv_data()
+            except SSLWantReadError:
+                yield None
             data = retard2data(raw_data)
             yield data
