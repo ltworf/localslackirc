@@ -90,11 +90,15 @@ class Rocket:
                 _, raw_data = self._websocket.recv_data()
             except SSLWantReadError:
                 yield None
+                continue
+            except:
+                self._connect()
+                continue
+
             data = retard2data(raw_data)
 
             # Handle the stupid ping thing directly here
             if data == {'msg': 'ping'}:
                 self._send_json({'msg': 'pong'})
-                yield None
                 continue
             yield data
