@@ -178,15 +178,21 @@ class Rocket:
             return None
         data = retard2data(raw_data)
 
+        # Handle the stupid ping thing directly here
+        if data == {'msg': 'ping'}:
+            self._send_json({'msg': 'pong'})
+            return None
+
+        # Search for results of function calls
         if data is not None and event_id is not None:
             if data.get('msg') == 'result' and data.get('id') == event_id:
                 return data['result']
             else:
+                # Not the needed item, append it there so it will be returned by the iterator later
                 self._internalevents.append(data)
                 return None
         else:
             return data
-
 
     def events_iter(self): # -> Iterator[Optional[SlackEvent]]:
         while True:
@@ -199,8 +205,4 @@ class Rocket:
                 yield None
                 continue
 
-            # Handle the stupid ping thing directly here
-            if data == {'msg': 'ping'}:
-                self._send_json({'msg': 'pong'})
-                continue
             yield data
