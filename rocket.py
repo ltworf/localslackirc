@@ -20,6 +20,9 @@
 import json
 from typing import Any, Optional
 
+from websocket import create_connection, WebSocket
+from websocket._exceptions import WebSocketConnectionClosedException
+
 
 def data2retard(data: Any) -> bytes:
     '''
@@ -44,3 +47,25 @@ def retard2data(data: bytes) -> Optional[Any]:
         boh = json.loads(data[1:])
         assert len(boh) == 1
         return json.loads(boh[0])
+    assert False
+
+
+class Rocket:
+    def __init__(self, url: str, token: str) -> None:
+        self._websocket = create_connection(
+            url,
+            headers=[
+                f'Cookie: rc_token={token}',
+            ]
+        )
+        self._websocket.sock.setblocking(0)
+        self._websocket.send(data2retard(
+            {
+                'msg': 'connect',
+                'version': '1',
+                'support': ['1', 'pre1', 'pre2']
+            }
+        ))
+        self._websocket.send(data2retard(
+            {"msg":"method","method":"login","params":[{"resume": token}],"id":"1"}
+        ))
