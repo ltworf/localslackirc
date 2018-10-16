@@ -48,6 +48,7 @@ def retard2data(data: bytes) -> Optional[Any]:
         boh = json.loads(data[1:])
         assert len(boh) == 1
         return json.loads(boh[0])
+    print('Strange data: ', repr(data))
     assert False
 
 
