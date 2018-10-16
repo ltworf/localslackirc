@@ -37,10 +37,10 @@ def retard2data(data: bytes) -> Optional[Any]:
         return None
 
     # I have no clue of why that would be
-    if data[0] == b'o':
+    if data[0:1] == b'o':
         return None
 
-    if data[0] == b'a':
+    if data[0:1] == b'a':
         boh = json.loads(data[1:])
         assert len(boh) == 1
         return json.loads(boh[0])
