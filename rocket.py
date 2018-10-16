@@ -196,9 +196,8 @@ class Rocket:
 
     def events_iter(self): # -> Iterator[Optional[SlackEvent]]:
         while True:
-            if self._internalevents:
+            while self._internalevents:
                 yield self._internalevents.pop()
-                continue
 
             data = self._read()
             if not data:
