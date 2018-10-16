@@ -7,6 +7,10 @@ to it with whatever IRC client they prefer or a bouncer like
 ZNC and keep using slack from IRC even after they shut down
 their IRC gateway.
 
+Since at my workplace they waited for me to implement all this to decide to
+switch to rocketchat, it now has support for doing the same thing with
+rocketchat.
+
 
 Options to Obtain token
 ===============
