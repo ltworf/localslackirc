@@ -19,10 +19,12 @@
 
 import json
 from ssl import SSLWantReadError
-from typing import Any, Optional
+from typing import Any, List, Optional, Set, Union
 
 from websocket import create_connection, WebSocket
 from websocket._exceptions import WebSocketConnectionClosedException
+
+from slack import Channel, File, FileShared, IM, User
 
 
 def data2retard(data: Any) -> bytes:
