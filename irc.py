@@ -433,6 +433,8 @@ def main() -> None:
     parser.add_argument('-o', '--override', action='store_true',
                                 dest='overridelocalip', required=False,
                                 help='allow non 127. addresses, this is potentially dangerous')
+    parser.add_argument('--rc-url', type=str, action='store', dest='rc_url', default=None, required=False,
+                                help='The rocketchat URL. Setting this changes the mode from slack to rocketchat')
 
     args = parser.parse_args()
     # Exit if their chosden ip isn't local. User can override with -o if they so dare
@@ -455,7 +457,10 @@ def main() -> None:
         except (FileNotFoundError, PermissionError):
             exit(f'Unable to open the token file {args.tokenfile}')
 
-    sl_client = slack.Slack(token)
+    if args.rc_url:
+        sl_client = rocket.Rocket(args.rc_url, token)  # type: Union[slack.Slack, rocket.Rocket]
+    else:
+        sl_client = slack.Slack(token)
     sl_events = sl_client.events_iter()
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
