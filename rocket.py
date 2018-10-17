@@ -19,13 +19,14 @@
 
 import json
 from ssl import SSLWantReadError
+from struct import Struct
 from time import sleep, monotonic
 from typing import Any, Dict, List, Optional, Set, Union
 
 from websocket import create_connection, WebSocket
 from websocket._exceptions import WebSocketConnectionClosedException
 
-from slack import Channel, File, FileShared, IM, SlackEvent, User
+from slack import Channel, File, FileShared, IM, SlackEvent, Topic, User
 
 
 CALL_TIMEOUT = 10
@@ -58,17 +59,33 @@ def retard2data(data: bytes) -> Optional[Any]:
     assert False
 
 
+class ChannelType(Struct):
+    CHANNEL = 'p'
+    QUERY = 'd'
+    #TODO = 'c'
+
 class Rocket:
     def __init__(self, url: str, token: str) -> None:
         self.url = url
         self.token  = token
         self._call_id = 100
         self._internalevents = []  # type: List[Dict[str, Any]]
+        self._channels = []  # type: List[Channel]
+
         self._connect()
 
     def _update_channels(self) -> None:
-        data = self._call('rooms/get', [], True)
-        #TODO
+        data = self._call('rooms/get', [], True)  # type: List[Dict[str, Any]]
+        self._channels.clear()
+
+        for i in data:
+            if i.get('t') == ChannelType.CHANNEL:
+                self._channels.append(Channel(
+                    id=i['_id'],
+                    name_normalized=i['fname'],
+                    purpose=Topic(i.get('topic', '')),
+                    topic=Topic(i.get('topic', '')),
+                ))
 
     def _send_json(self, data: Dict[str, Any]) -> None:
         """
@@ -92,6 +109,7 @@ class Rocket:
             }
         )
         self._call('login', [{"resume": self.token}], False)
+        self._update_channels()
 
 
     def _call(self, method: str, params: List[Any], wait_return: bool) -> Optional[Any]:
@@ -129,13 +147,19 @@ class Rocket:
         raise NotImplemented()
 
     def channels(self) -> List[Channel]:
-        raise NotImplemented()
+        return self._channels
 
     def get_channel(self, id_: str) -> Channel:
-        raise NotImplemented()
+        for i in self._channels:
+            if i.id == id_:
+                return i
+        raise KeyError()
 
     def get_channel_by_name(self, name: str) -> Channel:
-        raise NotImplemented()
+        for i in self._channels:
+            if i.name == name:
+                return i
+        raise KeyError()
 
     def get_ims(self) -> List[IM]:
         raise NotImplemented()
