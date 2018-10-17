@@ -240,7 +240,14 @@ class Rocket:
         raise NotImplemented()
 
     def send_message(self, channel_id: str, msg: str) -> None:
-        raise NotImplemented()
+        self._call_id += 1
+        self._call('sendMessage', [
+            {
+                '_id': str(self._call_id),
+                'msg': msg,
+                'rid': channel_id,
+            }
+        ], False)
 
     def send_message_to_user(self, user_id: str, msg: str):
         raise NotImplemented()
