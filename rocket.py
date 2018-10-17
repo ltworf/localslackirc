@@ -27,7 +27,7 @@ from websocket import create_connection, WebSocket
 from websocket._exceptions import WebSocketConnectionClosedException
 from typedload import load
 
-from slack import Channel, File, FileShared, IM, SlackEvent, Topic, User
+from slack import Channel, File, FileShared, IM, Message, Profile, SlackEvent, Topic, User
 from slackclient.client import Team, Self, LoginInfo
 
 CALL_TIMEOUT = 10
@@ -74,6 +74,7 @@ class Rocket:
         self._call_id = 100
         self._internalevents = []  # type: List[Dict[str, Any]]
         self._channels = []  # type: List[Channel]
+        self._users = {}  # type: Dict[str, User]
 
         self._connect()
 
@@ -180,7 +181,7 @@ class Rocket:
         raise NotImplemented()
 
     def get_members(self, id_: str) -> Set[str]:
-        return set() #FIXME
+        return set(self.get_usernames()) #FIXME
         raise NotImplemented()
 
     def channels(self) -> List[Channel]:
@@ -202,16 +203,23 @@ class Rocket:
         raise NotImplemented()
 
     def get_user_by_name(self, name: str) -> User:
-        raise NotImplemented()
+        for i in self._users.values():
+            if i.name == name:
+                return i
+        raise KeyError()
 
     def get_usernames(self) -> List[str]:
-        raise NotImplemented()
+        names = set()
+        for i in self._users.values():
+            names.add(i.name)
+        return list(names)
 
     def prefetch_users(self) -> None:
-        pass
+        # Subscribe to users changes
+        self._send_json({'id': 'aaaaaaaaaaaa', 'msg': 'sub', 'name': 'activeUsers', 'params': []})
 
     def get_user(self, id_: str) -> User:
-        raise NotImplemented()
+        return self._users[id_]
 
     def get_file(self, f: Union[FileShared, str]) -> File:
         raise NotImplemented()
@@ -257,12 +265,39 @@ class Rocket:
 
     def events_iter(self): # -> Iterator[Optional[SlackEvent]]:
         while True:
-            while self._internalevents:
-                yield self._internalevents.pop()
+            if self._internalevents:
+                data = self._internalevents.pop()
+            else:
+                data = self._read()
 
-            data = self._read()
             if not data:
                 yield None
                 continue
 
-            yield data
+            r = None
+            print('Scanning ', data)
+            if not isinstance(data, dict):
+                continue
+            if data.get('msg') == 'changed' and data.get('collection') == 'stream-room-messages': # New message
+                try:
+                    r = Message(
+                        channel=data['fields']['rid'],
+                        user=data['fields']['u']['_id'],
+                        text=data['fields']['msg'],
+                    )
+                except:
+                    pass
+            elif data.get('msg') == 'added' and data.get('collection') == 'users': # User
+                self._users[data['id']] = User(
+                    id=data['id'],
+                    name=data['fields']['username'],
+                    profile=Profile(
+                        real_name=data['fields'].get('name', 'noname'),
+                    )
+                )
+                continue
+
+            if r is None:
+                print('Not handled: ', data)
+            else:
+                yield r
