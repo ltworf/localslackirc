@@ -65,7 +65,7 @@ def retard2data(data: bytes) -> Optional[Any]:
 class ChannelType(Struct):
     CHANNEL = 'p'
     QUERY = 'd'
-    #TODO = 'c'
+    PUBLIC_CHANNEL = 'c'
 
 class Rocket:
     def __init__(self, url: str, token: str) -> None:
@@ -109,7 +109,7 @@ class Rocket:
             )
 
             # If it's a real channel
-            if i.get('t') == ChannelType.CHANNEL:
+            if i.get('t') in {ChannelType.CHANNEL, ChannelType.PUBLIC_CHANNEL}:
                 self._channels.append(Channel(
                     id=i['_id'],
                     name_normalized=i['fname'],
