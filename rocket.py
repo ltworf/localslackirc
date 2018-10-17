@@ -98,6 +98,24 @@ class Rocket:
         self._channels.clear()
 
         for i in data:
+            # Subscribe to it
+            self._send_json(
+                {
+                    'msg': 'sub',
+                    'id': 'b',
+                    'name': 'stream-room-messages',
+                    'params': [
+                        i['_id'],
+                        {
+                            'useCollection': False,
+                            'args':[]
+                        }
+                    ]
+                }
+            )
+
+
+            # If it's a real channel
             if i.get('t') == ChannelType.CHANNEL:
                 self._channels.append(Channel(
                     id=i['_id'],
