@@ -250,8 +250,11 @@ class Client:
             return
 
         for i in self.sl_client.get_members(channel.id):
-            user = self.sl_client.get_user(i)
-            self._sendreply(Replies.RPL_WHOREPLY, '0 %s' % user.real_name, [name, user.name, '127.0.0.1', self.hostname, user.name, 'H'])
+            try:
+                user = self.sl_client.get_user(i)
+                self._sendreply(Replies.RPL_WHOREPLY, '0 %s' % user.real_name, [name, user.name, '127.0.0.1', self.hostname, user.name, 'H'])
+            except:
+                pass
         self._sendreply(Replies.RPL_ENDOFWHO, 'End of WHO list', [name])
 
     def sendmsg(self, from_: bytes, to: bytes, message: bytes) -> None:
