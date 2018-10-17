@@ -299,12 +299,13 @@ class Rocket:
             print('Scanning ', data)
             if not isinstance(data, dict):
                 continue
+
             if data.get('msg') == 'changed' and data.get('collection') == 'stream-room-messages': # New message
                 try:
                     r = Message(
-                        channel=data['fields']['rid'],
-                        user=data['fields']['u']['_id'],
-                        text=data['fields']['msg'],
+                        channel=data['fields']['args'][0]['rid'],
+                        user=data['fields']['args'][0]['u']['_id'],
+                        text=data['fields']['args'][0]['msg'],
                     )
                 except:
                     pass
