@@ -27,7 +27,7 @@ from websocket import create_connection, WebSocket
 from websocket._exceptions import WebSocketConnectionClosedException
 from typedload import load
 
-from slack import Channel, File, FileShared, IM, Message, MessageEdit, Profile, SlackEvent, Topic, User
+from slack import Channel, File, FileShared, IM, Message, Profile, SlackEvent, Topic, User
 from slackclient.client import Team, Self, LoginInfo
 
 CALL_TIMEOUT = 10
@@ -109,17 +109,10 @@ class Rocket:
             )
 
             # If it's a real channel
-            if i.get('t') == ChannelType.CHANNEL:
+            if i.get('t') in {ChannelType.CHANNEL, ChannelType.PUBLIC_CHANNEL}:
                 self._channels.append(Channel(
                     id=i['_id'],
                     name_normalized=i['fname'],
-                    purpose=Topic(i.get('topic', '')),
-                    topic=Topic(i.get('topic', '')),
-                ))
-            elif i.get('t') == ChannelType.PUBLIC_CHANNEL:
-                self._channels.append(Channel(
-                    id=i['_id'],
-                    name_normalized=i['name'],
                     purpose=Topic(i.get('topic', '')),
                     topic=Topic(i.get('topic', '')),
                 ))
@@ -314,11 +307,6 @@ class Rocket:
                         user=data['fields']['args'][0]['u']['_id'],
                         text=data['fields']['args'][0]['msg'],
                     )
-                    if 'editedBy' in data['fields']['args'][0]:
-                        r = MessageEdit(
-                            previous=Message(channel=r.channel, user=r.user, text=''),
-                            current=r
-                        )
                 except:
                     pass
             elif data.get('msg') == 'added' and data.get('collection') == 'users': # User
