@@ -99,21 +99,14 @@ class Rocket:
 
         for i in data:
             # Subscribe to it
-            self._send_json(
-                {
-                    'msg': 'sub',
-                    'id': 'b',
-                    'name': 'stream-room-messages',
-                    'params': [
-                        i['_id'],
-                        {
-                            'useCollection': False,
-                            'args':[]
-                        }
-                    ]
-                }
+            self._subscribe('stream-room-messages', [
+                            i['_id'],
+                            {
+                                'useCollection': False,
+                                'args':[]
+                            }
+                        ]
             )
-
 
             # If it's a real channel
             if i.get('t') == ChannelType.CHANNEL:
@@ -148,6 +141,25 @@ class Rocket:
         self._call('login', [{"resume": self.token}], False)
         self._update_channels()
 
+    def _subscribe(self, name: str, params: List[Any]) -> bool:
+        self._call_id += 1
+        self._send_json(
+            {
+                'id': str(self._call_id),
+                'msg': 'sub',
+                'name': name,
+                'params': params,
+            }
+        )
+        initial = monotonic()
+        while initial + CALL_TIMEOUT > monotonic():
+            r = self._read(subs_id=str(self._call_id))
+            if r:
+                if r.get('msg') == 'ready':
+                    return True
+                return False
+            sleep(0.05)
+        raise TimeoutError()
 
     def _call(self, method: str, params: List[Any], wait_return: bool) -> Optional[Any]:
         """
@@ -216,7 +228,7 @@ class Rocket:
 
     def prefetch_users(self) -> None:
         # Subscribe to users changes
-        self._send_json({'id': 'aaaaaaaaaaaa', 'msg': 'sub', 'name': 'activeUsers', 'params': []})
+        self._subscribe('activeUsers', [])
 
     def get_user(self, id_: str) -> User:
         return self._users[id_]
@@ -237,7 +249,7 @@ class Rocket:
     def fileno(self) -> Optional[int]:
         return self._websocket.fileno()
 
-    def _read(self, event_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    def _read(self, event_id: Optional[str] = None, subs_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
         try:
             _, raw_data = self._websocket.recv_data()
         except SSLWantReadError:
@@ -253,9 +265,11 @@ class Rocket:
             return None
 
         # Search for results of function calls
-        if data is not None and event_id is not None:
+        if data is not None and (event_id is not None or subs_id is not None):
             if data.get('msg') == 'result' and data.get('id') == event_id:
                 return data['result']
+            elif data.get('subs') == [subs_id]:
+                return data
             else:
                 # Not the needed item, append it there so it will be returned by the iterator later
                 self._internalevents.append(data)
