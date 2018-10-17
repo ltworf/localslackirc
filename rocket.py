@@ -60,6 +60,7 @@ def retard2data(data: bytes) -> Optional[Any]:
     if data[0:1] == b'c':
         return load(json.loads(data[1:]), Tuple[int, str])
     print('Strange data: ', repr(data))
+    return None
 
 
 class ChannelType(Struct):
@@ -94,7 +95,9 @@ class Rocket:
         )
 
     def _update_channels(self) -> None:
-        data = self._call('rooms/get', [], True)  # type: List[Dict[str, Any]]
+        data = self._call('rooms/get', [], True)  # type: Optional[List[Dict[str, Any]]]
+        if not data:
+            raise Exception('No channel list was returned')
         self._channels.clear()
 
         for i in data:
@@ -302,7 +305,7 @@ class Rocket:
                 yield None
                 continue
 
-            r = None
+            r = None  # type: Optional[SlackEvent]
             print('Scanning ', data)
             if not isinstance(data, dict):
                 continue
