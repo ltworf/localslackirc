@@ -21,10 +21,11 @@ import json
 from ssl import SSLWantReadError
 from struct import Struct
 from time import sleep, monotonic
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from websocket import create_connection, WebSocket
 from websocket._exceptions import WebSocketConnectionClosedException
+from typedload import load
 
 from slack import Channel, File, FileShared, IM, SlackEvent, Topic, User
 from slackclient.client import Team, Self, LoginInfo
@@ -55,6 +56,9 @@ def retard2data(data: bytes) -> Optional[Any]:
         boh = json.loads(data[1:])
         assert len(boh) == 1
         return json.loads(boh[0])
+
+    if data[0:1] == b'c':
+        return load(json.loads(data[1:]), Tuple[int, str])
     print('Strange data: ', repr(data))
     assert False
 
