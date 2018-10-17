@@ -27,7 +27,7 @@ from websocket import create_connection, WebSocket
 from websocket._exceptions import WebSocketConnectionClosedException
 
 from slack import Channel, File, FileShared, IM, SlackEvent, Topic, User
-
+from slackclient.client import Team, Self, LoginInfo
 
 CALL_TIMEOUT = 10
 
@@ -73,6 +73,21 @@ class Rocket:
         self._channels = []  # type: List[Channel]
 
         self._connect()
+
+    @property
+    def login_info(self):
+        #TODO
+        return LoginInfo(
+            team=Team(
+                id='',
+                name='',
+                domain='',
+            ),
+            self=Self(
+                id='',
+                name='rchat_is_retarded',
+            ),
+        )
 
     def _update_channels(self) -> None:
         data = self._call('rooms/get', [], True)  # type: List[Dict[str, Any]]
