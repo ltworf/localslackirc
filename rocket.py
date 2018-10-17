@@ -60,7 +60,6 @@ def retard2data(data: bytes) -> Optional[Any]:
     if data[0:1] == b'c':
         return load(json.loads(data[1:]), Tuple[int, str])
     print('Strange data: ', repr(data))
-    assert False
 
 
 class ChannelType(Struct):
