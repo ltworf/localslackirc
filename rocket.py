@@ -309,6 +309,13 @@ class Rocket:
 
             if data.get('msg') == 'changed' and data.get('collection') == 'stream-room-messages': # New message
                 try:
+                    # If the sender is unknown, add it
+                    if data['fields']['args'][0]['u']['_id'] not in self._users:
+                        self._users[data['fields']['args'][0]['u']['_id']] = User(
+                            id=data['fields']['args'][0]['u']['_id'],
+                            name=data['fields']['args'][0]['u']['username'],
+                            profile=Profile(real_name='noname'),
+                        )
                     r = Message(
                         channel=data['fields']['args'][0]['rid'],
                         user=data['fields']['args'][0]['u']['_id'],
