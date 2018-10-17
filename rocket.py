@@ -181,6 +181,7 @@ class Rocket:
         raise NotImplemented()
 
     def get_members(self, id_: str) -> Set[str]:
+        return set() #FIXME
         raise NotImplemented()
 
     def channels(self) -> List[Channel]:
@@ -208,7 +209,7 @@ class Rocket:
         raise NotImplemented()
 
     def prefetch_users(self) -> None:
-        raise NotImplemented()
+        pass
 
     def get_user(self, id_: str) -> User:
         raise NotImplemented()
