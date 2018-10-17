@@ -89,7 +89,7 @@ class Rocket:
             ),
             self=Self(
                 id='',
-                name='rchat_is_retarded',
+                name='rchat_is_challenged',
             ),
         )
 
