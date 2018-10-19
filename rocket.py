@@ -248,8 +248,7 @@ class Rocket:
         return list(names)
 
     def prefetch_users(self) -> None:
-        # Subscribe to users changes
-        self._subscribe('activeUsers', [])
+        pass
 
     def get_user(self, id_: str) -> User:
         return self._users[id_]
@@ -342,15 +341,6 @@ class Rocket:
                         )
                 except:
                     pass
-            elif data.get('msg') == 'added' and data.get('collection') == 'users': # User
-                self._users[data['id']] = User(
-                    id=data['id'],
-                    name=data['fields']['username'],
-                    profile=Profile(
-                        real_name=data['fields'].get('name', 'noname'),
-                    )
-                )
-                continue
 
             if r is None:
                 print('Not handled: ', data)
