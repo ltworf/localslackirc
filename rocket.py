@@ -203,8 +203,19 @@ class Rocket:
         raise NotImplemented()
 
     def get_members(self, id_: str) -> Set[str]:
-        return set(self.get_usernames()) #FIXME
-        raise NotImplemented()
+        data = self._call('getUsersOfRoom', [id_ ,False], True)
+        try:
+            for i in data['records']:
+                if i['_id'] not in self._users:
+                    self._users[i['_id']] = User(
+                        id=i['_id'],
+                        name=i['username'],
+                        profile=Profile(real_name=i.get('name', 'noname')),
+                    )
+        except:
+            print('Fucked up data: ', data)
+            raise
+        return {i['_id'] for i in data['records']}
 
     def channels(self) -> List[Channel]:
         return self._channels
