@@ -273,34 +273,14 @@ class Slack:
         Returns the list of slack channels
         """
         result = []  # type: List[Channel]
-        r = self.client.api_call("channels.list", exclude_archived=True, exclude_members=True)
+        r = self.client.api_call("conversations.list", exclude_archived=True,
+                types='public_channel,private_channel,mpim', limit=1000)
         response = load(r, Response)
         if response.ok:
-            result.extend(load(r['channels'], List[Channel]))
+            return load(r['channels'], List[Channel])
         else:
             raise ResponseException(response)
 
-        # Multiparty IM appear as both groups and mpim.
-        # Fetch MPIM first, to exclude them in the list of groups.
-        r = self.client.api_call("mpim.list", exclude_archived=True, exclude_members=True)
-        response = load(r, Response)
-        if response.ok:
-            mpims = load(r['groups'], List[Channel])
-            result.extend(mpims)
-            mpim_ids = [mpim.id for mpim in mpims]
-        else:
-            raise ResponseException(response)
-
-        r = self.client.api_call("groups.list", exclude_archived=True, exclude_members=True)
-        response = load(r, Response)
-        if response.ok:
-            result.extend([
-                group for group in load(r['groups'], List[Channel])
-                if group.id not in mpim_ids
-            ])
-        else:
-            raise ResponseException(response)
-        return result
 
     @lru_cache()
     def get_channel(self, id_: str) -> Channel:
