@@ -481,7 +481,7 @@ def main() -> None:
             poller.register(sl_client.fileno, select.POLLIN)
 
         # Main loop
-        timeout = 7
+        timeout = 2
         while True:
             s_event = poller.poll(timeout)  # type: List[Tuple[int,int]]
             sl_event = next(sl_events)
