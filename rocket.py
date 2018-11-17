@@ -18,6 +18,7 @@
 
 
 import json
+from functools import lru_cache
 from ssl import SSLWantReadError
 from struct import Struct
 from time import sleep, monotonic
@@ -202,6 +203,7 @@ class Rocket:
     def away(self, is_away: bool) -> None:
         raise NotImplemented()
 
+    @lru_cache()
     def get_members(self, id_: str) -> Set[str]:
         data = self._call('getUsersOfRoom', [id_ ,False], True)
         try:
