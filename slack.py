@@ -151,13 +151,14 @@ class File(NamedTuple):
     mimetype: Optional[str] = None
     channels: List[str] = list()
     groups: List[str] = list()
+    ims: List[str] = list()
 
     def announce(self) -> Message:
         """
         Returns a message to announce this file.
         """
         return Message(
-            channel=(self.channels + self.groups).pop(),
+            channel=(self.channels + self.groups + self.ims).pop(),
             user=self.user,
             text='[file upload] %s\n%s %d bytes\n%s' % (
                 self.name,
