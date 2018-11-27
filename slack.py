@@ -319,11 +319,13 @@ class Slack:
         a user.
         """
         r = self.client.api_call(
-            "im.list",
+            "conversations.list",
+            exclude_archived=True,
+            types='im', limit=1000
         )
         response = load(r, Response)
         if response.ok:
-            return load(r['ims'], List[IM])
+            return load(r['channels'], List[IM])
         raise ResponseException(response)
 
     def get_user_by_name(self, name: str) -> User:
