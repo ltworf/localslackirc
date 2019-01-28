@@ -22,12 +22,12 @@ from functools import lru_cache
 from ssl import SSLWantReadError
 from enum import Enum
 from time import sleep, monotonic
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple, Union
 import uuid
 
 from websocket import create_connection, WebSocket
 from websocket._exceptions import WebSocketConnectionClosedException
-from typedload import load
+import typedload.dataloader
 
 from slack import Channel, File, FileShared, IM, Message, MessageEdit, Profile, SlackEvent, Topic, User
 from slackclient.client import Team, Self, LoginInfo
@@ -41,16 +41,20 @@ class ChannelType(Enum):
     PUBLIC_CHANNEL = 'c'
 
 
-class ChannelUser:
-    _id: str
+class ChannelUser(NamedTuple):
+    id_: str
     status: str
     username: str
     name: str =  'noname'
 
 
-class ChannelUsers:
+class ChannelUsers(NamedTuple):
     total: int
     records: List[ChannelUser]
+
+
+class DirectChannel(NamedTuple):
+    rid: str
 
 
 class Rocket:
@@ -61,6 +65,19 @@ class Rocket:
         self._internalevents = []  # type: List[Dict[str, Any]]
         self._channels = []  # type: List[Channel]
         self._users = {}  # type: Dict[str, User]
+
+        # WORKAROUND
+        # The NamedTuple module can't have a field called _id, so I rename it to id_
+        self.loader = typedload.dataloader.Loader()
+        index = self.loader.index(ChannelUsers)
+        _original_handler = self.loader.handlers[index][1]
+        def _namedtuplehandler(l: typedload.dataloader.Loader, d, t):
+            if '_id' in d:
+                d['id_'] = d['_id']
+                del d['_id']
+            return  _original_handler(l, d, t)
+        self.loader.handlers[index] = (self.loader.handlers[index][0], _namedtuplehandler)
+
 
         self._connect()
 
@@ -194,19 +211,16 @@ class Rocket:
 
     @lru_cache()
     def get_members(self, id_: str) -> Set[str]:
-        data = load(self._call('getUsersOfRoom', [id_, False], True), ChannelUsers)
-        try:
-            for i in data.records:
-                if i._id not in self._users:
-                    self._users[i._id] = User(
-                        id=i._id,
-                        name=i.username,
-                        profile=Profile(real_name=i.name),
-                    )
-        except:
-            print('Fucked up data: ', data)
-            raise
-        return {i['_id'] for i in data['records']}
+        data = self.loader.load(self._call('getUsersOfRoom', [id_, False], True), ChannelUsers)
+        print('<<<', data)
+        for i in data.records:
+            if i.id_ not in self._users:
+                self._users[i.id_] = User(
+                    id=i.id_,
+                    name=i.username,
+                    profile=Profile(real_name=i.name),
+                )
+        return {i.id_ for i in data.records}
 
     def channels(self) -> List[Channel]:
         return self._channels
@@ -263,12 +277,8 @@ class Rocket:
     def send_message_to_user(self, user_id: str, msg: str):
         self._call_id += 1
         u = self.get_user(user_id)
-        data = self._call('createDirectMessage', [u.name], True)
-        rid = data.get('rid')
-        if rid:
-            self.send_message(rid, msg)
-        else:
-            raise Exception('rchat did not create the direct chat')
+        data = self.loader.load(self._call('createDirectMessage', [u.name], True), DirectChannel)
+        self.send_message(data.rid, msg)
 
     @property
     def fileno(self) -> Optional[int]:
