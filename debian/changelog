@@ -9,7 +9,7 @@ localslackirc (1.2-1) unstable; urgency=medium
   * New upstream release
   * Bump Standards-Version to 4.3.0
 
- -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Tue, 21 Aug 2018 22:59:56 +0200
+ -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Sat, 26 Jan 2019 10:12:13 +0100
 
 localslackirc (1.1-1) unstable; urgency=low
 
