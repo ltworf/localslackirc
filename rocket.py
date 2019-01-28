@@ -211,8 +211,7 @@ class Rocket:
 
     @lru_cache()
     def get_members(self, id_: str) -> Set[str]:
-        data = self.loader.load(self._call('getUsersOfRoom', [id_, False], True), ChannelUsers)
-        print('<<<', data)
+        data = self.loader.load(self._call('getUsersOfRoom', [id_, True], True), ChannelUsers)
         for i in data.records:
             if i.id_ not in self._users:
                 self._users[i.id_] = User(
