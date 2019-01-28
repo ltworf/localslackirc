@@ -40,6 +40,19 @@ class ChannelType(Struct):
     QUERY = 'd'
     PUBLIC_CHANNEL = 'c'
 
+
+class ChannelUser:
+    _id: str
+    status: str
+    username: str
+    name: str =  'noname'
+
+
+class ChannelUsers:
+    total: int
+    records: List[ChannelUser]
+
+
 class Rocket:
     def __init__(self, url: str, token: str) -> None:
         self.url = url
@@ -178,14 +191,14 @@ class Rocket:
 
     @lru_cache()
     def get_members(self, id_: str) -> Set[str]:
-        data = self._call('getUsersOfRoom', [id_ ,False], True)
+        data = load(self._call('getUsersOfRoom', [id_, False], True), ChannelUsers)
         try:
-            for i in data['records']:
-                if i['_id'] not in self._users:
-                    self._users[i['_id']] = User(
-                        id=i['_id'],
-                        name=i['username'],
-                        profile=Profile(real_name=i.get('name', 'noname')),
+            for i in data.records:
+                if i._id not in self._users:
+                    self._users[i._id] = User(
+                        id=i._id,
+                        name=i.username,
+                        profile=Profile(real_name=i.name),
                     )
         except:
             print('Fucked up data: ', data)
