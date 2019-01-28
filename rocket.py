@@ -20,7 +20,7 @@
 import json
 from functools import lru_cache
 from ssl import SSLWantReadError
-from struct import Struct
+from enum import Enum
 from time import sleep, monotonic
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 import uuid
@@ -35,7 +35,7 @@ from slackclient.client import Team, Self, LoginInfo
 CALL_TIMEOUT = 10
 
 
-class ChannelType(Struct):
+class ChannelType(Enum):
     CHANNEL = 'p'
     QUERY = 'd'
     PUBLIC_CHANNEL = 'c'
