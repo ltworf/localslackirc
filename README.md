@@ -1,25 +1,24 @@
 localslackirc
 =============
 
-The idea of this project is to create a localhost IRC server that
-functions as a gateway for one user of slack, that can connect
-to it with whatever IRC client they prefer or a bouncer like
-ZNC and keep using slack from IRC even after they shut down
-their IRC gateway.
+The idea of this project is to create a localhost IRC server that functions as
+a gateway for one user of slack, that can connect to it with whatever IRC
+client they prefer or a bouncer like ZNC and keep using slack from IRC even
+after they shut down their IRC gateway.
 
 Since at my workplace they waited for me to implement all this to decide to
-switch to rocketchat, it now has support for doing the same thing with
-rocketchat.
+switch to Rocket.Chat (or retard chat, as I like to call it), it now has
+support for doing the same thing with Rocket.Chat.
 
 
-Options to Obtain token
-===============
+Options to Obtain a Slack token
+===============================
 
 * Retrieve a slack token from https://api.slack.com/docs/oauth-test-tokens
 
 Alternatively if this method fails you can get one from Slack's web client
 
-1) Instructions for chromium
+1) Instructions for Chromium
 
 * In your browser, go to "Inspect" (developer mode) on an empty page
 * Select the "Network" tab.
@@ -37,6 +36,13 @@ Alternatively if this method fails you can get one from Slack's web client
 * Select the 'WS' tab
 * Copy the 'token' parameter from the WebSocket connection URL.
 
+
+Obtain a Rocket.Chat token
+==========================
+
+Look for "Personal Access Tokens" in the settings and generate one there.
+
+You will need to pass your URL, like this `--rc-url wss://rchat.com/websocket`.
 
 
 Using Token
