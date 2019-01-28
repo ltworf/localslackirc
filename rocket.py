@@ -23,6 +23,7 @@ from ssl import SSLWantReadError
 from struct import Struct
 from time import sleep, monotonic
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
+import uuid
 
 from websocket import create_connection, WebSocket
 from websocket._exceptions import WebSocketConnectionClosedException
@@ -237,7 +238,7 @@ class Rocket:
         self._call_id += 1
         self._call('sendMessage', [
             {
-                '_id': str(self._call_id),
+                '_id': str(uuid.uuid1()),
                 'msg': msg,
                 'rid': channel_id,
             }
