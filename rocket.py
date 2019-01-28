@@ -111,7 +111,7 @@ class Rocket:
             {
                 'msg': 'connect',
                 'version': '1',
-                'support': ['1', 'pre1', 'pre2']
+                'support': ['1']
             }
         )
         self._call('login', [{"resume": self.token}], False)
