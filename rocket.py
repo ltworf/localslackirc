@@ -245,7 +245,14 @@ class Rocket:
         ], False)
 
     def send_message_to_user(self, user_id: str, msg: str):
-        raise NotImplemented()
+        self._call_id += 1
+        u = self.get_user(user_id)
+        data = self._call('createDirectMessage', [u.name], True)
+        rid = data.get('rid')
+        if rid:
+            self.send_message(rid, msg)
+        else:
+            raise Exception('rchat did not create the direct chat')
 
     @property
     def fileno(self) -> Optional[int]:
