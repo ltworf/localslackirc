@@ -102,11 +102,16 @@ class Rocket:
 
     def _send_json(self, data: Dict[str, Any]) -> None:
         """
-        Sends something raw over the websocket (normally a dictionary
+        Sends something raw over the websocket (normally a dictionary)
         """
         self._websocket.send(json.dumps(data).encode('utf8'))
 
     def _connect(self) -> None:
+        '''
+        Create the websocket
+        login
+        and update channels
+        '''
         self._websocket = create_connection(self.url)
         self._websocket.sock.setblocking(0)
         self._send_json(
