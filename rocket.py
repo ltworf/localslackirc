@@ -105,12 +105,7 @@ class Rocket:
         self._websocket.send(json.dumps(data).encode('utf8'))
 
     def _connect(self) -> None:
-        self._websocket = create_connection(
-            self.url,
-            headers=[
-                f'Cookie: rc_token={self.token}',
-            ]
-        )
+        self._websocket = create_connection(self.url)
         self._websocket.sock.setblocking(0)
         self._send_json(
             {
