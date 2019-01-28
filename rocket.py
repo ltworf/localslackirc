@@ -97,6 +97,8 @@ class Rocket:
                     purpose=Topic(i.get('topic', '')),
                     topic=Topic(i.get('topic', '')),
                 ))
+            else:
+                print('Unknown data %s' % repr(i))
 
     def _send_json(self, data: Dict[str, Any]) -> None:
         """
