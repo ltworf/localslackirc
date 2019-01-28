@@ -97,20 +97,23 @@ class Rocket:
             )
 
             # If it's a real channel
-            if i.get('t') == ChannelType.CHANNEL:
+            channel_type = ChannelType(i.get('t'))
+            if channel_type == ChannelType.CHANNEL:
                 self._channels.append(Channel(
                     id=i['_id'],
                     name_normalized=i['fname'],
                     purpose=Topic(i.get('topic', '')),
                     topic=Topic(i.get('topic', '')),
                 ))
-            elif i.get('t') == ChannelType.PUBLIC_CHANNEL:
+            elif channel_type == ChannelType.PUBLIC_CHANNEL:
                 self._channels.append(Channel(
                     id=i['_id'],
                     name_normalized=i['name'],
                     purpose=Topic(i.get('topic', '')),
                     topic=Topic(i.get('topic', '')),
                 ))
+            elif channel_type == ChannelType.QUERY:
+                pass
             else:
                 print('Unknown data %s' % repr(i))
 
