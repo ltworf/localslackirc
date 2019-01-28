@@ -1,5 +1,5 @@
 # localslackirc
-# Copyright (C) 2018 Salvo "LtWorf" Tomaselli
+# Copyright (C) 2018-2019 Salvo "LtWorf" Tomaselli
 #
 # localslackirc is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -32,36 +32,6 @@ from slack import Channel, File, FileShared, IM, Message, MessageEdit, Profile, 
 from slackclient.client import Team, Self, LoginInfo
 
 CALL_TIMEOUT = 10
-
-
-def data2retard(data: Any) -> bytes:
-    '''
-    Converts json data into the retarded format
-    used by rocketchat.
-    '''
-    return json.dumps([json.dumps(data)]).encode('ascii')
-
-
-def retard2data(data: bytes) -> Optional[Any]:
-    '''
-    Converts the even more retarded messages from rocket chat
-    '''
-    if len(data) == 0:
-        return None
-
-    # I have no clue of why that would be
-    if data[0:1] == b'o':
-        return None
-
-    if data[0:1] == b'a':
-        boh = json.loads(data[1:])
-        assert len(boh) == 1
-        return json.loads(boh[0])
-
-    if data[0:1] == b'c':
-        return load(json.loads(data[1:]), Tuple[int, str])
-    print('Strange data: ', repr(data))
-    return None
 
 
 class ChannelType(Struct):
@@ -132,7 +102,7 @@ class Rocket:
         """
         Sends something raw over the websocket (normally a dictionary
         """
-        self._websocket.send(data2retard(data))
+        self._websocket.send(json.dumps(data).encode('utf8'))
 
     def _connect(self) -> None:
         self._websocket = create_connection(
@@ -286,7 +256,7 @@ class Rocket:
         except:
             self._connect()
             return None
-        data = retard2data(raw_data)
+        data = json.loads(raw_data)
 
         # Handle the stupid ping thing directly here
         if data == {'msg': 'ping'}:
