@@ -288,6 +288,9 @@ class Rocket:
     def _read(self, event_id: Optional[str] = None, subs_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
         try:
             _, raw_data = self._websocket.recv_data()
+            if raw_data == b'\x03\xe8Normal closure':
+                print('Server triggered a disconnect. Reaconnecting')
+                raise Exception('Trigger reconnect')
         except SSLWantReadError:
             return None
         except:
