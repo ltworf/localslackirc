@@ -296,7 +296,13 @@ class Rocket:
         except:
             self._connect()
             return None
-        data = json.loads(raw_data)
+
+        try:
+            data = json.loads(raw_data)
+        except:
+            print(f'Failed to decode json: {repr(raw_data)}')
+            raise
+
 
         # Handle the stupid ping thing directly here
         if data == {'msg': 'ping'}:
