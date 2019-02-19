@@ -68,7 +68,7 @@ MPIM_HIDE_DELAY = datetime.timedelta(days=50)
 
 
 class Client:
-    def __init__(self, s, sl_client, *, nouserlist=False, autojoin=False):
+    def __init__(self, s, sl_client, *, nouserlist=False, autojoin=False, oldedits=False):
         self.nick = b''
         self.username = b''
         self.realname = b''
@@ -80,6 +80,7 @@ class Client:
 
         self.nouserlist = nouserlist
         self.autojoin = autojoin
+        self.oldedits = oldedits
 
     def _nickhandler(self, cmd: bytes) -> None:
         _, nick = cmd.split(b' ', 1)
@@ -375,7 +376,10 @@ class Client:
             self._message(sl_ev)
         elif isinstance(sl_ev, slack.MessageEdit):
             if sl_ev.is_changed:
-                self._message(sl_ev.diffmsg)
+                if self.oldedits:
+                    self._message(sl_ev.current, '[edited] ')
+                else:
+                    self._message(sl_ev.diffmsg)
         elif isinstance(sl_ev, slack.MessageBot):
             self._message(sl_ev, '[%s]' % sl_ev.username)
         elif isinstance(sl_ev, slack.FileShared):
@@ -439,9 +443,12 @@ def main() -> None:
                                 help='allow non 127. addresses, this is potentially dangerous')
     parser.add_argument('--rc-url', type=str, action='store', dest='rc_url', default=None, required=False,
                                 help='The rocketchat URL. Setting this changes the mode from slack to rocketchat')
+    parser.add_argument('-e', '--old-edits', action='store_true', dest='oldedits',
+                                default=False, required=False,
+                                help='Show old [edited] <message> instead of newer sed diff')
 
     args = parser.parse_args()
-    # Exit if their chosden ip isn't local. User can override with -o if they so dare
+    # Exit if their chosen ip isn't local. User can override with -o if they so dare
     if not args.ip.startswith('127') and not args.overridelocalip:
         exit('supplied ip isn\'t local\nlocalslackirc has no encryption or ' \
                 'authentication, it\'s recommended to only allow local connections\n' \
@@ -475,7 +482,7 @@ def main() -> None:
 
     while True:
         s, _ = serversocket.accept()
-        ircclient = Client(s, sl_client, nouserlist=args.nouserlist, autojoin=args.autojoin)
+        ircclient = Client(s, sl_client, nouserlist=args.nouserlist, autojoin=args.autojoin, oldedits=args.oldedits)
 
         poller.register(s.fileno(), select.POLLIN)
         if sl_client.fileno is not None:
