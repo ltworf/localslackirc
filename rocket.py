@@ -65,6 +65,7 @@ class Rocket:
         self._internalevents = []  # type: List[Dict[str, Any]]
         self._channels = []  # type: List[Channel]
         self._users = {}  # type: Dict[str, User]
+        self._id_prefix = 'lsi' + str(uuid.uuid1()) + '_'
 
         # WORKAROUND
         # The NamedTuple module can't have a field called _id, so I rename it to id_
@@ -77,8 +78,6 @@ class Rocket:
                 del d['_id']
             return  _original_handler(l, d, t)
         self.loader.handlers[index] = (self.loader.handlers[index][0], _namedtuplehandler)
-
-
         self._connect()
 
     @property
@@ -267,7 +266,7 @@ class Rocket:
         self._call_id += 1
         self._call('sendMessage', [
             {
-                '_id': str(uuid.uuid1()),
+                '_id': self._id_prefix + str(uuid.uuid1()),
                 'msg': msg,
                 'rid': channel_id,
             }
