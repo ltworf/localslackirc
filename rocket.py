@@ -43,9 +43,9 @@ class ChannelType(Enum):
 
 class ChannelUser(NamedTuple):
     id_: str
-    status: str
     username: str
     name: str =  'noname'
+    status: str = 'auto'
 
 
 class ChannelUsers(NamedTuple):
