@@ -18,7 +18,7 @@
 
 import datetime
 from functools import lru_cache
-from time import sleep
+from time import sleep, time
 from typing import *
 
 from slackclient import SlackClient
@@ -396,6 +396,18 @@ class Slack:
             return
         raise ResponseException(response)
 
+    def _triage_sent_by_self(self):
+        """
+        Clear all the old leftovers in
+        _sent_by_self
+        """
+        r = []
+        for i in self._sent_by_self:
+            if time() - i >= 10:
+                r.append(i)
+        for i in r:
+            self._sent_by_self.remove(i)
+
     def send_message(self, channel_id: str, msg: str) -> None:
         """
         Send a message to a channel or group or whatever
@@ -525,4 +537,5 @@ class Slack:
                         print(event)
                 except Exception as e:
                     print('Exception: %s' % e)
+            self._triage_sent_by_self()
             yield None
