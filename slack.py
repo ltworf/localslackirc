@@ -419,7 +419,7 @@ class Slack:
             as_user=True,
         )
         response = load(r, Response)
-        if response.ok:
+        if response.ok and response.ts:
             self._sent_by_self.add(response.ts)
             return
         raise ResponseException(response)
