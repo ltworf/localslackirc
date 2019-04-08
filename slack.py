@@ -57,6 +57,7 @@ class Response(NamedTuple):
     """
     ok: bool
     headers: Dict[str, str]
+    ts: Optional[float] = None
 
 
 class Topic(NamedTuple):
@@ -223,6 +224,7 @@ class Slack:
         self._get_members_cache = {}  # type: Dict[str, Set[str]]
         self._get_members_cache_cursor = {}  # type: Dict[str, Optional[str]]
         self._internalevents = []  # type: List[SlackEvent]
+        self._sent_by_self = set()  # type: Set[float]
 
     def away(self, is_away: bool) -> None:
         """
@@ -406,6 +408,7 @@ class Slack:
         )
         response = load(r, Response)
         if response.ok:
+            self._sent_by_self.add(response.ts)
             return
         raise ResponseException(response)
 
@@ -475,6 +478,11 @@ class Slack:
             for event in events:
                 t = event.get('type')
                 subt = event.get('subtype')
+
+                ts = float(event.get('ts', 0))
+                if ts in self._sent_by_self:
+                    self._sent_by_self.remove(ts)
+                    continue
 
                 try:
                     if t == 'message' and not subt:
