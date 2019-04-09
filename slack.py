@@ -205,7 +205,12 @@ class Join(NamedTuple):
     channel: str
 
 
+class TopicChange(NamedTuple):
+    topic: str
+    channel: str
+
 SlackEvent = Union[
+    TopicChange,
     MessageDelete,
     MessageEdit,
     Message,
@@ -232,6 +237,12 @@ class Slack:
         """
         status = 'away' if is_away else 'auto'
         r = self.client.api_call('users.setPresence', presence=status)
+        response = load(r, Response)
+        if not response.ok:
+            raise ResponseException(response)
+
+    def topic(self, channel: Channel, topic: str) -> None:
+        r = self.client.api_call('conversations.setTopic', channel=channel.id, topic=topic)
         response = load(r, Response)
         if not response.ok:
             raise ResponseException(response)
@@ -396,7 +407,7 @@ class Slack:
             return
         raise ResponseException(response)
 
-    def _triage_sent_by_self(self):
+    def _triage_sent_by_self(self) -> None:
         """
         Clear all the old leftovers in
         _sent_by_self
@@ -508,6 +519,8 @@ class Slack:
                             previous=load(event['previous_message'], Message),
                             current=load(event['message'], Message)
                         )
+                    elif t == 'message' and subt == 'group_topic':
+                        yield _loadwrapper(event, TopicChange)
                     elif t == 'message' and subt == 'message_deleted':
                         event['previous_message']['channel'] = event['channel']
                         ev = _loadwrapper(event['previous_message'], MessageDelete)

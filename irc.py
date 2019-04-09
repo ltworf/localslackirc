@@ -239,6 +239,11 @@ class Client:
         response = Replies.RPL_NOWAWAY if is_away else Replies.RPL_UNAWAY
         self._sendreply(response, 'Away status changed')
 
+    def _topichandler(self, cmd: bytes) -> None:
+        _, channel, topic = cmd.split(b' ', 2)
+        channel = self.sl_client.get_channel_by_name(channel.decode()[1:])
+        self.sl_client.topic(channel, topic.decode()[1:])
+
     def _whohandler(self, cmd: bytes) -> None:
         _, name = cmd.split(b' ', 1)
         if not name.startswith(b'#'):
@@ -381,6 +386,8 @@ class Client:
             self._message(f.announce())
         elif isinstance(sl_ev, slack.Join):
             self._joined(sl_ev)
+        elif isinstance(sl_ev, slack.TopicChange):
+            self._sendreply(Replies.RPL_TOPIC, sl_ev.topic, ['#' + self.sl_client.get_channel(sl_ev.channel).name])
 
     def command(self, cmd: bytes) -> None:
         if b' ' in cmd:
@@ -399,11 +406,11 @@ class Client:
             b'MODE': self._modehandler,
             b'PART': self._parthandler,
             b'AWAY': self._awayhandler,
+            b'TOPIC': self._topichandler,
             b'sendfile': self._sendfilehandler,
             #QUIT
             #CAP LS
             #USERHOST
-            #Unknown command:  b'TOPIC #cama :titolo del canale'
             #Unknown command:  b'whois TAMARRO'
         }
 
