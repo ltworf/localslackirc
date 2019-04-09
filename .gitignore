@@ -11,3 +11,4 @@ debian/localslackirc.prerm.debhelper
 debian/localslackirc.substvars
 debian/localslackirc/
 deb-pkg/
+*token

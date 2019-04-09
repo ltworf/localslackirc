@@ -303,7 +303,7 @@ class Rocket:
         # Search for results of function calls
         if data is not None and (event_id is not None or subs_id is not None):
             if data.get('msg') == 'result' and data.get('id') == event_id:
-                return data['result']
+                return data.get('result')
             elif data.get('subs') == [subs_id]:
                 return data
             else:

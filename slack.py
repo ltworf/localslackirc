@@ -208,6 +208,7 @@ class Join(NamedTuple):
 class TopicChange(NamedTuple):
     topic: str
     channel: str
+    user: str
 
 SlackEvent = Union[
     TopicChange,
