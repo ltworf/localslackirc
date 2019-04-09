@@ -205,7 +205,12 @@ class Join(NamedTuple):
     channel: str
 
 
+class TopicChange(NamedTuple):
+    topic: str
+    channel: str
+
 SlackEvent = Union[
+    TopicChange,
     MessageDelete,
     MessageEdit,
     Message,
@@ -514,6 +519,8 @@ class Slack:
                             previous=load(event['previous_message'], Message),
                             current=load(event['message'], Message)
                         )
+                    elif t == 'message' and subt == 'group_topic':
+                        yield _loadwrapper(event, TopicChange)
                     elif t == 'message' and subt == 'message_deleted':
                         event['previous_message']['channel'] = event['channel']
                         ev = _loadwrapper(event['previous_message'], MessageDelete)
