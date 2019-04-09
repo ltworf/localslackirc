@@ -386,6 +386,8 @@ class Client:
             self._message(f.announce())
         elif isinstance(sl_ev, slack.Join):
             self._joined(sl_ev)
+        elif isinstance(sl_ev, slack.TopicChange):
+            self._sendreply(Replies.RPL_TOPIC, sl_ev.topic, ['#' + self.sl_client.get_channel(sl_ev.channel).name])
 
     def command(self, cmd: bytes) -> None:
         if b' ' in cmd:
