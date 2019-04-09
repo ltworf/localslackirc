@@ -411,7 +411,6 @@ class Client:
             #QUIT
             #CAP LS
             #USERHOST
-            #Unknown command:  b'TOPIC #cama :titolo del canale'
             #Unknown command:  b'whois TAMARRO'
         }
 
