@@ -326,6 +326,13 @@ class Rocket:
             if not isinstance(data, dict):
                 continue
 
+            # Skip stuff sent by this client
+            try:
+                if data['fields']['args'][0]['_id'].startswith(self._id_prefix):
+                    continue
+            except:
+                pass
+
             if data.get('msg') == 'changed' and data.get('collection') == 'stream-room-messages': # New message
                 try:
                     # If the sender is unknown, add it
