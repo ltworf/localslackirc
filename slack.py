@@ -18,7 +18,7 @@
 
 import datetime
 from functools import lru_cache
-from time import sleep
+from time import sleep, time
 from typing import *
 
 from slackclient import SlackClient
@@ -57,6 +57,7 @@ class Response(NamedTuple):
     """
     ok: bool
     headers: Dict[str, str]
+    ts: Optional[float] = None
 
 
 class Topic(NamedTuple):
@@ -223,6 +224,7 @@ class Slack:
         self._get_members_cache = {}  # type: Dict[str, Set[str]]
         self._get_members_cache_cursor = {}  # type: Dict[str, Optional[str]]
         self._internalevents = []  # type: List[SlackEvent]
+        self._sent_by_self = set()  # type: Set[float]
 
     def away(self, is_away: bool) -> None:
         """
@@ -394,6 +396,18 @@ class Slack:
             return
         raise ResponseException(response)
 
+    def _triage_sent_by_self(self):
+        """
+        Clear all the old leftovers in
+        _sent_by_self
+        """
+        r = []
+        for i in self._sent_by_self:
+            if time() - i >= 10:
+                r.append(i)
+        for i in r:
+            self._sent_by_self.remove(i)
+
     def send_message(self, channel_id: str, msg: str) -> None:
         """
         Send a message to a channel or group or whatever
@@ -405,7 +419,8 @@ class Slack:
             as_user=True,
         )
         response = load(r, Response)
-        if response.ok:
+        if response.ok and response.ts:
+            self._sent_by_self.add(response.ts)
             return
         raise ResponseException(response)
 
@@ -476,6 +491,11 @@ class Slack:
                 t = event.get('type')
                 subt = event.get('subtype')
 
+                ts = float(event.get('ts', 0))
+                if ts in self._sent_by_self:
+                    self._sent_by_self.remove(ts)
+                    continue
+
                 try:
                     if t == 'message' and not subt:
                         yield _loadwrapper(event, Message)
@@ -517,4 +537,5 @@ class Slack:
                         print(event)
                 except Exception as e:
                     print('Exception: %s' % e)
+            self._triage_sent_by_self()
             yield None
