@@ -324,6 +324,19 @@ class Slack:
     def fileno(self) -> Optional[int]:
         return self.client.fileno
 
+    def get_im(self, im_id: str) -> Optional[IM]:
+        if not im_id.startswith('D'):
+            return None
+        for uid, imid in self._imcache.items():
+            if im_id == imid:
+                return IM(user=uid, id=imid)
+
+        for im in self.get_ims():
+            self._imcache[im.user] = im.id
+            if im.id == im_id:
+                return im;
+        return None
+
     def get_ims(self) -> List[IM]:
         """
         Returns a list of the IMs
@@ -509,7 +522,15 @@ class Slack:
 
                 try:
                     if t == 'message' and not subt:
-                        yield _loadwrapper(event, Message)
+                        msg = _loadwrapper(event, Message)
+
+                        # In private chats, pretend that my own messages
+                        # sent from another client actually come from
+                        # the other user, and prepend them with "I say: "
+                        im = self.get_im(msg.channel)
+                        if im and im.user != msg.user:
+                            msg = Message(user=im.user, text='I say: ' + msg.text, channel=im.id)
+                        yield msg
                     elif t == 'message' and subt == 'slackbot_response':
                         yield _loadwrapper(event, Message)
                     elif t == 'message' and subt == 'message_changed':
