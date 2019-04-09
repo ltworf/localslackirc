@@ -402,7 +402,7 @@ class Slack:
             return
         raise ResponseException(response)
 
-    def _triage_sent_by_self(self):
+    def _triage_sent_by_self(self) -> None:
         """
         Clear all the old leftovers in
         _sent_by_self
