@@ -433,7 +433,7 @@ class Slack:
         for i in r:
             self._sent_by_self.remove(i)
 
-    def send_message(self, channel_id: str, msg: str) -> None:
+    def send_message(self, channel_id: str, msg: str, action: bool) -> None:
         """
         Send a message to a channel or group or whatever
         """
@@ -449,7 +449,7 @@ class Slack:
             return
         raise ResponseException(response)
 
-    def send_message_to_user(self, user_id: str, msg: str):
+    def send_message_to_user(self, user_id: str, msg: str, action: bool):
         """
         Send a message to a user, pass the user id
         """
@@ -484,7 +484,7 @@ class Slack:
 
             self._imcache[user_id] = channel_id
 
-        self.send_message(channel_id, msg)
+        self.send_message(channel_id, msg, action)
 
     def events_iter(self) -> Iterator[Optional[SlackEvent]]:
         """

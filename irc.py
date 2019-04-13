@@ -203,13 +203,15 @@ class Client:
         if dest.startswith(b'#'):
             self.sl_client.send_message(
                 self.sl_client.get_channel_by_name(dest[1:].decode()).id,
-                message
+                message,
+                action,
             )
         else:
             try:
                 self.sl_client.send_message_to_user(
                     self.sl_client.get_user_by_name(dest.decode()).id,
-                    message
+                    message,
+                    action,
                 )
             except:
                 print('Impossible to find user ', dest)

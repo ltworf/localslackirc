@@ -265,7 +265,7 @@ class Rocket:
     def send_file(self, channel_id: str, filename: str) -> None:
         raise NotImplemented()
 
-    def send_message(self, channel_id: str, msg: str) -> None:
+    def send_message(self, channel_id: str, msg: str, action: bool) -> None:
         self._call_id += 1
         self._call('sendMessage', [
             {
@@ -275,11 +275,11 @@ class Rocket:
             }
         ], False)
 
-    def send_message_to_user(self, user_id: str, msg: str):
+    def send_message_to_user(self, user_id: str, msg: str, action: bool):
         self._call_id += 1
         u = self.get_user(user_id)
         data = self.loader.load(self._call('createDirectMessage', [u.name], True), DirectChannel)
-        self.send_message(data.rid, msg)
+        self.send_message(data.rid, msg, action)
 
     @property
     def fileno(self) -> Optional[int]:
