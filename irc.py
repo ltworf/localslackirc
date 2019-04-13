@@ -38,7 +38,7 @@ _MENTIONS_REGEXP = re.compile(r'<@([0-9A-Za-z]+)>')
 _CHANNEL_MENTIONS_REGEXP = re.compile(r'<#[A-Z0-9]+\|([A-Z0-9\-a-z]+)>')
 
 
-_SUBSTITUTIONS = [
+_SLACK_SUBSTITUTIONS = [
     ('&amp;', '&'),
     ('&gt;', '>'),
     ('&lt;', '<'),
@@ -63,23 +63,33 @@ class Replies(Enum):
     ERR_ERRONEUSNICKNAME = 432
 
 
+class Provider(Enum):
+    SLACK = 0
+    ROCKETCHAT = 1
+
+
 #: Inactivity days to hide a MPIM
 MPIM_HIDE_DELAY = datetime.timedelta(days=50)
 
 
 class Client:
-    def __init__(self, s, sl_client, *, nouserlist=False, autojoin=False):
+    def __init__(self, s, sl_client, nouserlist: bool, autojoin: bool, provider: Provider):
         self.nick = b''
         self.username = b''
         self.realname = b''
         self.parted_channels = set()  # type: Set[bytes]
         self.hostname = gethostname().encode('utf8')
 
+        self.provider = provider
         self.s = s
         self.sl_client = sl_client
-
         self.nouserlist = nouserlist
         self.autojoin = autojoin
+
+        if self.provider == Provider.SLACK:
+            self.substitutions = _SLACK_SUBSTITUTIONS
+        else:
+            self.substitutions: List[Tuple[str,str]] = []
 
     def _nickhandler(self, cmd: bytes) -> None:
         _, nick = cmd.split(b' ', 1)
@@ -274,13 +284,18 @@ class Client:
         Adds magic codes and various things to
         outgoing messages
         """
-        for i in _SUBSTITUTIONS:
+        for i in self.substitutions:
             msg = msg.replace(i[1], i[0])
-        msg = msg.replace('@here', '<!here>')
-        msg = msg.replace('@channel', '<!channel>')
-        msg = msg.replace('@yell', '<!channel>')
-        msg = msg.replace('@shout', '<!channel>')
-        msg = msg.replace('@attention', '<!channel>')
+        if self.provider == Provider.SLACK:
+            msg = msg.replace('@here', '<!here>')
+            msg = msg.replace('@channel', '<!channel>')
+            msg = msg.replace('@yell', '<!channel>')
+            msg = msg.replace('@shout', '<!channel>')
+            msg = msg.replace('@attention', '<!channel>')
+        elif self.provider == Provider.ROCKETCHAT:
+            msg = msg.replace('@yell', '@channel')
+            msg = msg.replace('@shout', '@channel')
+            msg = msg.replace('@attention', '@channel')
 
         # Extremely inefficient code to generate mentions
         # Just doing them client-side on the receiving end is too mainstream
@@ -288,7 +303,10 @@ class Client:
             if len(username) < 3: continue
             m = re.search(r'\b%s\b' % username, msg)
             if m:
-                msg = msg[0:m.start()] + '<@%s>' % self.sl_client.get_user_by_name(username).id + msg[m.end():]
+                if self.provider == Provider.SLACK:
+                    msg = msg[0:m.start()] + '<@%s>' % self.sl_client.get_user_by_name(username).id + msg[m.end():]
+                elif self.provider == Provider.ROCKETCHAT:
+                    msg = msg[0:m.start()] + f'@{username}' + msg[m.end():]
         return msg
 
     def parse_message(self, msg: str) -> Iterator[bytes]:
@@ -308,24 +326,29 @@ class Client:
                 )
 
             # Replace all channel mentions
-            while True:
-                mention = _CHANNEL_MENTIONS_REGEXP.search(i)
-                if not mention:
-                    break
-                i = (
-                    i[0:mention.span()[0]] +
-                    '#' +
-                    mention.groups()[0] +
-                    i[mention.span()[1]:]
-                )
+            if self.provider == Provider.SLACK:
+                while True:
+                    mention = _CHANNEL_MENTIONS_REGEXP.search(i)
+                    if not mention:
+                        break
+                    i = (
+                        i[0:mention.span()[0]] +
+                        '#' +
+                        mention.groups()[0] +
+                        i[mention.span()[1]:]
+                    )
 
-            for s in _SUBSTITUTIONS:
+            for s in self.substitutions:
                 i = i.replace(s[0], s[1])
 
             encoded = i.encode('utf8')
 
-            encoded = encoded.replace(b'<!here>', b'yelling [%s]' % self.nick)
-            encoded = encoded.replace(b'<!channel>', b'YELLING LOUDER [%s]' % self.nick)
+            if self.provider == Provider.SLACK:
+                encoded = encoded.replace(b'<!here>', b'yelling [%s]' % self.nick)
+                encoded = encoded.replace(b'<!channel>', b'YELLING LOUDER [%s]' % self.nick)
+            elif self.provider == Provider.ROCKETCHAT:
+                encoded = encoded.replace(b'@here', b'yelling [%s]' % self.nick)
+                encoded = encoded.replace(b'@channel', b'YELLING LOUDER [%s]' % self.nick)
 
             yield encoded
 
@@ -468,8 +491,10 @@ def main() -> None:
 
     if args.rc_url:
         sl_client = rocket.Rocket(args.rc_url, token)  # type: Union[slack.Slack, rocket.Rocket]
+        provider = Provider.ROCKETCHAT
     else:
         sl_client = slack.Slack(token)
+        provider = Provider.SLACK
     sl_events = sl_client.events_iter()
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -480,7 +505,7 @@ def main() -> None:
 
     while True:
         s, _ = serversocket.accept()
-        ircclient = Client(s, sl_client, nouserlist=args.nouserlist, autojoin=args.autojoin)
+        ircclient = Client(s, sl_client, args.nouserlist, args.autojoin, provider)
 
         poller.register(s.fileno(), select.POLLIN)
         if sl_client.fileno is not None:

@@ -91,7 +91,7 @@ class Rocket:
             ),
             self=Self(
                 id='',
-                name='ltworf',
+                name='LtWorf',
             ),
         )
 
@@ -288,12 +288,21 @@ class Rocket:
     def _read(self, event_id: Optional[str] = None, subs_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
         try:
             _, raw_data = self._websocket.recv_data()
+            if raw_data == b'\x03\xe8Normal closure':
+                print('Server triggered a disconnect. Reaconnecting')
+                raise Exception('Trigger reconnect')
         except SSLWantReadError:
             return None
         except:
             self._connect()
             return None
-        data = json.loads(raw_data)
+
+        try:
+            data = json.loads(raw_data)
+        except:
+            print(f'Failed to decode json: {repr(raw_data)}')
+            raise
+
 
         # Handle the stupid ping thing directly here
         if data == {'msg': 'ping'}:
