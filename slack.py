@@ -437,8 +437,12 @@ class Slack:
         """
         Send a message to a channel or group or whatever
         """
+        if action:
+            api = 'chat.meMessage'
+        else:
+            api = 'chat.postMessage'
         r = self.client.api_call(
-            "chat.postMessage",
+            api,
             channel=channel_id,
             text=msg,
             as_user=True,
