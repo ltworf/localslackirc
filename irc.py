@@ -188,6 +188,16 @@ class Client:
         _, dest, msg = cmd.split(b' ', 2)
         if msg.startswith(b':'):
             msg = msg[1:]
+
+        # Handle sending "/me does something"
+        # b'PRIVMSG #much_private :\x01ACTION saluta tutti\x01'
+        if msg.startswith(b'\x01ACTION ') and msg.endswith(b'\x01'):
+            action = True
+            _, msg = msg.split(b' ', 1)
+            msg = msg[:-1]
+        else:
+            action = False
+
         message = self._addmagic(msg.decode('utf8'))
 
         if dest.startswith(b'#'):
