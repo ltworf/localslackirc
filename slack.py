@@ -115,6 +115,10 @@ class Message(NamedTuple):
     text: str
 
 
+class ActionMessage(Message):
+    pass
+
+
 class MessageEdit(NamedTuple):
     previous: Message
     current: Message
@@ -215,6 +219,7 @@ SlackEvent = Union[
     MessageDelete,
     MessageEdit,
     Message,
+    ActionMessage,
     MessageBot,
     FileShared,
     Join,
@@ -526,7 +531,7 @@ class Slack:
                     continue
 
                 try:
-                    if t == 'message' and not subt:
+                    if t == 'message' and (not subt or subt == 'me_message'):
                         msg = _loadwrapper(event, Message)
 
                         # In private chats, pretend that my own messages
@@ -535,7 +540,10 @@ class Slack:
                         im = self.get_im(msg.channel)
                         if im and im.user != msg.user:
                             msg = Message(user=im.user, text='I say: ' + msg.text, channel=im.id)
-                        yield msg
+                        if subt == 'me_message':
+                            yield ActionMessage(*msg)
+                        else:
+                            yield msg
                     elif t == 'message' and subt == 'slackbot_response':
                         yield _loadwrapper(event, Message)
                     elif t == 'message' and subt == 'message_changed':
