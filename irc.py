@@ -365,7 +365,7 @@ class Client:
             yield encoded
 
 
-    def _message(self, sl_ev: Union[slack.Message, slack.MessageDelete, slack.MessageBot], prefix: str=''):
+    def _message(self, sl_ev: Union[slack.Message, slack.MessageDelete, slack.MessageBot, slack.ActionMessage], prefix: str=''):
         """
         Sends a message to the irc client
         """
@@ -384,6 +384,8 @@ class Client:
             # Ignoring messages, channel was left on IRC
             return
         for msg in self.parse_message(prefix + sl_ev.text):
+            if isinstance(sl_ev, slack.ActionMessage):
+                msg = b'\x01ACTION ' + msg + b'\x01'
             self.sendmsg(
                 source,
                 dest,
@@ -410,6 +412,8 @@ class Client:
         if isinstance(sl_ev, slack.MessageDelete):
             self._message(sl_ev, '[deleted]')
         elif isinstance(sl_ev, slack.Message):
+            self._message(sl_ev)
+        elif isinstance(sl_ev, slack.ActionMessage):
             self._message(sl_ev)
         elif isinstance(sl_ev, slack.MessageEdit):
             if sl_ev.is_changed:
