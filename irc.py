@@ -188,18 +188,30 @@ class Client:
         _, dest, msg = cmd.split(b' ', 2)
         if msg.startswith(b':'):
             msg = msg[1:]
+
+        # Handle sending "/me does something"
+        # b'PRIVMSG #much_private :\x01ACTION saluta tutti\x01'
+        if msg.startswith(b'\x01ACTION ') and msg.endswith(b'\x01'):
+            action = True
+            _, msg = msg.split(b' ', 1)
+            msg = msg[:-1]
+        else:
+            action = False
+
         message = self._addmagic(msg.decode('utf8'))
 
         if dest.startswith(b'#'):
             self.sl_client.send_message(
                 self.sl_client.get_channel_by_name(dest[1:].decode()).id,
-                message
+                message,
+                action,
             )
         else:
             try:
                 self.sl_client.send_message_to_user(
                     self.sl_client.get_user_by_name(dest.decode()).id,
-                    message
+                    message,
+                    action,
                 )
             except:
                 print('Impossible to find user ', dest)
@@ -353,7 +365,7 @@ class Client:
             yield encoded
 
 
-    def _message(self, sl_ev: Union[slack.Message, slack.MessageDelete, slack.MessageBot], prefix: str=''):
+    def _message(self, sl_ev: Union[slack.Message, slack.MessageDelete, slack.MessageBot, slack.ActionMessage], prefix: str=''):
         """
         Sends a message to the irc client
         """
@@ -372,6 +384,8 @@ class Client:
             # Ignoring messages, channel was left on IRC
             return
         for msg in self.parse_message(prefix + sl_ev.text):
+            if isinstance(sl_ev, slack.ActionMessage):
+                msg = b'\x01ACTION ' + msg + b'\x01'
             self.sendmsg(
                 source,
                 dest,
@@ -398,6 +412,8 @@ class Client:
         if isinstance(sl_ev, slack.MessageDelete):
             self._message(sl_ev, '[deleted]')
         elif isinstance(sl_ev, slack.Message):
+            self._message(sl_ev)
+        elif isinstance(sl_ev, slack.ActionMessage):
             self._message(sl_ev)
         elif isinstance(sl_ev, slack.MessageEdit):
             if sl_ev.is_changed:

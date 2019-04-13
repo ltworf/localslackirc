@@ -115,6 +115,10 @@ class Message(NamedTuple):
     text: str
 
 
+class ActionMessage(Message):
+    pass
+
+
 class MessageEdit(NamedTuple):
     previous: Message
     current: Message
@@ -215,6 +219,7 @@ SlackEvent = Union[
     MessageDelete,
     MessageEdit,
     Message,
+    ActionMessage,
     MessageBot,
     FileShared,
     Join,
@@ -433,12 +438,16 @@ class Slack:
         for i in r:
             self._sent_by_self.remove(i)
 
-    def send_message(self, channel_id: str, msg: str) -> None:
+    def send_message(self, channel_id: str, msg: str, action: bool) -> None:
         """
         Send a message to a channel or group or whatever
         """
+        if action:
+            api = 'chat.meMessage'
+        else:
+            api = 'chat.postMessage'
         r = self.client.api_call(
-            "chat.postMessage",
+            api,
             channel=channel_id,
             text=msg,
             as_user=True,
@@ -449,7 +458,7 @@ class Slack:
             return
         raise ResponseException(response)
 
-    def send_message_to_user(self, user_id: str, msg: str):
+    def send_message_to_user(self, user_id: str, msg: str, action: bool):
         """
         Send a message to a user, pass the user id
         """
@@ -484,7 +493,7 @@ class Slack:
 
             self._imcache[user_id] = channel_id
 
-        self.send_message(channel_id, msg)
+        self.send_message(channel_id, msg, action)
 
     def events_iter(self) -> Iterator[Optional[SlackEvent]]:
         """
@@ -522,7 +531,7 @@ class Slack:
                     continue
 
                 try:
-                    if t == 'message' and not subt:
+                    if t == 'message' and (not subt or subt == 'me_message'):
                         msg = _loadwrapper(event, Message)
 
                         # In private chats, pretend that my own messages
@@ -531,7 +540,10 @@ class Slack:
                         im = self.get_im(msg.channel)
                         if im and im.user != msg.user:
                             msg = Message(user=im.user, text='I say: ' + msg.text, channel=im.id)
-                        yield msg
+                        if subt == 'me_message':
+                            yield ActionMessage(*msg)
+                        else:
+                            yield msg
                     elif t == 'message' and subt == 'slackbot_response':
                         yield _loadwrapper(event, Message)
                     elif t == 'message' and subt == 'message_changed':
