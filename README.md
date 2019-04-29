@@ -7,8 +7,7 @@ client they prefer or a bouncer like ZNC and keep using slack from IRC even
 after they shut down their IRC gateway.
 
 Since at my workplace they waited for me to implement all this to decide to
-switch to Rocket.Chat (or retard chat, as I like to call it), it now has
-support for doing the same thing with Rocket.Chat.
+switch to Rocket.Chat, it now has support for doing the same with Rocket.Chat.
 
 
 Options to Obtain a Slack token
