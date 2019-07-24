@@ -266,6 +266,13 @@ class Client:
         channel = self.sl_client.get_channel_by_name(channel.decode()[1:])
         self.sl_client.topic(channel, topic.decode()[1:])
 
+    def _kickhandler(self, cmd: bytes) -> None:
+        _, channel, username, message = cmd.split(b' ', 3)
+        channel = self.sl_client.get_channel_by_name(channel.decode()[1:])
+        user = self.sl_client.get_user_by_name(username)
+        self.sl_client.kick(channel, user)
+
+
     def _whohandler(self, cmd: bytes) -> None:
         _, name = cmd.split(b' ', 1)
         if not name.startswith(b'#'):
@@ -446,6 +453,7 @@ class Client:
             b'PART': self._parthandler,
             b'AWAY': self._awayhandler,
             b'TOPIC': self._topichandler,
+            b'KICK': self._kickhandler,
             b'sendfile': self._sendfilehandler,
             #QUIT
             #CAP LS
