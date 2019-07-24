@@ -399,7 +399,7 @@ class Client:
                 msg
             )
 
-    def _joined(self, sl_ev: slack.Join) -> None:
+    def _joined_parted(self, sl_ev: slack.Join, joined: bool) -> None:
         """
         Handle join events from slack, by sending a JOIN notification
         to IRC.
@@ -413,7 +413,10 @@ class Client:
             return
         name = user.name.encode('utf8')
         rname = user.real_name.replace(' ', '_').encode('utf8')
-        self.s.send(b':%s!%s@127.0.0.1 JOIN :%s\n' % (name, rname, dest))
+        if joined:
+            self.s.send(b':%s!%s@127.0.0.1 JOIN :%s\n' % (name, rname, dest))
+        else:
+            self.s.send(b':%s!%s@127.0.0.1 PART %s\n' % (name, rname, dest))
 
     def slack_event(self, sl_ev: slack.SlackEvent) -> None:
         if isinstance(sl_ev, slack.MessageDelete):
@@ -431,7 +434,9 @@ class Client:
             f = self.sl_client.get_file(sl_ev)
             self._message(f.announce())
         elif isinstance(sl_ev, slack.Join):
-            self._joined(sl_ev)
+            self._joined_parted(sl_ev, True)
+        elif isinstance(sl_ev, slack.Leave):
+            self._joined_parted(sl_ev, False)
         elif isinstance(sl_ev, slack.TopicChange):
             self._sendreply(Replies.RPL_TOPIC, sl_ev.topic, ['#' + self.sl_client.get_channel(sl_ev.channel).name])
 
