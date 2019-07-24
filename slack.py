@@ -209,6 +209,11 @@ class Join(NamedTuple):
     channel: str
 
 
+class Leave(NamedTuple):
+    user: str
+    channel: str
+
+
 class TopicChange(NamedTuple):
     topic: str
     channel: str
@@ -223,6 +228,7 @@ SlackEvent = Union[
     MessageBot,
     FileShared,
     Join,
+    Leave,
 ]
 
 
@@ -571,6 +577,10 @@ class Slack:
                     elif t == 'member_joined_channel':
                         j = _loadwrapper(event, Join)
                         self._get_members_cache[j.channel].add(j.user)
+                        yield j
+                    elif t == 'member_left_channel':
+                        j = _loadwrapper(event, Leave)
+                        self._get_members_cache[j.channel].remove(j.user)
                         yield j
                     elif t == 'user_change':
                         # Changes in the user, drop it from cache
