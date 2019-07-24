@@ -1,5 +1,6 @@
 1.4
 * Support for /kick
+* Handle people leaving rooms
 
 1.3
 * Experimental support for Rocket.Chat added
