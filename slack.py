@@ -253,6 +253,12 @@ class Slack:
         if not response.ok:
             raise ResponseException(response)
 
+    def kick(self, channel: Channel, user: User) -> None:
+        r = self.client.api_call('conversations.kick', channel=channel.id, user=user.id)
+        response = load(r, Response)
+        if not response.ok:
+            raise ResponseException(response)
+
     def get_members(self, id_: str) -> Set[str]:
         """
         Returns the list (as a set) of users in a channel.

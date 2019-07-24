@@ -208,6 +208,9 @@ class Rocket:
     def topic(self, channel: Channel, topic: str) -> None:
         raise NotImplemented()
 
+    def kick(self, channel: Channel, user: User) -> None:
+        raise NotImplemented()
+
     def away(self, is_away: bool) -> None:
         raise NotImplemented()
 
