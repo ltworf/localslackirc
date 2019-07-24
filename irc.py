@@ -269,7 +269,7 @@ class Client:
     def _kickhandler(self, cmd: bytes) -> None:
         _, channel, username, message = cmd.split(b' ', 3)
         channel = self.sl_client.get_channel_by_name(channel.decode()[1:])
-        user = self.sl_client.get_user_by_name(username)
+        user = self.sl_client.get_user_by_name(username.decode())
         self.sl_client.kick(channel, user)
 
 
