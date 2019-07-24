@@ -253,8 +253,8 @@ class Slack:
         if not response.ok:
             raise ResponseException(response)
 
-    def kick(self, channel: Channel, user_id: str) -> None:
-        r = self.client.api_call('conversations.kick', channel=channel.id, user=user_id)
+    def kick(self, channel: Channel, user: User) -> None:
+        r = self.client.api_call('conversations.kick', channel=channel.id, user=user.id)
         response = load(r, Response)
         if not response.ok:
             raise ResponseException(response)
