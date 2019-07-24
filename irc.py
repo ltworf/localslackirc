@@ -399,7 +399,7 @@ class Client:
                 msg
             )
 
-    def _joined_parted(self, sl_ev: slack.Join, joined: bool) -> None:
+    def _joined_parted(self, sl_ev: Union[slack.Join, slack.Leave], joined: bool) -> None:
         """
         Handle join events from slack, by sending a JOIN notification
         to IRC.
