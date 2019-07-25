@@ -272,6 +272,11 @@ class Client:
         user = self.sl_client.get_user_by_name(username.decode())
         self.sl_client.kick(channel, user)
 
+    def _invitehandler(self, cmd: bytes) -> None:
+        _, username, channel = cmd.split(b' ', 2)
+        channel = self.sl_client.get_channel_by_name(channel.decode()[1:])
+        user = self.sl_client.get_user_by_name(username.decode())
+        self.sl_client.invite(channel, user)
 
     def _whohandler(self, cmd: bytes) -> None:
         _, name = cmd.split(b' ', 1)
@@ -459,6 +464,7 @@ class Client:
             b'AWAY': self._awayhandler,
             b'TOPIC': self._topichandler,
             b'KICK': self._kickhandler,
+            b'INVITE': self._invitehandler,
             b'sendfile': self._sendfilehandler,
             #QUIT
             #CAP LS
