@@ -265,6 +265,19 @@ class Slack:
         if not response.ok:
             raise ResponseException(response)
 
+    def invite(self, channel: Channel, user: Union[User, List[User]]) -> None:
+        if isinstance(user, User):
+            ids = user.id
+        else:
+            if len(user) > 30:
+                raise ValueError('No more than 30 users allowed')
+            ids = ','.join(i.id for i in user)
+
+        r = self.client.api_call('conversations.invite', channel=channel.id, users=ids)
+        response = load(r, Response)
+        if not response.ok:
+            raise ResponseException(response)
+
     def get_members(self, id_: str) -> Set[str]:
         """
         Returns the list (as a set) of users in a channel.

@@ -214,6 +214,9 @@ class Rocket:
     def away(self, is_away: bool) -> None:
         raise NotImplemented()
 
+    def invite(self, channel: Channel, user: Union[User, List[User]]) -> None:
+        raise NotImplemented()
+
     @lru_cache()
     def get_members(self, id_: str) -> Set[str]:
         data = self.loader.load(self._call('getUsersOfRoom', [id_, True], True), ChannelUsers)
