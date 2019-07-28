@@ -273,7 +273,7 @@ class Client:
         try:
             self.sl_client.kick(channel, user)
         except Exception as e:
-            self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Error: %s' % e, [cmdid])
+            self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Error: %s' % e)
 
     def _invitehandler(self, cmd: bytes) -> None:
         _, username, channel = cmd.split(b' ', 2)
@@ -282,7 +282,7 @@ class Client:
         try:
             self.sl_client.invite(channel, user)
         except Exception as e:
-            self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Error: %s' % e, [cmdid])
+            self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Error: %s' % e)
 
     def _whohandler(self, cmd: bytes) -> None:
         _, name = cmd.split(b' ', 1)
