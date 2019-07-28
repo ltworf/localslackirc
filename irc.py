@@ -89,7 +89,7 @@ class Client:
         if self.provider == Provider.SLACK:
             self.substitutions = _SLACK_SUBSTITUTIONS
         else:
-            self.substitutions: List[Tuple[str,str]] = []
+            self.substitutions = []
 
     def _nickhandler(self, cmd: bytes) -> None:
         _, nick = cmd.split(b' ', 1)
