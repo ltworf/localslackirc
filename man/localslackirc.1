@@ -1,15 +1,17 @@
-.TH localslackirc 1 "Jul 30, 2018" "IRC gateway for slack"
+.TH localslackirc 1 "Jul 29, 2019" "IRC gateway for slack and rocket.chat"
 .SH NAME
 localslackirc
-\- Creates an IRC server running locally, which acts as a gateway to slack for one user.
+\- Creates an IRC server running locally, which acts as a gateway to slack or rocket.chat for one user.
 
 .SH SYNOPSIS
 localslackirc [OPTIONS]
 
 .SH DESCRIPTION
-This command starts an IRC server running on 127.0.0.1:9007 which acts as a gateway to slack for one user.
+This command starts an IRC server running on 127.0.0.1:9007 which acts as a gateway to slack or rocket.chat for one user.
 .br
-To connect to multiple slack instances it is necessary to run multiple instances of this software.
+To connect to multiple instances it is necessary to run multiple instances of this software.
+.TP
+While basic support for rocket.chat is present, it lacks several features and is not as good as support for slack.
 .SH OPTIONS
 .SS
 .SS Options:
@@ -36,8 +38,13 @@ Automatically join all remote channels.
 Allow listening on addresses that do not start with 127.*
 .br
 This is potentially dangerous.
-.SH FILES
-The slack token is (unless specified otherwise) located in ~/.localslackirc
+.TP
+.B --rc-url RC_URL
+The rocket.chat URL.
+.br
+Setting this changes the mode from slack to rocket.chat.
+.SH TOKEN
+The access token is (unless specified otherwise) located in ~/.localslackirc, for information on how to obtain your token, check the README file.
 .SH WEB
 .BR https://github.com/ltworf/localslackirc
 

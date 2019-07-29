@@ -24,7 +24,7 @@ Alternatively if this method fails you can get one from Slack's web client
 * Select the "Network" tab.
 * Select WS (WebSockets)
 * Open your web slack client
-* Copy the 'token' parameter from the WebSocket connection URL. [Picture](https://raw.githubusercontent.com/inariksit/localslackirc/master/doc/token-instructions.png)
+* Copy the 'token' parameter from the WebSocket connection URL. [Picture](https://raw.githubusercontent.com/ltworf/localslackirc/master/doc/token-instructions.png)
 
 
 2) Instructions for firefox
@@ -107,15 +107,21 @@ And you should see the following message in your irssi:
 ...
 ```
 
+Installing localslackirc
+========================
+
+It is packaged for Debian (and Ubuntu), alternatively you can install from sources.
+
+
 Requirements
-============
+------------
 
 * At least Python 3.6
 * The modules indicated in `requirements.txt`
 
 
 Using a docker container to run localslackirc
-=============================================
+---------------------------------------------
 
 Inside `docker` directory there is a dockerfile to generate a container that runs `localslackirc`.
 In order to use it follow the instructions:
