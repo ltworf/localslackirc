@@ -107,15 +107,21 @@ And you should see the following message in your irssi:
 ...
 ```
 
+Installing localslackirc
+========================
+
+It is packaged for Debian (and Ubuntu), alternatively you can install from sources.
+
+
 Requirements
-============
+------------
 
 * At least Python 3.6
 * The modules indicated in `requirements.txt`
 
 
 Using a docker container to run localslackirc
-=============================================
+---------------------------------------------
 
 Inside `docker` directory there is a dockerfile to generate a container that runs `localslackirc`.
 In order to use it follow the instructions:
