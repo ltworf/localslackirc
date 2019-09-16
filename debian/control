@@ -18,5 +18,5 @@ Description: IRC gateway for slack, running on localhost for one user
  .
  One instance of localslackirc connects to one slack account and one
  IRC client, passing the messages between the two.
-
+ .
  Experimentally it also supports Rocket.Chat.
