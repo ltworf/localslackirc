@@ -54,7 +54,7 @@ deb-pkg: dist
 	mv localslackirc_`head -1 CHANGELOG`.orig.tar.gz* /tmp
 	cd /tmp; tar -xf localslackirc*.orig.tar.gz
 	cp -r debian /tmp/localslackirc/
-	cd /tmp/localslackirc/; dpkg-buildpackage
+	cd /tmp/localslackirc/; dpkg-buildpackage --changes-option=-S
 	install -d deb-pkg
 	mv /tmp/localslackirc_* deb-pkg
 	$(RM) -r /tmp/localslackirc
