@@ -2,6 +2,7 @@ localslackirc (1.4-1) unstable; urgency=low
 
   * New upstream release
   * Bump Standards-Version to 4.4.0
+  * Bump compat level to 12
 
  -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Mon, 16 Sep 2019 20:38:02 +0200
 
