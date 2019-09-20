@@ -394,7 +394,7 @@ class Client:
         try:
             dest = b'#' + self.sl_client.get_channel(sl_ev.channel).name.encode('utf8')
         except KeyError:
-            dest = source
+            dest = self.nick
         except Exception as e:
             print('Error: ', str(e))
             return
