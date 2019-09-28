@@ -248,8 +248,7 @@ class Client:
             self.sl_client.send_file(dest, filename)
             self._sendreply(0, 'Upload of %s completed' % filename)
         except Exception as e:
-            print(e)
-            self._sendreply(Replies.ERR_FILEERROR, 'Unable to send file')
+            self._sendreply(Replies.ERR_FILEERROR, f'Unable to send file {e}')
 
     def _parthandler(self, cmd: bytes) -> None:
         _, name = cmd.split(b' ', 1)
