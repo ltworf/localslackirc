@@ -77,7 +77,7 @@ class Rocket:
                 d['id_'] = d['_id']
                 del d['_id']
             return  _original_handler(l, d, t)
-        self.loader.handlers[index] = (self.loader.handlers[index][0], _namedtuplehandler)
+        self.loader.handlers[index] = (self.loader.handlers[index][0], _namedtuplehandler)  # type: ignore
         self._connect()
 
     @property
@@ -331,7 +331,7 @@ class Rocket:
     def events_iter(self): # -> Iterator[Optional[SlackEvent]]:
         while True:
             if self._internalevents:
-                data = self._internalevents.pop()
+                data: Optional[Dict[str, Any]] = self._internalevents.pop()
             else:
                 data = self._read()
 

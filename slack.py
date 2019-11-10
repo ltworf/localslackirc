@@ -537,8 +537,8 @@ class Slack:
                 try:
                     self.login_info = self.client.rtm_connect()
                     sleeptime = 1
-                except:
-                    print('Connection to slack failed')
+                except Exception as e:
+                    print(f'Connection to slack failed {e}')
                     sleep(sleeptime)
                     if sleeptime <= 120:  # max reconnection interval at 2 minutes
                         sleeptime *= 2

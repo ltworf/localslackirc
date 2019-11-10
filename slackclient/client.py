@@ -142,7 +142,7 @@ class SlackClient:
                                                http_proxy_host=proxy_host,
                                                http_proxy_port=proxy_port,
                                                http_proxy_auth=proxy_auth)
-            self._websocket.sock.setblocking(0)
+            self._websocket.sock.setblocking(0)  # type: ignore
         except Exception as e:
             raise SlackConnectionError(message=str(e))
 
