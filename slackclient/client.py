@@ -98,7 +98,7 @@ class SlackClient:
         self._api_requester = SlackRequest(proxies=proxies)
 
         # RTM configs
-        self._websocket = None  # type: Optional[WebSocket]
+        self._websocket: Optional[WebSocket] = None
 
     @property
     def fileno(self) -> Optional[int]:
