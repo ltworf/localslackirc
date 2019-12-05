@@ -330,7 +330,7 @@ class Client:
         # Just doing them client-side on the receiving end is too mainstream
         for username in self.sl_client.get_usernames():
             if len(username) < 3: continue
-            m = re.search(r'\B@%s\b' % username, msg)
+            m = re.search(r'(^{0}:|\B@{0}\b)'.format(username), msg)
             if m:
                 if self.provider == Provider.SLACK:
                     msg = msg[0:m.start()] + '<@%s>' % self.sl_client.get_user_by_name(username).id + msg[m.end():]
