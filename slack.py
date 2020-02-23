@@ -1,5 +1,5 @@
 # localslackirc
-# Copyright (C) 2018 Salvo "LtWorf" Tomaselli
+# Copyright (C) 2018-2020 Salvo "LtWorf" Tomaselli
 #
 # localslackirc is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -235,13 +235,13 @@ SlackEvent = Union[
 class Slack:
     def __init__(self, token: str) -> None:
         self.client = SlackClient(token)
-        self._usercache = {}  # type: Dict[str, User]
-        self._usermapcache = {}  # type: Dict[str, User]
-        self._imcache = {}  # type: Dict[str, str]
-        self._get_members_cache = {}  # type: Dict[str, Set[str]]
-        self._get_members_cache_cursor = {}  # type: Dict[str, Optional[str]]
-        self._internalevents = []  # type: List[SlackEvent]
-        self._sent_by_self = set()  # type: Set[float]
+        self._usercache: Dict[str, User] = {}
+        self._usermapcache: Dict[str, User] = {}
+        self._imcache: Dict[str, str] = {}
+        self._get_members_cache: Dict[str, Set[str]] = {}
+        self._get_members_cache_cursor: Dict[str, Optional[str]] = {}
+        self._internalevents: List[SlackEvent] = []
+        self._sent_by_self: Set[float] = set()
 
     def away(self, is_away: bool) -> None:
         """
@@ -317,7 +317,7 @@ class Slack:
         """
         Returns the list of slack channels
         """
-        result = []  # type: List[Channel]
+        result: List[Channel] = []
         r = self.client.api_call("conversations.list", exclude_archived=True,
                 types='public_channel,private_channel,mpim', limit=1000)
         response = load(r, Response)

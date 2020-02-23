@@ -22,7 +22,7 @@ from functools import lru_cache
 from ssl import SSLWantReadError
 from enum import Enum
 from time import sleep, monotonic
-from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple, Union, Iterator
 import uuid
 
 from websocket import create_connection, WebSocket
@@ -62,9 +62,9 @@ class Rocket:
         self.url = url
         self.token  = token
         self._call_id = 100
-        self._internalevents = []  # type: List[Dict[str, Any]]
-        self._channels = []  # type: List[Channel]
-        self._users = {}  # type: Dict[str, User]
+        self._internalevents: List[Dict[str, Any]] = []
+        self._channels: List[Channel] = []
+        self._users: Dict[str, User] = {}
         self._id_prefix = 'lsi' + str(uuid.uuid1()) + '_'
 
         # WORKAROUND
@@ -96,7 +96,7 @@ class Rocket:
         )
 
     def _update_channels(self) -> None:
-        data = self._call('rooms/get', [], True)  # type: Optional[List[Dict[str, Any]]]
+        data: Optional[List[Dict[str, Any]]] = self._call('rooms/get', [], True)
         if not data:
             raise Exception('No channel list was returned')
         self._channels.clear()
@@ -328,7 +328,7 @@ class Rocket:
         else:
             return data
 
-    def events_iter(self): # -> Iterator[Optional[SlackEvent]]:
+    def events_iter(self) -> Iterator[Optional[SlackEvent]]:
         while True:
             if self._internalevents:
                 data: Optional[Dict[str, Any]] = self._internalevents.pop()
@@ -339,7 +339,7 @@ class Rocket:
                 yield None
                 continue
 
-            r = None  # type: Optional[SlackEvent]
+            r: Optional[SlackEvent] = None
             print('Scanning ', data)
             if not isinstance(data, dict):
                 continue
