@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # localslackirc
-# Copyright (C) 2018 Salvo "LtWorf" Tomaselli
+# Copyright (C) 2018-2020 Salvo "LtWorf" Tomaselli
 #
 # localslackirc is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -77,7 +77,7 @@ class Client:
         self.nick = b''
         self.username = b''
         self.realname = b''
-        self.parted_channels = set()  # type: Set[bytes]
+        self.parted_channels: Set[bytes] = set()
         self.hostname = gethostname().encode('utf8')
 
         self.provider = provider
@@ -530,7 +530,7 @@ def main() -> None:
             exit(f'Unable to open the token file {args.tokenfile}')
 
     if args.rc_url:
-        sl_client = rocket.Rocket(args.rc_url, token)  # type: Union[slack.Slack, rocket.Rocket]
+        sl_client: Union[slack.Slack, rocket.Rocket] = rocket.Rocket(args.rc_url, token)
         provider = Provider.ROCKETCHAT
     else:
         sl_client = slack.Slack(token)
@@ -554,7 +554,7 @@ def main() -> None:
         # Main loop
         timeout = 2
         while True:
-            s_event = poller.poll(timeout)  # type: List[Tuple[int,int]]
+            s_event: List[Tuple[int,int]] = poller.poll(timeout)
             sl_event = next(sl_events)
 
             if s_event:
