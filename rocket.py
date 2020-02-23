@@ -1,5 +1,5 @@
 # localslackirc
-# Copyright (C) 2018-2019 Salvo "LtWorf" Tomaselli
+# Copyright (C) 2018-2020 Salvo "LtWorf" Tomaselli
 #
 # localslackirc is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -77,7 +77,7 @@ class Rocket:
                 d['id_'] = d['_id']
                 del d['_id']
             return  _original_handler(l, d, t)
-        self.loader.handlers[index] = (self.loader.handlers[index][0], _namedtuplehandler)  # type: ignore
+        self.loader.handlers[index] = (self.loader.handlers[index][0], _namedtuplehandler)
         self._connect()
 
     @property
