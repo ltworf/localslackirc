@@ -1,5 +1,5 @@
 # localslackirc
-# Copyright (C) 2018 Salvo "LtWorf" Tomaselli
+# Copyright (C) 2018-2020 Salvo "LtWorf" Tomaselli
 #
 # localslackirc is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -125,7 +125,7 @@ class SlackClient:
             self._connect_slack_websocket(login_data['url'])
             return load(login_data, LoginInfo)
         else:
-            raise SlackLoginError(reply=reply)
+            raise SlackLoginError(reply=login_data)
 
     def _connect_slack_websocket(self, ws_url):
         """Uses http proxy if available"""

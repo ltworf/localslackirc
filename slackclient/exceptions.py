@@ -1,5 +1,5 @@
 # localslackirc
-# Copyright (C) 2018 Salvo "LtWorf" Tomaselli
+# Copyright (C) 2018-2020 Salvo "LtWorf" Tomaselli
 #
 # localslackirc is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,6 +27,11 @@ class SlackClientError(Exception):
     """
     def __init__(self, msg: str) -> None:
         super(SlackClientError, self).__init__(msg)
+
+    def __str__(self) -> str:
+        reply = getattr(self, 'reply', None)
+        msg = getattr(self, 'msg', None)
+        return f'message={msg} reply={reply}'
 
 
 class SlackConnectionError(SlackClientError):
