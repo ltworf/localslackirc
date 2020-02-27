@@ -549,6 +549,9 @@ def main() -> None:
         except IsADirectoryError:
             exit(f'Not a file {args.cookiefile}')
 
+    if token.startswith('xoxc-') and not cookie:
+        exit('The cookie is needed for this kind of slack token')
+
     if args.rc_url:
         sl_client: Union[slack.Slack, rocket.Rocket] = rocket.Rocket(args.rc_url, token)
         provider = Provider.ROCKETCHAT
