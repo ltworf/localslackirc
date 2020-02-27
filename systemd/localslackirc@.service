@@ -9,7 +9,7 @@ AssertPathExists=/etc/localslackirc.d/%i
 User=salvo
 Type=simple
 Restart=always
-ExecStart=/home/salvo/dev/localslackirc/irc.py -j
+ExecStart=/usr/bin/localslackirc -j
 # Log
 StandardOutput=journal
 StandardError=journal
