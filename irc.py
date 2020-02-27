@@ -526,6 +526,8 @@ def main() -> None:
         try:
             with open(args.tokenfile) as f:
                 token = f.readline().strip()
+        except IsADirectoryError:
+            exit(f'Not a file {args.tokenfile}')
         except (FileNotFoundError, PermissionError):
             exit(f'Unable to open the token file {args.tokenfile}')
 
