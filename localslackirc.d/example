@@ -6,6 +6,9 @@
 #
 # filename must be replaced with the filename of the
 # configuration file in /etc/localslackirc.d
+#
+# Make sure that the file is not world readable, since
+# it contains the access token.
 
 
 # The port to listen to, for the IRC client to connect to
