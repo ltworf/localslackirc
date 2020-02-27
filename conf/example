@@ -1,0 +1,18 @@
+# Example configuration file for localslackirc.
+#
+# The instances are to be launched with:
+#
+# systemctl start localslackirc@filename.service
+#
+# filename must be replaced with the filename of the
+# configuration file in /etc/localslackirc.d
+
+
+# The port to listen to, for the IRC client to connect to
+#PORT=9007
+
+# The token string
+#TOKEN=xxxx
+
+# The cookie string (Not always needed)
+#COOKIE=xxxx
