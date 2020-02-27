@@ -1,5 +1,6 @@
 1.7
 * Logs are more useful
+* Ship with systemd service to run instances from configuration files
 
 1.6
 * Useless release because of mypy
