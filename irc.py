@@ -499,7 +499,7 @@ def main() -> None:
     parser.add_argument('-c', '--cookiefile', type=str, action='store', dest='cookiefile',
                                 default=None,
                                 required=False,
-                                help='set the cookie file (for only, for xoxc tokens)')
+                                help='set the cookie file (for slack only, for xoxc tokens)')
     parser.add_argument('-u', '--nouserlist', action='store_true',
                                 dest='nouserlist', required=False,
                                 help='don\'t display userlist')
