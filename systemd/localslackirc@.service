@@ -1,0 +1,28 @@
+[Install]
+WantedBy=multi-user.target
+
+[Unit]
+Description=Localslackirc
+AssertPathExists=/etc/localslackirc.d/%i
+
+[Service]
+User=salvo
+Type=simple
+Restart=always
+ExecStart=/home/salvo/dev/localslackirc/irc.py -j
+# Log
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=localslackirc-%i
+# Config
+EnvironmentFile=/etc/localslackirc.d/%i
+# Security
+ProtectSystem=strict
+PrivateDevices=true
+#ProtectClock=¶
+#ProtectKernelTunables=¶
+#ProtectKernelModules=¶
+#ProtectKernelLogs=¶
+#ProtectControlGroups=¶
+#RestrictAddressFamilies=¶
+LockPersonality=true
