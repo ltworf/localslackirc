@@ -488,7 +488,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--port', type=int, action='store', dest='port',
                                 default=9007, required=False,
-                                help='set port number')
+                                help='set port number. Defaults to 9007')
     parser.add_argument('-i', '--ip', type=str, action='store', dest='ip',
                                 default='127.0.0.1', required=False,
                                 help='set ip address')
