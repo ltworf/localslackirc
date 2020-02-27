@@ -496,6 +496,10 @@ def main() -> None:
                                 default=expanduser('~')+'/.localslackirc',
                                 required=False,
                                 help='set the token file')
+    parser.add_argument('-c', '--cookiefile', type=str, action='store', dest='cookiefile',
+                                default=None,
+                                required=False,
+                                help='set the cookie file (for only, for xoxc tokens)')
     parser.add_argument('-u', '--nouserlist', action='store_true',
                                 dest='nouserlist', required=False,
                                 help='don\'t display userlist')
@@ -531,11 +535,25 @@ def main() -> None:
         except (FileNotFoundError, PermissionError):
             exit(f'Unable to open the token file {args.tokenfile}')
 
+    if 'COOKIE' in environ:
+        cookie: Optional[str] = environ['COOKIE']
+    else:
+        try:
+            if args.cookiefile:
+                with open(args.cookiefile) as f:
+                    cookie = f.readline().strip()
+            else:
+                cookie = None
+        except (FileNotFoundError, PermissionError):
+            exit(f'Unable to open the cookie file {args.cookiefile}')
+        except IsADirectoryError:
+            exit(f'Not a file {args.cookiefile}')
+
     if args.rc_url:
         sl_client: Union[slack.Slack, rocket.Rocket] = rocket.Rocket(args.rc_url, token)
         provider = Provider.ROCKETCHAT
     else:
-        sl_client = slack.Slack(token)
+        sl_client = slack.Slack(token, cookie)
         provider = Provider.SLACK
     sl_events = sl_client.events_iter()
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

@@ -1,4 +1,4 @@
-.TH localslackirc 1 "Jul 29, 2019" "IRC gateway for slack and rocket.chat"
+.TH localslackirc 1 "Feb 27, 2020" "IRC gateway for slack and rocket.chat"
 .SH NAME
 localslackirc
 \- Creates an IRC server running locally, which acts as a gateway to slack or rocket.chat for one user.
@@ -27,6 +27,9 @@ Set the IP (Ipv4 only) address to listen to. The default is 127.0.0.1.
 .TP
 .B -t TOKENFILE, --tokenfile TOKENFILE
 Set the token file. The default is ~/.localslackirc.
+.TP
+.B -c TOKENFILE, --cookiefile TOKENFILE
+Set the cookie file. This is only used on slack, and is only useful if your token starts with "xoxc".
 .TP
 .B -u, --nouserlist
 Don't display userlist in the IRC client.

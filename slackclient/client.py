@@ -36,6 +36,7 @@ from websocket._exceptions import WebSocketConnectionClosedException
 
 class SlackRequest(NamedTuple):
     token: str
+    cookie: Optional[str]
     proxies: Optional[Dict[str,str]]
 
     def do(self, request: str, post_data: Dict[str,str], timeout: Optional[float], files: Optional[Dict]):
@@ -57,6 +58,8 @@ class SlackRequest(NamedTuple):
             'user-agent': 'localslackirc',
             'Authorization': f'Bearer {self.token}'
         }
+        if self.cookie:
+            headers['cookie'] = self.cookie
 
         # Submit the request
         return requests.post(
@@ -90,11 +93,11 @@ class SlackClient:
     The SlackClient object owns the websocket connection and all attached channel information.
     """
 
-    def __init__(self, token: str, proxies: Optional[Dict[str,str]] = None) -> None:
+    def __init__(self, token: str, cookie: Optional[str], proxies: Optional[Dict[str,str]] = None) -> None:
         # Slack client configs
         self._token = token
         self._proxies = proxies
-        self._api_requester = SlackRequest(token, proxies)
+        self._api_requester = SlackRequest(token, cookie, proxies)
 
         # RTM configs
         self._websocket: Optional[WebSocket] = None
