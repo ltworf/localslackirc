@@ -45,6 +45,8 @@ dist:
 		localslackirc/requirements.txt \
 		localslackirc/docker/Dockerfile \
 		localslackirc/man \
+		localslackirc/conf \
+		localslackirc/systemd \
 		localslackirc/mypy.conf \
 		localslackirc/stubs/
 	mv ../localslackirc.tar.gz localslackirc_`head -1 CHANGELOG`.orig.tar.gz
