@@ -43,7 +43,6 @@ class SlackRequest(NamedTuple):
         Perform a POST request to the Slack Web API
 
         Args:
-            token (str): your authentication token
             request (str): the method to call from the Slack API. For example: 'channels.list'
             timeout (float): stop waiting for a response after a given number of seconds
             post_data (dict): key/value arguments to pass for the request. For example:
