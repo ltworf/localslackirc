@@ -19,3 +19,9 @@
 
 # The cookie string (Not always needed)
 #COOKIE=xxxx
+
+# The user that will be used to run this process.
+# Using nobody is fine, but it might be desirable to
+# change this to be able to send files which might not
+# be readable otherwise
+#PROCESS_OWNER=nobody

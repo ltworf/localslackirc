@@ -1,4 +1,4 @@
-.TH localslackirc 1 "Feb 27, 2020" "IRC gateway for slack and rocket.chat"
+.TH localslackirc 1 "Feb 28, 2020" "IRC gateway for slack and rocket.chat"
 .SH NAME
 localslackirc
 \- Creates an IRC server running locally, which acts as a gateway to slack or rocket.chat for one user.
@@ -56,6 +56,11 @@ The following environment variables are used. They override command line setting
 .B PORT
 .TP
 .B TOKEN
+.TP
+.B PROCESS_OWNER
+If running as root, this is the name of the user to switch to. If this is not specified, "nobody" will be used.
+.br
+This is very useful to start localslackirc as a service and configure which user to use in the configuration file.
 .SH WEB
 .BR https://github.com/ltworf/localslackirc
 
