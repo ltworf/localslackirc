@@ -24,8 +24,10 @@ import select
 import socket
 import argparse
 from typing import *
+import os
 from os import environ
 from os.path import expanduser
+import pwd
 from socket import gethostname
 import traceback
 
@@ -484,7 +486,28 @@ class Client:
             print('Unknown command: ', cmd)
 
 
+def su() -> None:
+    """
+    switch user. Useful when starting localslackirc
+    as a service as root user.
+    """
+
+    # Nothing to do, already not root
+    if os.getuid() != 0:
+        return
+
+    username = environ.get('PROCESS_OWNER', 'nobody')
+    userdata = pwd.getpwnam(username)
+    os.setgid(userdata.pw_gid)
+    os.setegid(userdata.pw_gid)
+    os.setuid(userdata.pw_uid)
+    os.seteuid(userdata.pw_uid)
+
+
+
 def main() -> None:
+    su()
+
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--port', type=int, action='store', dest='port',
                                 default=9007, required=False,
