@@ -24,7 +24,6 @@ Description=Localslackirc
 AssertPathExists=/etc/localslackirc.d/%i
 
 [Service]
-User=salvo
 Type=simple
 Restart=always
 ExecStart=/usr/bin/localslackirc -j
