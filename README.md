@@ -139,6 +139,21 @@ To start your new container:
 docker run -d -p 9007:9007 --name=mylocalslackirc -e 'SLACKTOKEN=MYSLACKTOKEN' localslackirc
 ```
 
+Connecting to multiple slack instances
+======================================
+
+To do this, run several instances of localslackirc on different ports.
+
+To simplify the procedure, a service called `localslackirc@.service` is provided. It can be used to manage several instances.
+
+It is enough to copy the example configuration file in /etc/localslackirc.d/instancename and then tell systemd about the new instance by running:
+
+```bash
+# To start the instance
+sudo systemctl start localslackirc@instancename.service
+# To start the instance at every boot
+sudo systemctl enable localslackirc@instancename.service
+```
 
 IRC Channel
 ===========
