@@ -36,10 +36,4 @@ EnvironmentFile=/etc/localslackirc.d/%i
 # Security
 ProtectSystem=strict
 PrivateDevices=true
-#ProtectClock=¶
-#ProtectKernelTunables=¶
-#ProtectKernelModules=¶
-#ProtectKernelLogs=¶
-#ProtectControlGroups=¶
-#RestrictAddressFamilies=¶
 LockPersonality=true
