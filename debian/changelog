@@ -1,8 +1,9 @@
 localslackirc (1.7-1) UNRELEASED; urgency=medium
 
   * New upstream release
+  * Adds localslackirc@.service file
 
- -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Sun, 23 Feb 2020 11:44:40 +0100
+ -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Sat, 29 Feb 2020 01:57:40 +0100
 
 localslackirc (1.6-1) unstable; urgency=low
 
