@@ -18,23 +18,45 @@ Options to Obtain a Slack token
 
 Alternatively if this method fails you can get one from Slack's web client
 
-1) Instructions for Chromium
+1) Instructions for Chromium and Firefox
 
-* In your browser, go to "Inspect" (developer mode) on an empty page
-* Select the "Network" tab.
-* Select WS (WebSockets)
-* Open your web slack client
-* Copy the 'token' parameter from the WebSocket connection URL. [Picture](https://raw.githubusercontent.com/ltworf/localslackirc/master/doc/token-instructions.png)
+* In your browser, login to slack and then open the web console.
+* Run this javascript code: `q=JSON.parse(localStorage.localConfig_v2)["teams"]; q[Object.keys(q)[0]]["token"]`
+* Copy the result, without quotes.
+
+Obtain a Slack cookie
+---------------------
+
+This step is only needed if your token starts with `xoxc-`.
+
+* Run this javascript code:
+
+```
+q=JSON.parse(localStorage.localConfig_v2)["teams"];
+var authToken=q[Object.keys(q)[0]]["token"];
 
 
-2) Instructions for firefox
+// setup request
+var formData = new FormData();
+formData.append('token', authToken);
 
-* In your browser, open the Slack web client
-* Press F12 to open the developer tools
-* Refresh the page (F5)
-* Select the 'Network' tab
-* Select the 'WS' tab
-* Copy the 'token' parameter from the WebSocket connection URL.
+// make request
+(async () => {
+  const rawResponse = await fetch('/api/emoji.list', {
+    method: 'POST',
+    body: formData
+  });
+
+  const emojisApi = await rawResponse.json();
+
+  // dump to console
+})();
+```
+
+* In the network tab inspect the request for "emoji.list".
+* From that request, copy the "Cookie" header.
+* The values in the field look like `key1=value1; key2=value2; key3=value3;`
+* Get the string `d=XXXXXX;` (where XXX is the secret) and that is your cookie value. It is important to copy the `d=` part and the final `;`.
 
 
 Obtain a Rocket.Chat token
