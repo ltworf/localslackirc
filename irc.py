@@ -537,7 +537,8 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    overridelocalip = environ['OVERRIDE_LOCAL_IP'].lower() == 'true' if 'OVERRIDE_LOCAL_IP' in environ else args.overridelocalip
+    ip: str = environ.get('IP_ADDRESS', args.ip)
+    overridelocalip: bool = environ['OVERRIDE_LOCAL_IP'].lower() == 'true' if 'OVERRIDE_LOCAL_IP' in environ else args.overridelocalip
 
     # Exit if their chosden ip isn't local. User can override with -o if they so dare
     if not ip.startswith('127') and not overridelocalip:
@@ -546,9 +547,9 @@ def main() -> None:
                 'you can override this with -o')
 
     port = int(environ.get('PORT', args.port))
-    rc_url = environ.get('RC_URL', args.rc_url)
+    rc_url: Optional[str] = environ.get('RC_URL', args.rc_url)
 
-    autojoin = environ['AUTOJOIN'].lower() == 'true' if 'AUTOJOIN' in environ else args.autojoin
+    autojoin: bool = environ['AUTOJOIN'].lower() == 'true' if 'AUTOJOIN' in environ else args.autojoin
 
     if 'TOKEN' in environ:
         token = environ['TOKEN']
