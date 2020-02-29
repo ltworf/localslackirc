@@ -16,28 +16,19 @@
 #
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
-[Install]
-WantedBy=multi-user.target
+# systemd service for managing all localslackirc instances on the system. This
+# service is actually a systemd target, but we are using a service since
+# targets cannot be reloaded.
 
 [Unit]
 Description=Localslackirc
 Documentation=man:localslackirc(1)
-AssertPathExists=/etc/localslackirc.d/%i
-PartOf=localslackirc.service
-ReloadPropagatedFrom=localslackirc.service
-Before=localslackirc.service
 
 [Service]
-Type=simple
-Restart=always
-ExecStart=/usr/bin/localslackirc -j
-# Log
-StandardOutput=journal
-StandardError=journal
-SyslogIdentifier=localslackirc-%i
-# Config
-EnvironmentFile=/etc/localslackirc.d/%i
-# Security
-ProtectSystem=strict
-PrivateDevices=true
-LockPersonality=true
+Type=oneshot
+ExecStart=/bin/true
+ExecReload=/bin/true
+RemainAfterExit=on
+
+[Install]
+WantedBy=multi-user.target

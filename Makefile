@@ -29,6 +29,7 @@ install:
 	install -m644 -D man/localslackirc.1 $${DESTDIR:-/}/usr/share/man/man1/localslackirc.1
 	install -m644 -D localslackirc.d/example $${DESTDIR:-/}/etc/localslackirc.d/example
 	install -m644 -D systemd/localslackirc@.service $${DESTDIR:-/}/lib/systemd/system/localslackirc@.service
+	install -m644 -D systemd/localslackirc.service $${DESTDIR:-/}/lib/systemd/system/localslackirc.service
 
 .PHONY: dist
 dist:
