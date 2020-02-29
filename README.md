@@ -18,24 +18,11 @@ Options to Obtain a Slack token
 
 Alternatively if this method fails you can get one from Slack's web client
 
-1) Instructions for Chromium
+1) Instructions for Chromium and Firefox
 
-* In your browser, go to "Inspect" (developer mode) on an empty page
-* Select the "Network" tab.
-* Select WS (WebSockets)
-* Open your web slack client
-* Copy the 'token' parameter from the WebSocket connection URL. [Picture](https://raw.githubusercontent.com/ltworf/localslackirc/master/doc/token-instructions.png)
-
-
-2) Instructions for firefox
-
-* In your browser, open the Slack web client
-* Press F12 to open the developer tools
-* Refresh the page (F5)
-* Select the 'Network' tab
-* Select the 'WS' tab
-* Copy the 'token' parameter from the WebSocket connection URL.
-
+* In your browser, login to slack and then open the web console.
+* Run this javascript code: `q=JSON.parse(localStorage.localConfig_v2)["teams"]; q[Object.keys(q)[0]]["token"]`
+* Copy the result, without quotes.
 
 Obtain a Rocket.Chat token
 ==========================
