@@ -550,6 +550,7 @@ def main() -> None:
     rc_url: Optional[str] = environ.get('RC_URL', args.rc_url)
 
     autojoin: bool = environ['AUTOJOIN'].lower() == 'true' if 'AUTOJOIN' in environ else args.autojoin
+    nouserlist: bool = environ['NOUSERLIST'].lower() == 'true' if 'NOUSERLIST' in environ else args.nouserlist
 
     if 'TOKEN' in environ:
         token = environ['TOKEN']
@@ -595,7 +596,7 @@ def main() -> None:
 
     while True:
         s, _ = serversocket.accept()
-        ircclient = Client(s, sl_client, args.nouserlist, autojoin, provider)
+        ircclient = Client(s, sl_client, nouserlist, autojoin, provider)
 
         poller.register(s.fileno(), select.POLLIN)
         if sl_client.fileno is not None:
