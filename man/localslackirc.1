@@ -50,7 +50,7 @@ Setting this changes the mode from slack to rocket.chat.
 .SH TOKEN
 The access token is (unless specified otherwise) located in ~/.localslackirc, for information on how to obtain your token, check the README file.
 .SH ENVIRONMENT
-The following environment variables are used. They override command line settings.
+The following environment variables are used. They override command line settings. The alternatives to switches must contain "true" to work.
 .TP
 .B COOKIE
 Alternative to --cookiefile
@@ -74,6 +74,9 @@ Alternative to --override
 .TP
 .B RC_URL
 Alternative to --rc-url
+.TP
+.B AUTOJOIN
+Alternative to --autojoin
 .SH WEB
 .BR https://github.com/ltworf/localslackirc
 
