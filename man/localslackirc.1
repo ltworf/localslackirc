@@ -21,6 +21,7 @@ Show the help message and exit.
 .TP
 .B -p PORT, --port PORT
 Set the port number. The default is 9007.
+.br
 .TP
 .B -i IP, --ip IP
 Set the IP (Ipv4 only) address to listen to. The default is 127.0.0.1.
@@ -52,10 +53,13 @@ The access token is (unless specified otherwise) located in ~/.localslackirc, fo
 The following environment variables are used. They override command line settings.
 .TP
 .B COOKIE
+Alternative to --cookiefile
 .TP
 .B PORT
+Alternative to --port
 .TP
 .B TOKEN
+Alternative to --tokenfile
 .TP
 .B PROCESS_OWNER
 If running as root, this is the name of the user to switch to. If this is not specified, "nobody" will be used.
