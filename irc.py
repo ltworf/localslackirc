@@ -536,8 +536,15 @@ def main() -> None:
                                 help='The rocketchat URL. Setting this changes the mode from slack to rocketchat')
 
     args = parser.parse_args()
+
+    ip = environ.get('IP_ADDRESS', args.ip)
+    if 'OVERRIDE_LOCAL_IP' in environ:
+        overridelocalip = environ['OVERRIDE_LOCAL_IP'].lower() == 'true'
+    else:
+        overridelocalip = args.overridelocalip
+
     # Exit if their chosden ip isn't local. User can override with -o if they so dare
-    if not args.ip.startswith('127') and not args.overridelocalip:
+    if not ip.startswith('127') and not overridelocalip:
         exit('supplied ip isn\'t local\nlocalslackirc has no encryption or ' \
                 'authentication, it\'s recommended to only allow local connections\n' \
                 'you can override this with -o')
@@ -584,7 +591,7 @@ def main() -> None:
     sl_events = sl_client.events_iter()
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    serversocket.bind((args.ip, port))
+    serversocket.bind((ip, port))
     serversocket.listen(1)
 
     poller = select.poll()

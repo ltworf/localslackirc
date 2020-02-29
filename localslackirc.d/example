@@ -25,3 +25,7 @@
 # change this to be able to send files which might not
 # be readable otherwise
 #PROCESS_OWNER=nobody
+
+
+#IP_ADDRESS=127.0.0.1
+#OVERRIDE_LOCAL_IP=false
