@@ -549,10 +549,7 @@ def main() -> None:
                 'authentication, it\'s recommended to only allow local connections\n' \
                 'you can override this with -o')
 
-    if 'PORT' in environ:
-        port = int(environ['PORT'])
-    else:
-        port = args.port
+    port = int(environ.get('PORT', args.port))
 
     if 'TOKEN' in environ:
         token = environ['TOKEN']
