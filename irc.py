@@ -550,6 +550,7 @@ def main() -> None:
                 'you can override this with -o')
 
     port = int(environ.get('PORT', args.port))
+    rc_url = environ.get('RC_URL', args.rc_url)
 
     if 'TOKEN' in environ:
         token = environ['TOKEN']
@@ -579,8 +580,8 @@ def main() -> None:
     if token.startswith('xoxc-') and not cookie:
         exit('The cookie is needed for this kind of slack token')
 
-    if args.rc_url:
-        sl_client: Union[slack.Slack, rocket.Rocket] = rocket.Rocket(args.rc_url, token)
+    if rc_url:
+        sl_client: Union[slack.Slack, rocket.Rocket] = rocket.Rocket(rc_url, token)
         provider = Provider.ROCKETCHAT
     else:
         sl_client = slack.Slack(token, cookie)

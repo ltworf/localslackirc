@@ -26,6 +26,9 @@
 # be readable otherwise
 #PROCESS_OWNER=nobody
 
+# Rocket.Chat URL
+#RC_URL=
 
+# Networking
 #IP_ADDRESS=127.0.0.1
 #OVERRIDE_LOCAL_IP=false
