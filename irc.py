@@ -537,11 +537,7 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    ip = environ.get('IP_ADDRESS', args.ip)
-    if 'OVERRIDE_LOCAL_IP' in environ:
-        overridelocalip = environ['OVERRIDE_LOCAL_IP'].lower() == 'true'
-    else:
-        overridelocalip = args.overridelocalip
+    overridelocalip = environ['OVERRIDE_LOCAL_IP'].lower() == 'true' if 'OVERRIDE_LOCAL_IP' in environ else args.overridelocalip
 
     # Exit if their chosden ip isn't local. User can override with -o if they so dare
     if not ip.startswith('127') and not overridelocalip:
