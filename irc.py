@@ -536,16 +536,21 @@ def main() -> None:
                                 help='The rocketchat URL. Setting this changes the mode from slack to rocketchat')
 
     args = parser.parse_args()
+
+    ip: str = environ.get('IP_ADDRESS', args.ip)
+    overridelocalip: bool = environ['OVERRIDE_LOCAL_IP'].lower() == 'true' if 'OVERRIDE_LOCAL_IP' in environ else args.overridelocalip
+
     # Exit if their chosden ip isn't local. User can override with -o if they so dare
-    if not args.ip.startswith('127') and not args.overridelocalip:
+    if not ip.startswith('127') and not overridelocalip:
         exit('supplied ip isn\'t local\nlocalslackirc has no encryption or ' \
                 'authentication, it\'s recommended to only allow local connections\n' \
                 'you can override this with -o')
 
-    if 'PORT' in environ:
-        port = int(environ['PORT'])
-    else:
-        port = args.port
+    port = int(environ.get('PORT', args.port))
+    rc_url: Optional[str] = environ.get('RC_URL', args.rc_url)
+
+    autojoin: bool = environ['AUTOJOIN'].lower() == 'true' if 'AUTOJOIN' in environ else args.autojoin
+    nouserlist: bool = environ['NOUSERLIST'].lower() == 'true' if 'NOUSERLIST' in environ else args.nouserlist
 
     if 'TOKEN' in environ:
         token = environ['TOKEN']
@@ -575,8 +580,8 @@ def main() -> None:
     if token.startswith('xoxc-') and not cookie:
         exit('The cookie is needed for this kind of slack token')
 
-    if args.rc_url:
-        sl_client: Union[slack.Slack, rocket.Rocket] = rocket.Rocket(args.rc_url, token)
+    if rc_url:
+        sl_client: Union[slack.Slack, rocket.Rocket] = rocket.Rocket(rc_url, token)
         provider = Provider.ROCKETCHAT
     else:
         sl_client = slack.Slack(token, cookie)
@@ -584,14 +589,14 @@ def main() -> None:
     sl_events = sl_client.events_iter()
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    serversocket.bind((args.ip, port))
+    serversocket.bind((ip, port))
     serversocket.listen(1)
 
     poller = select.poll()
 
     while True:
         s, _ = serversocket.accept()
-        ircclient = Client(s, sl_client, args.nouserlist, args.autojoin, provider)
+        ircclient = Client(s, sl_client, nouserlist, autojoin, provider)
 
         poller.register(s.fileno(), select.POLLIN)
         if sl_client.fileno is not None:

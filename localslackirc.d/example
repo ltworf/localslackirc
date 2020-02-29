@@ -25,3 +25,16 @@
 # change this to be able to send files which might not
 # be readable otherwise
 #PROCESS_OWNER=nobody
+
+# Auto join channels
+AUTOJOIN=true
+
+# Rocket.Chat URL
+#RC_URL=
+
+# Networking
+#IP_ADDRESS=127.0.0.1
+#OVERRIDE_LOCAL_IP=false
+
+# Do not fetch the user list (for huge instances)
+#NOUSERLIST=true
