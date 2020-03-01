@@ -29,6 +29,7 @@ from os import environ
 from os.path import expanduser
 import pwd
 from socket import gethostname
+import sys
 import traceback
 
 import slack
@@ -491,6 +492,8 @@ def su() -> None:
     switch user. Useful when starting localslackirc
     as a service as root user.
     """
+    if sys.platform.startswith('win'):
+        return
 
     # Nothing to do, already not root
     if os.getuid() != 0:
