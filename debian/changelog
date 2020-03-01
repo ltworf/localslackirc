@@ -1,3 +1,9 @@
+localslackirc (1.8-1) UNRELEASED; urgency=medium
+
+  * New upstream release
+
+ -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Sun, 01 Mar 2020 12:47:17 +0100
+
 localslackirc (1.7-1) unstable; urgency=medium
 
   * New upstream release
