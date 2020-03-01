@@ -29,6 +29,7 @@ from os import environ
 from os.path import expanduser
 import pwd
 from socket import gethostname
+import sys
 import traceback
 
 import slack
