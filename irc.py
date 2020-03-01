@@ -491,6 +491,8 @@ def su() -> None:
     switch user. Useful when starting localslackirc
     as a service as root user.
     """
+    if sys.platform.startswith('win'):
+        return
 
     # Nothing to do, already not root
     if os.getuid() != 0:
