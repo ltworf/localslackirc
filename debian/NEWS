@@ -1,0 +1,12 @@
+localslackirc (1.7-1) unstable; urgency=medium
+
+  * To simplify running several instances of localslackirc, a new systemd
+    service is provided.
+    There is a main service called localslackirc.service, that does nothing but
+    group all the instances.
+    Instances are called with localslackirc@instance_name and require a file
+    named in the same way in /etc/localslackirc.d
+    This file acts like a configuration file and defines environment variables
+    that are loaded by systemd and passed to localslackirc-
+
+ -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Sun, 01 Mar 2020 12:31:01 +0100
