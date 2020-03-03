@@ -7,6 +7,7 @@ lint:
 
 .PHONY: test
 test: lint
+	python3 -m tests
 
 .PHONY: install
 install:
