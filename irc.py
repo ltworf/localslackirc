@@ -377,7 +377,7 @@ class Client:
                     i = (
                         i[0:url.span()[0]] +
                         f'{schema}://{path}' +
-                        f' ({label})' if label else '' +
+                        (f' ({label})' if label else '') +
                         i[url.span()[1]:]
                     )
 
