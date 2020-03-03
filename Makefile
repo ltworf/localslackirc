@@ -69,3 +69,4 @@ deb-pkg: dist
 .PHONY: clean
 clean:
 	$(RM) -r deb-pkg
+	$(RM) -r tests/__pycache__
