@@ -376,6 +376,7 @@ class Client:
             if self.provider == Provider.SLACK:
                 encoded = encoded.replace(b'<!here>', b'yelling [%s]' % self.nick)
                 encoded = encoded.replace(b'<!channel>', b'YELLING LOUDER [%s]' % self.nick)
+                encoded = encoded.replace(b'<!everyone>', b'DEAFENING YELL [%s]' % self.nick)
             elif self.provider == Provider.ROCKETCHAT:
                 encoded = encoded.replace(b'@here', b'yelling [%s]' % self.nick)
                 encoded = encoded.replace(b'@channel', b'YELLING LOUDER [%s]' % self.nick)
