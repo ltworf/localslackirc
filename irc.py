@@ -39,6 +39,7 @@ import rocket
 # How slack expresses mentioning users
 _MENTIONS_REGEXP = re.compile(r'<@([0-9A-Za-z]+)>')
 _CHANNEL_MENTIONS_REGEXP = re.compile(r'<#[A-Z0-9]+\|([A-Z0-9\-a-z]+)>')
+_URL_REGEXP=re.compile(r'<([a-z0-9\-\.]+)://([^\s\|]+)[\|]{0,1}([^<>]*)>')
 
 
 _SLACK_SUBSTITUTIONS = [
@@ -366,6 +367,18 @@ class Client:
                         '#' +
                         mention.groups()[0] +
                         i[mention.span()[1]:]
+                    )
+
+                while True:
+                    url = _URL_REGEXP.search(i)
+                    if not url:
+                        break
+                    schema, path, label = url.groups()
+                    i = (
+                        i[0:url.span()[0]] +
+                        f'{schema}://{path}' +
+                        f' ({label})' if label else '' +
+                        i[url.span()[1]:]
                     )
 
             for s in self.substitutions:
