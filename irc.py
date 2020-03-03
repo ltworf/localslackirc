@@ -321,9 +321,7 @@ class Client:
         if self.provider == Provider.SLACK:
             msg = msg.replace('@here', '<!here>')
             msg = msg.replace('@channel', '<!channel>')
-            msg = msg.replace('@yell', '<!channel>')
-            msg = msg.replace('@shout', '<!channel>')
-            msg = msg.replace('@attention', '<!channel>')
+            msg = msg.replace('@everyone', '<!everyone>')
         elif self.provider == Provider.ROCKETCHAT:
             msg = msg.replace('@yell', '@channel')
             msg = msg.replace('@shout', '@channel')
