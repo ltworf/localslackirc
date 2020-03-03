@@ -39,6 +39,7 @@ import rocket
 # How slack expresses mentioning users
 _MENTIONS_REGEXP = re.compile(r'<@([0-9A-Za-z]+)>')
 _CHANNEL_MENTIONS_REGEXP = re.compile(r'<#[A-Z0-9]+\|([A-Z0-9\-a-z]+)>')
+_URL_REGEXP=re.compile(r'<([a-z0-9\-\.]+)://([^\s\|]+)[\|]{0,1}([^<>]*)>')
 
 
 _SLACK_SUBSTITUTIONS = [
@@ -321,9 +322,7 @@ class Client:
         if self.provider == Provider.SLACK:
             msg = msg.replace('@here', '<!here>')
             msg = msg.replace('@channel', '<!channel>')
-            msg = msg.replace('@yell', '<!channel>')
-            msg = msg.replace('@shout', '<!channel>')
-            msg = msg.replace('@attention', '<!channel>')
+            msg = msg.replace('@everyone', '<!everyone>')
         elif self.provider == Provider.ROCKETCHAT:
             msg = msg.replace('@yell', '@channel')
             msg = msg.replace('@shout', '@channel')
@@ -370,6 +369,18 @@ class Client:
                         i[mention.span()[1]:]
                     )
 
+                while True:
+                    url = _URL_REGEXP.search(i)
+                    if not url:
+                        break
+                    schema, path, label = url.groups()
+                    i = (
+                        i[0:url.span()[0]] +
+                        f'{schema}://{path}' +
+                        (f' ({label})' if label else '') +
+                        i[url.span()[1]:]
+                    )
+
             for s in self.substitutions:
                 i = i.replace(s[0], s[1])
 
@@ -378,6 +389,7 @@ class Client:
             if self.provider == Provider.SLACK:
                 encoded = encoded.replace(b'<!here>', b'yelling [%s]' % self.nick)
                 encoded = encoded.replace(b'<!channel>', b'YELLING LOUDER [%s]' % self.nick)
+                encoded = encoded.replace(b'<!everyone>', b'DEAFENING YELL [%s]' % self.nick)
             elif self.provider == Provider.ROCKETCHAT:
                 encoded = encoded.replace(b'@here', b'yelling [%s]' % self.nick)
                 encoded = encoded.replace(b'@channel', b'YELLING LOUDER [%s]' % self.nick)

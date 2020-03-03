@@ -18,7 +18,21 @@
 
 import unittest
 
-from .test_re import *
+from irc import _MENTIONS_REGEXP, _CHANNEL_MENTIONS_REGEXP, _URL_REGEXP
 
-if __name__ == '__main__':
-    unittest.main()
+
+class TestTesto(unittest.TestCase):
+    def test_url_re(self):
+        cases = [
+            # String, matched groups
+            ('q1://p1|p', None),
+            ('Pinnello <q1://p1|p>', ('q1', 'p1', 'p')),
+            ('Pinnello <q1://p1|p> asd asd', ('q1', 'p1', 'p')),
+            ('<q1://p1|p> asd asd', ('q1', 'p1', 'p')),
+            ('<q1://p1|p a|> asd asd', ('q1', 'p1', 'p a|')),
+            ('<q1://p1> asd asd', ('q1', 'p1', '')),
+        ]
+
+        for url, expected in cases:
+            m = _URL_REGEXP.search(url)
+            assert m is None if expected is None else m.groups() == expected

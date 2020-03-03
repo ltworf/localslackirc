@@ -1,4 +1,6 @@
 1.8
+* Support @everyone
+* Parse URLs sent from slack with a label
 
 1.7
 * Logs are more useful

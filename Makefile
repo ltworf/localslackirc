@@ -49,6 +49,7 @@ dist:
 		localslackirc/requirements.txt \
 		localslackirc/docker/Dockerfile \
 		localslackirc/man \
+		localslackirc/tests \
 		localslackirc/localslackirc.d \
 		localslackirc/systemd \
 		localslackirc/mypy.conf \
@@ -68,3 +69,4 @@ deb-pkg: dist
 .PHONY: clean
 clean:
 	$(RM) -r deb-pkg
+	$(RM) -r tests/__pycache__
