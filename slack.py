@@ -560,6 +560,14 @@ class Slack:
                     continue
 
                 try:
+                    yield load(
+                        event,
+                        Union[TopicChange]
+                    )
+                except Exception:
+                    pass
+
+                try:
                     if t == 'message' and (not subt or subt == 'me_message'):
                         msg = _loadwrapper(event, Message)
 
@@ -582,8 +590,6 @@ class Slack:
                             previous=load(event['previous_message'], Message),
                             current=load(event['message'], Message)
                         )
-                    elif t == 'message' and subt == 'group_topic':
-                        yield _loadwrapper(event, TopicChange)
                     elif t == 'message' and subt == 'message_deleted':
                         event['previous_message']['channel'] = event['channel']
                         ev = _loadwrapper(event['previous_message'], MessageDelete)
