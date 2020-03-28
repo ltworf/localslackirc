@@ -1,6 +1,8 @@
 localslackirc (1.8-1) UNRELEASED; urgency=medium
 
   * New upstream release
+  * Require python3.8 at least
+  * Depend on python3-attr
 
  -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Sun, 01 Mar 2020 12:47:17 +0100
 

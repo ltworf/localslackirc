@@ -21,11 +21,11 @@ from functools import lru_cache
 from time import sleep, time
 from typing import *
 
-from slackclient import SlackClient
+from attr import attrs, attrib
 from typedload import load, dump
 
 from diff import seddiff
-
+from slackclient import SlackClient
 
 USELESS_EVENTS = {
     'channel_marked',
@@ -36,6 +36,7 @@ USELESS_EVENTS = {
     'user_typing',
     'file_deleted',
     'file_public',
+    'file_created',
 }
 
 
@@ -115,13 +116,22 @@ class Message(NamedTuple):
     text: str
 
 
+class NoChanMessage(NamedTuple):
+    user: str
+    text: str
+
+
 class ActionMessage(Message):
     pass
 
 
-class MessageEdit(NamedTuple):
-    previous: Message
-    current: Message
+@attrs
+class MessageEdit:
+    type: Literal['message'] = attrib()
+    subtype: Literal['message_changed'] = attrib()
+    channel: str = attrib()
+    previous: NoChanMessage = attrib(metadata={'name': 'previous_message'})
+    current: NoChanMessage = attrib(metadata={'name': 'message'})
 
     @property
     def is_changed(self) -> bool:
@@ -129,13 +139,27 @@ class MessageEdit(NamedTuple):
 
     @property
     def diffmsg(self) -> Message:
-        m = dump(self.current)
-        m['text'] = seddiff(self.previous.text, self.current.text)
-        return load(m, Message)
+        return Message(
+            text=seddiff(self.previous.text, self.current.text),
+            channel=self.channel,
+            user=self.current.user,
+        )
 
 
-class MessageDelete(Message):
-    pass
+@attrs
+class MessageDelete:
+    type: Literal['message'] = attrib()
+    subtype: Literal['message_deleted'] = attrib()
+    channel: str = attrib()
+    previous_message: NoChanMessage = attrib()
+
+    @property
+    def user(self) -> str:
+        return self.previous_message.user
+
+    @property
+    def text(self) -> str:
+        return self.previous_message.text
 
 
 class Profile(NamedTuple):
@@ -174,17 +198,22 @@ class File(NamedTuple):
         )
 
 
-class FileShared(NamedTuple):
-    file_id: str
-    user_id: str
-    ts: float
+@attrs
+class FileShared:
+    type: Literal['file_shared'] = attrib()
+    file_id: str = attrib()
+    user_id: str = attrib()
+    ts: float = attrib()
 
 
-class MessageBot(NamedTuple):
-    text: str
-    username: str
-    channel: str
-    bot_id: Optional[str] = None
+@attrs
+class MessageBot:
+    type: Literal['message'] = attrib()
+    subtype: Literal['bot_message'] = attrib()
+    text: str = attrib()
+    username: str = attrib()
+    channel: str = attrib()
+    bot_id: Optional[str] = attrib(default=None)
 
 
 class User(NamedTuple):
@@ -214,10 +243,14 @@ class Leave(NamedTuple):
     channel: str
 
 
-class TopicChange(NamedTuple):
-    topic: str
-    channel: str
-    user: str
+@attrs
+class TopicChange:
+    type: Literal['message'] = attrib()
+    subtype: Literal['group_topic'] = attrib()
+    topic: str = attrib()
+    channel: str = attrib()
+    user: str = attrib()
+
 
 SlackEvent = Union[
     TopicChange,
@@ -556,6 +589,14 @@ class Slack:
                     continue
 
                 try:
+                    yield load(
+                        event,
+                        Union[TopicChange, FileShared, MessageBot, MessageEdit, MessageDelete]
+                    )
+                except Exception:
+                    pass
+
+                try:
                     if t == 'message' and (not subt or subt == 'me_message'):
                         msg = _loadwrapper(event, Message)
 
@@ -571,22 +612,6 @@ class Slack:
                             yield msg
                     elif t == 'message' and subt == 'slackbot_response':
                         yield _loadwrapper(event, Message)
-                    elif t == 'message' and subt == 'message_changed':
-                        event['message']['channel'] = event['channel']
-                        event['previous_message']['channel'] = event['channel']
-                        yield MessageEdit(
-                            previous=load(event['previous_message'], Message),
-                            current=load(event['message'], Message)
-                        )
-                    elif t == 'message' and subt == 'group_topic':
-                        yield _loadwrapper(event, TopicChange)
-                    elif t == 'message' and subt == 'message_deleted':
-                        event['previous_message']['channel'] = event['channel']
-                        ev = _loadwrapper(event['previous_message'], MessageDelete)
-                        if ev.text:  # deleting files generates empty MessageDelete events
-                            yield ev
-                    elif t == 'message' and subt == 'bot_message':
-                        yield _loadwrapper(event, MessageBot)
                     elif t == 'member_joined_channel':
                         j = _loadwrapper(event, Join)
                         self._get_members_cache[j.channel].add(j.user)
@@ -602,11 +627,6 @@ class Slack:
                             del self._usercache[u.id]
                             #FIXME don't know if it is wise, maybe it gets lost forever del self._usermapcache[u.name]
                         #TODO make an event for this
-                    elif t == 'file_shared':
-                        try: # slack idiocy workaround, they send the event twice, one time without the ts field
-                            yield _loadwrapper(event, FileShared)
-                        except ValueError:
-                            pass
                     elif t in USELESS_EVENTS:
                         continue
                     else:

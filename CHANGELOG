@@ -1,6 +1,7 @@
 1.8
 * Support @everyone
 * Parse URLs sent from slack with a label
+* Require python3.8
 
 1.7
 * Logs are more useful
