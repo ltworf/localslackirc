@@ -138,7 +138,7 @@ It is packaged for Debian (and Ubuntu), alternatively you can install from sourc
 Requirements
 ------------
 
-* At least Python 3.6
+* At least Python 3.8
 * The modules indicated in `requirements.txt`
 
 
