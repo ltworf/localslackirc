@@ -176,18 +176,21 @@ class File(NamedTuple):
 
 
 @attrs
-class FileShared():
+class FileShared:
     type: Literal['file_shared'] = attrib()
     file_id: str = attrib()
     user_id: str = attrib()
     ts: float = attrib()
 
 
-class MessageBot(NamedTuple):
-    text: str
-    username: str
-    channel: str
-    bot_id: Optional[str] = None
+@attrs
+class MessageBot:
+    type: Literal['message'] = attrib()
+    subtype: Literal['bot_message'] = attrib()
+    text: str = attrib()
+    username: str = attrib()
+    channel: str = attrib()
+    bot_id: Optional[str] = attrib(default=None)
 
 
 class User(NamedTuple):
@@ -565,7 +568,7 @@ class Slack:
                 try:
                     yield load(
                         event,
-                        Union[TopicChange, FileShared]
+                        Union[TopicChange, FileShared, MessageBot]
                     )
                 except Exception:
                     pass
@@ -598,8 +601,6 @@ class Slack:
                         ev = _loadwrapper(event['previous_message'], MessageDelete)
                         if ev.text:  # deleting files generates empty MessageDelete events
                             yield ev
-                    elif t == 'message' and subt == 'bot_message':
-                        yield _loadwrapper(event, MessageBot)
                     elif t == 'member_joined_channel':
                         j = _loadwrapper(event, Join)
                         self._get_members_cache[j.channel].add(j.user)
