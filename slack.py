@@ -21,11 +21,11 @@ from functools import lru_cache
 from time import sleep, time
 from typing import *
 
-from slackclient import SlackClient
+from attr import attrs, attrib
 from typedload import load, dump
 
 from diff import seddiff
-
+from slackclient import SlackClient
 
 USELESS_EVENTS = {
     'channel_marked',
@@ -214,10 +214,14 @@ class Leave(NamedTuple):
     channel: str
 
 
-class TopicChange(NamedTuple):
-    topic: str
-    channel: str
-    user: str
+@attrs
+class TopicChange:
+    type: Literal['message'] = attrib()
+    subtype: Literal['group_topic'] = attrib()
+    topic: str = attrib()
+    channel: str = attrib()
+    user: str = attrib()
+
 
 SlackEvent = Union[
     TopicChange,
