@@ -174,10 +174,12 @@ class File(NamedTuple):
         )
 
 
-class FileShared(NamedTuple):
-    file_id: str
-    user_id: str
-    ts: float
+@attrs
+class FileShared():
+    type: Literal['file_shared'] = attrib()
+    file_id: str = attrib()
+    user_id: str = attrib()
+    ts: float = attrib()
 
 
 class MessageBot(NamedTuple):
@@ -562,7 +564,7 @@ class Slack:
                 try:
                     yield load(
                         event,
-                        Union[TopicChange]
+                        Union[TopicChange, FileShared]
                     )
                 except Exception:
                     pass
@@ -612,11 +614,6 @@ class Slack:
                             del self._usercache[u.id]
                             #FIXME don't know if it is wise, maybe it gets lost forever del self._usermapcache[u.name]
                         #TODO make an event for this
-                    elif t == 'file_shared':
-                        try: # slack idiocy workaround, they send the event twice, one time without the ts field
-                            yield _loadwrapper(event, FileShared)
-                        except ValueError:
-                            pass
                     elif t in USELESS_EVENTS:
                         continue
                     else:
