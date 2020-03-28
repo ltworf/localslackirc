@@ -36,6 +36,7 @@ USELESS_EVENTS = {
     'user_typing',
     'file_deleted',
     'file_public',
+    'file_created',
 }
 
 
