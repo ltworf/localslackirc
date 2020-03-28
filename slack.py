@@ -146,8 +146,20 @@ class MessageEdit:
         )
 
 
-class MessageDelete(Message):
-    pass
+@attrs
+class MessageDelete:
+    type: Literal['message'] = attrib()
+    subtype: Literal['message_deleted'] = attrib()
+    channel: str = attrib()
+    previous_message: NoChanMessage = attrib()
+
+    @property
+    def user(self) -> str:
+        return self.previous_message.user
+
+    @property
+    def text(self) -> str:
+        return self.previous_message.text
 
 
 class Profile(NamedTuple):
@@ -579,7 +591,7 @@ class Slack:
                 try:
                     yield load(
                         event,
-                        Union[TopicChange, FileShared, MessageBot, MessageEdit]
+                        Union[TopicChange, FileShared, MessageBot, MessageEdit, MessageDelete]
                     )
                 except Exception:
                     pass
@@ -600,11 +612,6 @@ class Slack:
                             yield msg
                     elif t == 'message' and subt == 'slackbot_response':
                         yield _loadwrapper(event, Message)
-                    elif t == 'message' and subt == 'message_deleted':
-                        event['previous_message']['channel'] = event['channel']
-                        ev = _loadwrapper(event['previous_message'], MessageDelete)
-                        if ev.text:  # deleting files generates empty MessageDelete events
-                            yield ev
                     elif t == 'member_joined_channel':
                         j = _loadwrapper(event, Join)
                         self._get_members_cache[j.channel].add(j.user)
