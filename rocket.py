@@ -29,7 +29,7 @@ from websocket import create_connection, WebSocket
 from websocket._exceptions import WebSocketConnectionClosedException
 import typedload.dataloader
 
-from slack import Channel, File, FileShared, IM, Message, MessageEdit, Profile, SlackEvent, Topic, User
+from slack import Channel, File, FileShared, IM, Message, MessageEdit, Profile, SlackEvent, Topic, User, NoChanMessage
 from slackclient.client import Team, Self, LoginInfo
 
 CALL_TIMEOUT = 10
@@ -367,8 +367,11 @@ class Rocket:
                     )
                     if 'editedBy' in data['fields']['args'][0]:
                         r = MessageEdit(
-                            previous=Message(channel=r.channel, user=r.user, text=''),
-                            current=r
+                            type='message',
+                            subtype='message_changed',
+                            channel=r.channel,
+                            previous=NoChanMessage(user=r.user, text=''),
+                            current=NoChanMessage(user=r.user, text=r.text)
                         )
                 except:
                     pass

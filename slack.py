@@ -116,13 +116,22 @@ class Message(NamedTuple):
     text: str
 
 
+class NoChanMessage(NamedTuple):
+    user: str
+    text: str
+
+
 class ActionMessage(Message):
     pass
 
 
-class MessageEdit(NamedTuple):
-    previous: Message
-    current: Message
+@attrs
+class MessageEdit:
+    type: Literal['message'] = attrib()
+    subtype: Literal['message_changed'] = attrib()
+    channel: str = attrib()
+    previous: NoChanMessage = attrib(metadata={'name': 'previous_message'})
+    current: NoChanMessage = attrib(metadata={'name': 'message'})
 
     @property
     def is_changed(self) -> bool:
@@ -130,9 +139,11 @@ class MessageEdit(NamedTuple):
 
     @property
     def diffmsg(self) -> Message:
-        m = dump(self.current)
-        m['text'] = seddiff(self.previous.text, self.current.text)
-        return load(m, Message)
+        return Message(
+            text=seddiff(self.previous.text, self.current.text),
+            channel=self.channel,
+            user=self.current.user,
+        )
 
 
 class MessageDelete(Message):
@@ -568,7 +579,7 @@ class Slack:
                 try:
                     yield load(
                         event,
-                        Union[TopicChange, FileShared, MessageBot]
+                        Union[TopicChange, FileShared, MessageBot, MessageEdit]
                     )
                 except Exception:
                     pass
@@ -589,13 +600,6 @@ class Slack:
                             yield msg
                     elif t == 'message' and subt == 'slackbot_response':
                         yield _loadwrapper(event, Message)
-                    elif t == 'message' and subt == 'message_changed':
-                        event['message']['channel'] = event['channel']
-                        event['previous_message']['channel'] = event['channel']
-                        yield MessageEdit(
-                            previous=load(event['previous_message'], Message),
-                            current=load(event['message'], Message)
-                        )
                     elif t == 'message' and subt == 'message_deleted':
                         event['previous_message']['channel'] = event['channel']
                         ev = _loadwrapper(event['previous_message'], MessageDelete)
