@@ -596,9 +596,6 @@ class Slack:
                 continue
 
             for event in events:
-                t = event.get('type')
-                subt = event.get('subtype')
-
                 ts = float(event.get('ts', 0))
                 if ts in self._sent_by_self:
                     self._sent_by_self.remove(ts)
@@ -611,6 +608,9 @@ class Slack:
                     )
                 except Exception:
                     pass
+
+                t = event.get('type')
+                subt = event.get('subtype')
 
                 try:
                     if t == 'message' and (not subt or subt == 'me_message'):
