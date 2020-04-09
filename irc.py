@@ -265,9 +265,13 @@ class Client:
         self._sendreply(response, 'Away status changed')
 
     def _topichandler(self, cmd: bytes) -> None:
-        _, channel, topic = cmd.split(b' ', 2)
-        channel = self.sl_client.get_channel_by_name(channel.decode()[1:])
-        self.sl_client.topic(channel, topic.decode()[1:])
+        _, channel_b, topic_b = cmd.split(b' ', 2)
+        topic = topic_b.decode()[1:]
+        channel = self.sl_client.get_channel_by_name(channel_b.decode()[1:])
+        try:
+            self.sl_client.topic(channel, topic)
+        except Exception:
+            self._sendreply(Replies.ERR_UNKNOWNCOMMAND, f'Unable to set topic to {topic}')
 
     def _kickhandler(self, cmd: bytes) -> None:
         _, channel, username, message = cmd.split(b' ', 3)
