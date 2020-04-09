@@ -179,7 +179,7 @@ class Client:
             for i in self.sl_client.get_members(slchan.id):
                 try:
                     u = self.sl_client.get_user(i)
-                except:
+                except Exception:
                     continue
                 if u.deleted:
                     # Disabled user, skip it
@@ -224,7 +224,7 @@ class Client:
                     message,
                     action,
                 )
-            except:
+            except Exception:
                 print('Impossible to find user ', dest)
 
     def _listhandler(self, cmd: bytes) -> None:
@@ -312,7 +312,7 @@ class Client:
             try:
                 user = self.sl_client.get_user(i)
                 self._sendreply(Replies.RPL_WHOREPLY, '0 %s' % user.real_name, [name, user.name, '127.0.0.1', self.hostname, user.name, 'H'])
-            except:
+            except Exception:
                 pass
         self._sendreply(Replies.RPL_ENDOFWHO, 'End of WHO list', [name])
 

@@ -582,7 +582,7 @@ class Slack:
 
             try:
                 events = self.client.rtm_read()
-            except:
+            except Exception:
                 print('Connecting to slack...')
                 try:
                     self.login_info = self.client.rtm_connect()

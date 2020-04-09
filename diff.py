@@ -32,13 +32,13 @@ def seddiff(a: str, b: str) -> str:
         try:
             if a[prefix] != b[prefix]:
                 break
-        except:
+        except Exception:
             break
     for postfix in count(1):
         try:
             if a[-postfix] != b[-postfix]:
                 break
-        except:
+        except Exception:
             break
 
     if prefix < 0:
