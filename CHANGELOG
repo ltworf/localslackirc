@@ -2,6 +2,7 @@
 * Support @everyone
 * Parse URLs sent from slack with a label
 * Require python3.8
+* Aware of new channels the user is added to
 
 1.7
 * Logs are more useful
