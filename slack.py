@@ -30,6 +30,7 @@ from slackclient import SlackClient
 USELESS_EVENTS = {
     'channel_marked',
     'group_marked',
+    'mpim_marked',
     'hello',
     'dnd_updated_user',
     'reaction_added',
