@@ -126,6 +126,12 @@ class ActionMessage(Message):
 
 
 @attrs
+class GroupJoined:
+    type: Literal['group_joined'] = attrib()
+    channel: Channel = attrib()
+
+
+@attrs
 class MessageEdit:
     type: Literal['message'] = attrib()
     subtype: Literal['message_changed'] = attrib()
@@ -262,6 +268,7 @@ SlackEvent = Union[
     FileShared,
     Join,
     Leave,
+    GroupJoined,
 ]
 
 
@@ -367,9 +374,12 @@ class Slack:
 
         raises KeyError if it doesn't exist.
         """
-        for c in self.channels():
-            if c.id == id_:
-                return c
+        for i in range(2):
+            for c in self.channels():
+                if c.id == id_:
+                    return c
+            if i == 0:
+                self.channels.cache_clear()
         raise KeyError()
 
     @lru_cache()
@@ -379,9 +389,12 @@ class Slack:
 
         raises KeyError if it doesn't exist.
         """
-        for c in self.channels():
-            if c.name == name:
-                return c
+        for i in range(2):
+            for c in self.channels():
+                if c.name == name:
+                    return c
+            if i == 0:
+                self.channels.cache_clear()
         raise KeyError()
 
     @property
@@ -591,7 +604,7 @@ class Slack:
                 try:
                     yield load(
                         event,
-                        Union[TopicChange, FileShared, MessageBot, MessageEdit, MessageDelete]
+                        Union[TopicChange, FileShared, MessageBot, MessageEdit, MessageDelete, GroupJoined]
                     )
                 except Exception:
                     pass
