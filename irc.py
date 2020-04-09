@@ -77,7 +77,7 @@ MPIM_HIDE_DELAY = datetime.timedelta(days=50)
 
 
 class Client:
-    def __init__(self, s, sl_client, nouserlist: bool, autojoin: bool, provider: Provider):
+    def __init__(self, s, sl_client: Union[slack.Slack, rocket.Rocket], nouserlist: bool, autojoin: bool, provider: Provider):
         self.nick = b''
         self.username = b''
         self.realname = b''
@@ -98,6 +98,7 @@ class Client:
     def _nickhandler(self, cmd: bytes) -> None:
         _, nick = cmd.split(b' ', 1)
         self.nick = nick.strip()
+        assert self.sl_client.login_info
         if self.nick != self.sl_client.login_info.self.name.encode('ascii'):
             self._sendreply(Replies.ERR_ERRONEUSNICKNAME, 'Incorrect nickname, use %s' % self.sl_client.login_info.self.name)
 
@@ -119,6 +120,7 @@ class Client:
 
     def _userhandler(self, cmd: bytes) -> None:
         #TODO USER salvo 8 * :Salvatore Tomaselli
+        assert self.sl_client.login_info
         self._sendreply(1, 'Welcome to localslackirc')
         self._sendreply(2, 'Your team name is: %s' % self.sl_client.login_info.team.name)
         self._sendreply(2, 'Your team domain is: %s' % self.sl_client.login_info.team.domain)
@@ -274,8 +276,8 @@ class Client:
             self._sendreply(Replies.ERR_UNKNOWNCOMMAND, f'Unable to set topic to {topic}')
 
     def _kickhandler(self, cmd: bytes) -> None:
-        _, channel, username, message = cmd.split(b' ', 3)
-        channel = self.sl_client.get_channel_by_name(channel.decode()[1:])
+        _, channel_b, username, message = cmd.split(b' ', 3)
+        channel = self.sl_client.get_channel_by_name(channel_b.decode()[1:])
         user = self.sl_client.get_user_by_name(username.decode())
         try:
             self.sl_client.kick(channel, user)
@@ -283,8 +285,8 @@ class Client:
             self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Error: %s' % e)
 
     def _invitehandler(self, cmd: bytes) -> None:
-        _, username, channel = cmd.split(b' ', 2)
-        channel = self.sl_client.get_channel_by_name(channel.decode()[1:])
+        _, username, channel_b = cmd.split(b' ', 2)
+        channel = self.sl_client.get_channel_by_name(channel_b.decode()[1:])
         user = self.sl_client.get_user_by_name(username.decode())
         try:
             self.sl_client.invite(channel, user)

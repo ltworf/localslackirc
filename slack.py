@@ -26,6 +26,7 @@ from typedload import load, dump
 
 from diff import seddiff
 from slackclient import SlackClient
+from slackclient.client import LoginInfo
 
 USELESS_EVENTS = {
     'channel_marked',
@@ -283,6 +284,7 @@ class Slack:
         self._get_members_cache_cursor: Dict[str, Optional[str]] = {}
         self._internalevents: List[SlackEvent] = []
         self._sent_by_self: Set[float] = set()
+        self.login_info: Optional[LoginInfo] = None
 
     def away(self, is_away: bool) -> None:
         """

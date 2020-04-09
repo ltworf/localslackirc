@@ -81,7 +81,7 @@ class Rocket:
         self._connect()
 
     @property
-    def login_info(self):
+    def login_info(self) -> LoginInfo:
         #TODO
         return LoginInfo(
             team=Team(
