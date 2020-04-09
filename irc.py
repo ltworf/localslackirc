@@ -156,17 +156,22 @@ class Client:
         self.s.send(b':%s PONG %s %s\n' % (self.hostname, self.hostname, lbl))
 
     def _joinhandler(self, cmd: bytes) -> None:
-        _, channel_name = cmd.split(b' ', 1)
+        _, channel_name_b = cmd.split(b' ', 1)
 
-        if channel_name in self.parted_channels:
-            self.parted_channels.remove(channel_name)
+        if channel_name_b in self.parted_channels:
+            self.parted_channels.remove(channel_name_b)
 
+        channel_name = channel_name_b[1:].decode()
         try:
-            slchan = self.sl_client.get_channel_by_name(channel_name[1:].decode())
-        except:
+            slchan = self.sl_client.get_channel_by_name(channel_name)
+        except Exception:
+            self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find channel: {channel_name}')
             return
 
-        self._send_chan_info(channel_name, slchan)
+        try:
+            self._send_chan_info(channel_name, slchan)
+        except Exception:
+            self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to join channel: {channel_name}')
 
     def _send_chan_info(self, channel_name: bytes, slchan: slack.Channel):
         if not self.nouserlist:
