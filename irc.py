@@ -98,6 +98,7 @@ class Client:
     def _nickhandler(self, cmd: bytes) -> None:
         _, nick = cmd.split(b' ', 1)
         self.nick = nick.strip()
+        assert self.sl_client.login_info
         if self.nick != self.sl_client.login_info.self.name.encode('ascii'):
             self._sendreply(Replies.ERR_ERRONEUSNICKNAME, 'Incorrect nickname, use %s' % self.sl_client.login_info.self.name)
 
@@ -119,6 +120,7 @@ class Client:
 
     def _userhandler(self, cmd: bytes) -> None:
         #TODO USER salvo 8 * :Salvatore Tomaselli
+        assert self.sl_client.login_info
         self._sendreply(1, 'Welcome to localslackirc')
         self._sendreply(2, 'Your team name is: %s' % self.sl_client.login_info.team.name)
         self._sendreply(2, 'Your team domain is: %s' % self.sl_client.login_info.team.domain)
