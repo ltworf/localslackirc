@@ -274,8 +274,8 @@ class Client:
             self._sendreply(Replies.ERR_UNKNOWNCOMMAND, f'Unable to set topic to {topic}')
 
     def _kickhandler(self, cmd: bytes) -> None:
-        _, channel, username, message = cmd.split(b' ', 3)
-        channel = self.sl_client.get_channel_by_name(channel.decode()[1:])
+        _, channel_b, username, message = cmd.split(b' ', 3)
+        channel = self.sl_client.get_channel_by_name(channel_b.decode()[1:])
         user = self.sl_client.get_user_by_name(username.decode())
         try:
             self.sl_client.kick(channel, user)
@@ -283,8 +283,8 @@ class Client:
             self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Error: %s' % e)
 
     def _invitehandler(self, cmd: bytes) -> None:
-        _, username, channel = cmd.split(b' ', 2)
-        channel = self.sl_client.get_channel_by_name(channel.decode()[1:])
+        _, username, channel_b = cmd.split(b' ', 2)
+        channel = self.sl_client.get_channel_by_name(channel_b.decode()[1:])
         user = self.sl_client.get_user_by_name(username.decode())
         try:
             self.sl_client.invite(channel, user)
