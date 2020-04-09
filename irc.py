@@ -464,6 +464,9 @@ class Client:
             self._joined_parted(sl_ev, False)
         elif isinstance(sl_ev, slack.TopicChange):
             self._sendreply(Replies.RPL_TOPIC, sl_ev.topic, ['#' + self.sl_client.get_channel(sl_ev.channel).name])
+        elif isinstance(sl_ev, slack.GroupJoined):
+            channel_name = '#%s' % sl_ev.channel.name_normalized
+            self._send_chan_info(channel_name.encode('utf-8'), sl_ev.channel)
 
     def command(self, cmd: bytes) -> None:
         if b' ' in cmd:
