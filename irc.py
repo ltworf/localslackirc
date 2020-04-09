@@ -156,25 +156,30 @@ class Client:
         self.s.send(b':%s PONG %s %s\n' % (self.hostname, self.hostname, lbl))
 
     def _joinhandler(self, cmd: bytes) -> None:
-        _, channel_name = cmd.split(b' ', 1)
+        _, channel_name_b = cmd.split(b' ', 1)
 
-        if channel_name in self.parted_channels:
-            self.parted_channels.remove(channel_name)
+        if channel_name_b in self.parted_channels:
+            self.parted_channels.remove(channel_name_b)
 
+        channel_name = channel_name_b[1:].decode()
         try:
-            slchan = self.sl_client.get_channel_by_name(channel_name[1:].decode())
-        except:
+            slchan = self.sl_client.get_channel_by_name(channel_name)
+        except Exception:
+            self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find channel: {channel_name}')
             return
 
-        self._send_chan_info(channel_name, slchan)
+        try:
+            self._send_chan_info(channel_name_b, slchan)
+        except Exception:
+            self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to join channel: {channel_name}')
 
     def _send_chan_info(self, channel_name: bytes, slchan: slack.Channel):
         if not self.nouserlist:
-            userlist = []  # type List[bytes]
+            userlist: List[bytes] = []
             for i in self.sl_client.get_members(slchan.id):
                 try:
                     u = self.sl_client.get_user(i)
-                except:
+                except Exception:
                     continue
                 if u.deleted:
                     # Disabled user, skip it
@@ -219,7 +224,7 @@ class Client:
                     message,
                     action,
                 )
-            except:
+            except Exception:
                 print('Impossible to find user ', dest)
 
     def _listhandler(self, cmd: bytes) -> None:
@@ -307,7 +312,7 @@ class Client:
             try:
                 user = self.sl_client.get_user(i)
                 self._sendreply(Replies.RPL_WHOREPLY, '0 %s' % user.real_name, [name, user.name, '127.0.0.1', self.hostname, user.name, 'H'])
-            except:
+            except Exception:
                 pass
         self._sendreply(Replies.RPL_ENDOFWHO, 'End of WHO list', [name])
 

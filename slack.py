@@ -39,6 +39,7 @@ USELESS_EVENTS = {
     'file_deleted',
     'file_public',
     'file_created',
+    'desktop_notification',
 }
 
 
@@ -581,7 +582,7 @@ class Slack:
 
             try:
                 events = self.client.rtm_read()
-            except:
+            except Exception:
                 print('Connecting to slack...')
                 try:
                     self.login_info = self.client.rtm_connect()
@@ -596,9 +597,6 @@ class Slack:
                 continue
 
             for event in events:
-                t = event.get('type')
-                subt = event.get('subtype')
-
                 ts = float(event.get('ts', 0))
                 if ts in self._sent_by_self:
                     self._sent_by_self.remove(ts)
@@ -611,6 +609,9 @@ class Slack:
                     )
                 except Exception:
                     pass
+
+                t = event.get('type')
+                subt = event.get('subtype')
 
                 try:
                     if t == 'message' and (not subt or subt == 'me_message'):

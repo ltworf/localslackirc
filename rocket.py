@@ -299,13 +299,13 @@ class Rocket:
                 raise Exception('Trigger reconnect')
         except SSLWantReadError:
             return None
-        except:
+        except Exception:
             self._connect()
             return None
 
         try:
             data = json.loads(raw_data)
-        except:
+        except Exception:
             print(f'Failed to decode json: {repr(raw_data)}')
             raise
 
@@ -348,7 +348,7 @@ class Rocket:
             try:
                 if data['fields']['args'][0]['_id'].startswith(self._id_prefix):
                     continue
-            except:
+            except Exception:
                 pass
 
             if data.get('msg') == 'changed' and data.get('collection') == 'stream-room-messages': # New message
@@ -373,7 +373,7 @@ class Rocket:
                             previous=NoChanMessage(user=r.user, text=''),
                             current=NoChanMessage(user=r.user, text=r.text)
                         )
-                except:
+                except Exception:
                     pass
 
             if r is None:
