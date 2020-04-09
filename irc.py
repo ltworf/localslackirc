@@ -169,7 +169,7 @@ class Client:
             return
 
         try:
-            self._send_chan_info(channel_name, slchan)
+            self._send_chan_info(channel_name_b, slchan)
         except Exception:
             self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to join channel: {channel_name}')
 
