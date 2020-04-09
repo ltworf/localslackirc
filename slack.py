@@ -39,6 +39,7 @@ USELESS_EVENTS = {
     'file_deleted',
     'file_public',
     'file_created',
+    'desktop_notification',
 }
 
 
