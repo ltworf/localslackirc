@@ -77,7 +77,7 @@ MPIM_HIDE_DELAY = datetime.timedelta(days=50)
 
 
 class Client:
-    def __init__(self, s, sl_client, nouserlist: bool, autojoin: bool, provider: Provider):
+    def __init__(self, s, sl_client: Union[slack.Slack, rocket.Rocket], nouserlist: bool, autojoin: bool, provider: Provider):
         self.nick = b''
         self.username = b''
         self.realname = b''
