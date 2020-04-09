@@ -3,6 +3,8 @@
 * Parse URLs sent from slack with a label
 * Require python3.8
 * Aware of new channels the user is added to
+* Various crashes fixed
+* Ctrl+C now works at the 1st attempt
 
 1.7
 * Logs are more useful
