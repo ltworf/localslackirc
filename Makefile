@@ -18,6 +18,7 @@ install:
 	install -m644 slackclient/__init__.py $${DESTDIR:-/}/usr/share/localslackirc/slackclient/
 	# Install files from the root dir
 	install -m644 diff.py $${DESTDIR:-/}/usr/share/localslackirc/
+	install -m644 log.py $${DESTDIR:-/}/usr/share/localslackirc/
 	install -m644 slack.py $${DESTDIR:-/}/usr/share/localslackirc/
 	install -m644 rocket.py $${DESTDIR:-/}/usr/share/localslackirc/
 	install irc.py $${DESTDIR:-/}/usr/share/localslackirc/
@@ -37,6 +38,7 @@ dist:
 	cd ..; tar -czvvf localslackirc.tar.gz \
 		localslackirc/irc.py \
 		localslackirc/diff.py \
+		localslackirc/log.py \
 		localslackirc/slack.py \
 		localslackirc/rocket.py \
 		localslackirc/slackclient/__init__.py \
