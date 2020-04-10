@@ -333,7 +333,7 @@ class Slack:
                 continue
 
             cursor = None
-            while True:
+            while True: # Loop to iterate the cursor
                 r = self.client.api_call(
                     'conversations.history',
                     channel=channel.id,
@@ -358,8 +358,6 @@ class Slack:
                     cursor = response.response_metadata.next_cursor
                 else:
                     break
-
-
 
     def get_status(self) -> bytes:
         '''
