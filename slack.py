@@ -18,6 +18,7 @@
 
 import datetime
 from functools import lru_cache
+import json
 from time import sleep, time
 from typing import *
 
@@ -261,6 +262,32 @@ class TopicChange:
     user: str = attrib()
 
 
+class HistoryBotMessage(NamedTuple):
+    type: Literal['message']
+    subtype: Literal['bot_message']
+    text: str
+    bot_id: Optional[str]
+    username: str = 'bot'
+
+
+class HistoryMessage(NamedTuple):
+    type: Literal['message']
+    user: str
+    text: str
+    ts: float
+
+
+class NextCursor(NamedTuple):
+    next_cursor: str
+
+
+class History(NamedTuple):
+    ok: Literal[True]
+    messages: List[Union[HistoryMessage, HistoryBotMessage]]
+    has_more: bool
+    response_metadata: Optional[NextCursor] = None
+
+
 SlackEvent = Union[
     TopicChange,
     MessageDelete,
@@ -275,8 +302,12 @@ SlackEvent = Union[
 ]
 
 
+@attrs
+class SlackStatus:
+    last_timestamp: float = attrib(default=0.0)
+
 class Slack:
-    def __init__(self, token: str, cookie: Optional[str]) -> None:
+    def __init__(self, token: str, cookie: Optional[str], previous_status: Optional[bytes]) -> None:
         self.client = SlackClient(token, cookie)
         self._usercache: Dict[str, User] = {}
         self._usermapcache: Dict[str, User] = {}
@@ -286,6 +317,66 @@ class Slack:
         self._internalevents: List[SlackEvent] = []
         self._sent_by_self: Set[float] = set()
         self.login_info: Optional[LoginInfo] = None
+        if previous_status is None:
+            self._status = SlackStatus()
+        else:
+            self._status = load(json.loads(previous_status), SlackStatus)
+
+    def _history(self) -> None:
+        '''
+        Obtain the history from the last known event and
+        inject fake events as if the messages are coming now.
+        '''
+        if self._status.last_timestamp == 0:
+            return
+
+        for channel in self.channels():
+            if not channel.is_member:
+                continue
+
+            cursor = None
+            while True: # Loop to iterate the cursor
+                r = self.client.api_call(
+                    'conversations.history',
+                    channel=channel.id,
+                    oldest=self._status.last_timestamp,
+                    limit=1000,
+                    cursor=cursor,
+                )
+                try:
+                    response = load(r, History)
+                except Exception as e:
+                    print('Failed to parse', e)
+                    print(r)
+                    break
+
+                for msg in response.messages:
+                    if isinstance(msg, HistoryMessage):
+                        self._internalevents.append(Message(
+                            channel=channel.id,
+                            text=msg.text,
+                            user=msg.user
+                        ))
+                    elif isinstance(msg, HistoryBotMessage):
+                        self._internalevents.append(MessageBot(
+                            type='message', subtype='bot_message',
+                            text=msg.text,
+                            username=msg.username,
+                            channel=channel.id,
+                            bot_id=msg.bot_id,
+                        ))
+
+                if response.has_more and response.response_metadata:
+                    cursor = response.response_metadata.next_cursor
+                else:
+                    break
+
+    def get_status(self) -> bytes:
+        '''
+        A status string that will be passed back when this is started again
+        '''
+        return json.dumps(dump(self._status), ensure_ascii=True).encode('ascii')
+
 
     def away(self, is_away: bool) -> None:
         """
@@ -589,10 +680,12 @@ class Slack:
             try:
                 events = self.client.rtm_read()
             except Exception:
+                events = []
                 print('Connecting to slack...')
                 try:
                     self.login_info = self.client.rtm_connect()
                     sleeptime = 1
+                    self._history()
                 except Exception as e:
                     print(f'Connection to slack failed {e}')
                     sleep(sleeptime)
@@ -604,6 +697,10 @@ class Slack:
 
             for event in events:
                 ts = float(event.get('ts', 0))
+
+                if ts > self._status.last_timestamp:
+                    self._status.last_timestamp = ts
+
                 if ts in self._sent_by_self:
                     self._sent_by_self.remove(ts)
                     continue

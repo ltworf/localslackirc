@@ -58,7 +58,7 @@ class DirectChannel(NamedTuple):
 
 
 class Rocket:
-    def __init__(self, url: str, token: str) -> None:
+    def __init__(self, url: str, token: str, previous_status: Optional[bytes]) -> None:
         self.url = url
         self.token  = token
         self._call_id = 100
@@ -79,6 +79,9 @@ class Rocket:
             return  _original_handler(l, d, t)
         self.loader.handlers[index] = (self.loader.handlers[index][0], _namedtuplehandler)
         self._connect()
+
+    def get_status(self) -> bytes:
+        return b''
 
     @property
     def login_info(self) -> LoginInfo:

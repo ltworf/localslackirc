@@ -17,8 +17,10 @@
 #
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
+import atexit
 import datetime
 from enum import Enum
+from pathlib import Path
 import re
 import select
 import socket
@@ -569,8 +571,15 @@ def main() -> None:
                                 help='allow non 127. addresses, this is potentially dangerous')
     parser.add_argument('--rc-url', type=str, action='store', dest='rc_url', default=None, required=False,
                                 help='The rocketchat URL. Setting this changes the mode from slack to rocketchat')
+    parser.add_argument('-f', '--status-file', type=str, action='store', dest='status_file', required=False, default=None,
+                                help='Path to the file to keep the internal status.')
 
     args = parser.parse_args()
+
+    status_file_str: Optional[str] = environ.get('STATUS_FILE', args.status_file)
+    status_file = None
+    if status_file_str is not None:
+        status_file = Path(status_file_str)
 
     ip: str = environ.get('IP_ADDRESS', args.ip)
     overridelocalip: bool = environ['OVERRIDE_LOCAL_IP'].lower() == 'true' if 'OVERRIDE_LOCAL_IP' in environ else args.overridelocalip
@@ -615,12 +624,19 @@ def main() -> None:
     if token.startswith('xoxc-') and not cookie:
         exit('The cookie is needed for this kind of slack token')
 
+    previous_status = None
+    if status_file is not None and status_file.exists():
+        previous_status = status_file.read_bytes()
+
     if rc_url:
-        sl_client: Union[slack.Slack, rocket.Rocket] = rocket.Rocket(rc_url, token)
+        sl_client: Union[slack.Slack, rocket.Rocket] = rocket.Rocket(rc_url, token, previous_status)
         provider = Provider.ROCKETCHAT
     else:
-        sl_client = slack.Slack(token, cookie)
+        sl_client = slack.Slack(token, cookie, previous_status)
         provider = Provider.SLACK
+
+    atexit.register(lambda: status_file and status_file.write_bytes(sl_client.get_status()))
+
     sl_events = sl_client.events_iter()
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
