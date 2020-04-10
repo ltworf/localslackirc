@@ -17,6 +17,7 @@
 #
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
+import atexit
 import datetime
 from enum import Enum
 from pathlib import Path
@@ -628,6 +629,9 @@ def main() -> None:
     else:
         sl_client = slack.Slack(token, cookie, previous_status)
         provider = Provider.SLACK
+
+    atexit.register(lambda: status_file.write_bytes(sl_client.get_status()))
+
     sl_events = sl_client.events_iter()
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
