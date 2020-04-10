@@ -304,7 +304,7 @@ SlackEvent = Union[
 
 @attrs
 class SlackStatus:
-    last_timestamp: float = attrib(default=0)
+    last_timestamp: float = attrib(default=0.0)
 
 class Slack:
     def __init__(self, token: str, cookie: Optional[str], previous_status: Optional[bytes]) -> None:
@@ -327,6 +327,9 @@ class Slack:
         Obtain the history from the last known event and
         inject fake events as if the messages are coming now.
         '''
+        if self._status.last_timestamp == 0:
+            return
+
         for channel in self.channels():
             if not channel.is_member:
                 continue
