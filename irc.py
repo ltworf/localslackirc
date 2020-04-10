@@ -36,6 +36,7 @@ import traceback
 
 import slack
 import rocket
+from log import *
 
 
 # How slack expresses mentioning users
@@ -233,7 +234,7 @@ class Client:
                     action,
                 )
             except Exception:
-                print('Impossible to find user ', dest)
+                log('Impossible to find user ', dest)
 
     def _listhandler(self, cmd: bytes) -> None:
         for c in self.sl_client.channels():
@@ -309,7 +310,7 @@ class Client:
     def _whohandler(self, cmd: bytes) -> None:
         _, name = cmd.split(b' ', 1)
         if not name.startswith(b'#'):
-            print('WHO not supported on ', name)
+            log('WHO not supported on ', name)
             return
         try:
             channel = self.sl_client.get_channel_by_name(name.decode()[1:])
@@ -429,7 +430,7 @@ class Client:
         except KeyError:
             dest = self.nick
         except Exception as e:
-            print('Error: ', str(e))
+            log('Error: ', str(e))
             return
         if dest in self.parted_channels:
             # Ignoring messages, channel was left on IRC
@@ -518,7 +519,7 @@ class Client:
             handlers[cmdid](cmd)
         else:
             self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Unknown command', [cmdid])
-            print('Unknown command: ', cmd)
+            log('Unknown command: ', cmd)
 
 
 def su() -> None:
@@ -579,6 +580,7 @@ def main() -> None:
     status_file_str: Optional[str] = environ.get('STATUS_FILE', args.status_file)
     status_file = None
     if status_file_str is not None:
+        log('Status file at:', status_file_str)
         status_file = Path(status_file_str)
 
     ip: str = environ.get('IP_ADDRESS', args.ip)
@@ -670,7 +672,7 @@ def main() -> None:
                         ircclient.command(i)
 
             while sl_event:
-                print(sl_event)
+                log(sl_event)
                 ircclient.slack_event(sl_event)
                 sl_event = next(sl_events)
 
