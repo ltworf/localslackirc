@@ -262,6 +262,14 @@ class TopicChange:
     user: str = attrib()
 
 
+class HistoryBotMessage(NamedTuple):
+    type: Literal['message']
+    subtype: Literal['bot_message']
+    text: str
+    username: str
+    bot_id: Optional[str]
+
+
 class HistoryMessage(NamedTuple):
     type: Literal['message']
     user: str
@@ -275,7 +283,7 @@ class NextCursor(NamedTuple):
 
 class History(NamedTuple):
     ok: Literal[True]
-    messages: List[HistoryMessage]
+    messages: List[Union[HistoryMessage, HistoryBotMessage]]
     has_more: bool
     response_metadata: Optional[NextCursor] = None
 
