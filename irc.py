@@ -19,6 +19,7 @@
 
 import datetime
 from enum import Enum
+from pathlib import Path
 import re
 import select
 import socket
@@ -615,7 +616,12 @@ def main() -> None:
     if token.startswith('xoxc-') and not cookie:
         exit('The cookie is needed for this kind of slack token')
 
+    status_file = Path('/tmp/blabla') # FIXME make this an option
+
     previous_status = None
+    if status_file.exists():
+        previous_status = status_file.read_bytes()
+
     if rc_url:
         sl_client: Union[slack.Slack, rocket.Rocket] = rocket.Rocket(rc_url, token, previous_status)
         provider = Provider.ROCKETCHAT
