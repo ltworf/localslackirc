@@ -18,6 +18,7 @@
 
 import datetime
 from functools import lru_cache
+import json
 from time import sleep, time
 from typing import *
 
@@ -275,6 +276,10 @@ SlackEvent = Union[
 ]
 
 
+@attrs
+class SlackStatus:
+    last_timestamp: float = attrib(default=0)
+
 class Slack:
     def __init__(self, token: str, cookie: Optional[str], previous_status: Optional[bytes]) -> None:
         self.client = SlackClient(token, cookie)
@@ -286,12 +291,13 @@ class Slack:
         self._internalevents: List[SlackEvent] = []
         self._sent_by_self: Set[float] = set()
         self.login_info: Optional[LoginInfo] = None
+        self._status = SlackStatus()
 
     def get_status(self) -> bytes:
         '''
         A status string that will be passed back when this is started again
         '''
-        return b''
+        return json.dumps(dump(self._status), ensure_ascii=True).encode('ascii')
 
 
     def away(self, is_away: bool) -> None:
@@ -611,6 +617,10 @@ class Slack:
 
             for event in events:
                 ts = float(event.get('ts', 0))
+
+                if ts > self._status.last_timestamp:
+                    self._status.last_timestamp = ts
+
                 if ts in self._sent_by_self:
                     self._sent_by_self.remove(ts)
                     continue
