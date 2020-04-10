@@ -168,6 +168,12 @@ class Client:
             self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find channel: {channel_name}')
             return
 
+        if not slchan.is_member:
+            try:
+                self.sl_client.join(slchan)
+            except Exception:
+                self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to join server channel: {channel_name}')
+
         try:
             self._send_chan_info(channel_name_b, slchan)
         except Exception:

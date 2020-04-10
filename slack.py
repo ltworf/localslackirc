@@ -309,6 +309,12 @@ class Slack:
         if not response.ok:
             raise ResponseException(response)
 
+    def join(self, channel: Channel) -> None:
+        r = self.client.api_call('conversations.join', channel=channel.id)
+        response = load(r, Response)
+        if not response.ok:
+            raise ResponseException(response)
+
     def invite(self, channel: Channel, user: Union[User, List[User]]) -> None:
         if isinstance(user, User):
             ids = user.id
