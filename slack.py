@@ -309,7 +309,46 @@ class Slack:
         self._internalevents: List[SlackEvent] = []
         self._sent_by_self: Set[float] = set()
         self.login_info: Optional[LoginInfo] = None
-        self._status = SlackStatus()
+        if previous_status is None:
+            self._status = SlackStatus()
+        else:
+            self._status = load(json.loads(previous_status), SlackStatus)
+            self._history()
+
+    def _history(self) -> None:
+        '''
+        Obtain the history from the last known event and
+        inject fake events as if the messages are coming now.
+        '''
+        for channel in self.channels():
+            cursor = None
+            while True:
+                r = self.client.api_call(
+                    'conversations.history',
+                    channel=channel.id,
+                    oldest=self._status.last_timestamp,
+                    limit=1000,
+                    cursor=cursor,
+                )
+                try:
+                    response = load(r, History)
+                except Exception as e:
+                    print('Failed to parse', e)
+                    print(r)
+                    break
+
+                for msg in response.messages:
+                    self._internalevents.append(Message(
+                        channel=channel.id,
+                        text=msg.text,
+                        user=msg.user
+                    ))
+                if response.has_more and response.response_metadata:
+                    cursor = response.response_metadata.next_cursor
+                else:
+                    break
+
+
 
     def get_status(self) -> bytes:
         '''
