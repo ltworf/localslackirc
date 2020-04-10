@@ -31,6 +31,7 @@ import typedload.dataloader
 
 from slack import Channel, File, FileShared, IM, Message, MessageEdit, Profile, SlackEvent, Topic, User, NoChanMessage
 from slackclient.client import Team, Self, LoginInfo
+from log import *
 
 CALL_TIMEOUT = 10
 
@@ -134,7 +135,7 @@ class Rocket:
             elif channel_type == ChannelType.QUERY:
                 pass
             else:
-                print('Unknown data %s' % repr(i))
+                log('Unknown data %s' % repr(i))
 
     def _send_json(self, data: Dict[str, Any]) -> None:
         """
@@ -301,7 +302,7 @@ class Rocket:
         try:
             _, raw_data = self._websocket.recv_data()
             if raw_data == b'\x03\xe8Normal closure':
-                print('Server triggered a disconnect. Reaconnecting')
+                log('Server triggered a disconnect. Reaconnecting')
                 raise Exception('Trigger reconnect')
         except SSLWantReadError:
             return None
@@ -312,7 +313,7 @@ class Rocket:
         try:
             data = json.loads(raw_data)
         except Exception:
-            print(f'Failed to decode json: {repr(raw_data)}')
+            log(f'Failed to decode json: {repr(raw_data)}')
             raise
 
 
@@ -346,7 +347,7 @@ class Rocket:
                 continue
 
             r: Optional[SlackEvent] = None
-            print('Scanning ', data)
+            log('Scanning ', data)
             if not isinstance(data, dict):
                 continue
 
@@ -383,6 +384,6 @@ class Rocket:
                     pass
 
             if r is None:
-                print('Not handled: ', data)
+                log('Not handled: ', data)
             else:
                 yield r

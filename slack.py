@@ -28,6 +28,7 @@ from typedload import load, dump
 from diff import seddiff
 from slackclient import SlackClient
 from slackclient.client import LoginInfo
+from log import *
 
 USELESS_EVENTS = {
     'channel_marked',
@@ -48,7 +49,7 @@ def _loadwrapper(value, type_):
     try:
         return load(value, type_)
     except Exception as e:
-        print(e)
+        log(e)
         pass
 
 
@@ -346,8 +347,8 @@ class Slack:
                 try:
                     response = load(r, History)
                 except Exception as e:
-                    print('Failed to parse', e)
-                    print(r)
+                    log('Failed to parse', e)
+                    log(r)
                     break
 
                 for msg in response.messages:
@@ -681,18 +682,18 @@ class Slack:
                 events = self.client.rtm_read()
             except Exception:
                 events = []
-                print('Connecting to slack...')
+                log('Connecting to slack...')
                 try:
                     self.login_info = self.client.rtm_connect()
                     sleeptime = 1
                     self._history()
                 except Exception as e:
-                    print(f'Connection to slack failed {e}')
+                    log(f'Connection to slack failed {e}')
                     sleep(sleeptime)
                     if sleeptime <= 120:  # max reconnection interval at 2 minutes
                         sleeptime *= 2
                     continue
-                print('Connected to slack')
+                log('Connected to slack')
                 continue
 
             for event in events:
@@ -750,8 +751,8 @@ class Slack:
                     elif t in USELESS_EVENTS:
                         continue
                     else:
-                        print(event)
+                        log(event)
                 except Exception as e:
-                    print('Exception: %s' % e)
+                    log('Exception: %s' % e)
             self._triage_sent_by_self()
             yield None
