@@ -38,3 +38,5 @@ AUTOJOIN=true
 
 # Do not fetch the user list (for huge instances)
 #NOUSERLIST=true
+
+#STATUS_FILE=/home/username/.config/localslackirc
