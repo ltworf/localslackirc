@@ -262,6 +262,24 @@ class TopicChange:
     user: str = attrib()
 
 
+class HistoryMessage(NamedTuple):
+    type: Literal['message']
+    user: str
+    text: str
+    ts: float
+
+
+class NextCursor(NamedTuple):
+    next_cursor: str
+
+
+class History(NamedTuple):
+    ok: Literal[True]
+    messages: List[HistoryMessage]
+    has_more: bool
+    response_metadata: Optional[NextCursor] = None
+
+
 SlackEvent = Union[
     TopicChange,
     MessageDelete,
