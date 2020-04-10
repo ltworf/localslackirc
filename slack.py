@@ -329,6 +329,9 @@ class Slack:
         inject fake events as if the messages are coming now.
         '''
         for channel in self.channels():
+            if not channel.is_member:
+                continue
+
             cursor = None
             while True:
                 r = self.client.api_call(
