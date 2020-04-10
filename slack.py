@@ -321,7 +321,6 @@ class Slack:
             self._status = SlackStatus()
         else:
             self._status = load(json.loads(previous_status), SlackStatus)
-            self._history()
 
     def _history(self) -> None:
         '''
@@ -678,10 +677,12 @@ class Slack:
             try:
                 events = self.client.rtm_read()
             except Exception:
+                events = []
                 print('Connecting to slack...')
                 try:
                     self.login_info = self.client.rtm_connect()
                     sleeptime = 1
+                    self._history()
                 except Exception as e:
                     print(f'Connection to slack failed {e}')
                     sleep(sleeptime)
