@@ -6,6 +6,7 @@
 * Various crashes fixed
 * Ctrl+C now works at the 1st attempt
 * Can join slack channels without doing so from the app
+* Chat history is retrieved and injected
 
 1.7
 * Logs are more useful
