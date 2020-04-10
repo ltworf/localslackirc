@@ -266,8 +266,8 @@ class HistoryBotMessage(NamedTuple):
     type: Literal['message']
     subtype: Literal['bot_message']
     text: str
-    username: str
     bot_id: Optional[str]
+    username: str = 'bot'
 
 
 class HistoryMessage(NamedTuple):
