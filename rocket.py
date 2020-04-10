@@ -214,6 +214,9 @@ class Rocket:
     def away(self, is_away: bool) -> None:
         raise NotImplemented()
 
+    def join(self, channel: Channel) -> None:
+        raise NotImplemented()
+
     def invite(self, channel: Channel, user: Union[User, List[User]]) -> None:
         raise NotImplemented()
 
