@@ -349,11 +349,21 @@ class Slack:
                     break
 
                 for msg in response.messages:
-                    self._internalevents.append(Message(
-                        channel=channel.id,
-                        text=msg.text,
-                        user=msg.user
-                    ))
+                    if isinstance(msg, HistoryMessage):
+                        self._internalevents.append(Message(
+                            channel=channel.id,
+                            text=msg.text,
+                            user=msg.user
+                        ))
+                    elif isinstance(msg, HistoryBotMessage):
+                        self._internalevents.append(MessageBot(
+                            type='message', subtype='bot_message',
+                            text=msg.text,
+                            username=msg.username,
+                            channel=channel.id,
+                            bot_id=msg.bot_id,
+                        ))
+
                 if response.has_more and response.response_metadata:
                     cursor = response.response_metadata.next_cursor
                 else:
