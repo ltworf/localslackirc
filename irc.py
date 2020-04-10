@@ -615,11 +615,12 @@ def main() -> None:
     if token.startswith('xoxc-') and not cookie:
         exit('The cookie is needed for this kind of slack token')
 
+    previous_status = None
     if rc_url:
-        sl_client: Union[slack.Slack, rocket.Rocket] = rocket.Rocket(rc_url, token)
+        sl_client: Union[slack.Slack, rocket.Rocket] = rocket.Rocket(rc_url, token, previous_status)
         provider = Provider.ROCKETCHAT
     else:
-        sl_client = slack.Slack(token, cookie)
+        sl_client = slack.Slack(token, cookie, previous_status)
         provider = Provider.SLACK
     sl_events = sl_client.events_iter()
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

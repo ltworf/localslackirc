@@ -276,7 +276,7 @@ SlackEvent = Union[
 
 
 class Slack:
-    def __init__(self, token: str, cookie: Optional[str]) -> None:
+    def __init__(self, token: str, cookie: Optional[str], previous_status: Optional[bytes]) -> None:
         self.client = SlackClient(token, cookie)
         self._usercache: Dict[str, User] = {}
         self._usermapcache: Dict[str, User] = {}
@@ -286,6 +286,13 @@ class Slack:
         self._internalevents: List[SlackEvent] = []
         self._sent_by_self: Set[float] = set()
         self.login_info: Optional[LoginInfo] = None
+
+    def get_status(self) -> bytes:
+        '''
+        A status string that will be passed back when this is started again
+        '''
+        return b''
+
 
     def away(self, is_away: bool) -> None:
         """
