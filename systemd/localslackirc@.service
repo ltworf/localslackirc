@@ -39,5 +39,6 @@ SyslogIdentifier=localslackirc-%i
 EnvironmentFile=/etc/localslackirc.d/%i
 # Security
 ProtectSystem=strict
+ReadWritePaths=/var/tmp
 PrivateDevices=true
 LockPersonality=true

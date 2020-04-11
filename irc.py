@@ -23,6 +23,7 @@ from enum import Enum
 from pathlib import Path
 import re
 import select
+import signal
 import socket
 import argparse
 from typing import *
@@ -522,6 +523,13 @@ class Client:
             log('Unknown command: ', cmd)
 
 
+def exit_hook(status_file, sl_client) -> None:
+    if status_file:
+        log(f'Writing status to {status_file}')
+        status_file.write_bytes(sl_client.get_status())
+    log('Exiting...')
+
+
 def su() -> None:
     """
     switch user. Useful when starting localslackirc
@@ -540,7 +548,6 @@ def su() -> None:
     os.setegid(userdata.pw_gid)
     os.setuid(userdata.pw_uid)
     os.seteuid(userdata.pw_uid)
-
 
 
 def main() -> None:
@@ -637,7 +644,10 @@ def main() -> None:
         sl_client = slack.Slack(token, cookie, previous_status)
         provider = Provider.SLACK
 
-    atexit.register(lambda: status_file and status_file.write_bytes(sl_client.get_status()))
+    atexit.register(exit_hook, status_file, sl_client)
+    term_f = lambda _, __: sys.exit(0)
+    signal.signal(signal.SIGHUP, term_f )
+    signal.signal(signal.SIGTERM, term_f)
 
     sl_events = sl_client.events_iter()
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
