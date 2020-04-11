@@ -38,6 +38,3 @@ AUTOJOIN=true
 
 # Do not fetch the user list (for huge instances)
 #NOUSERLIST=true
-
-#Defaults to /var/tmp/localslackirc-status-%i
-#STATUS_FILE=/home/username/.config/localslackirc
