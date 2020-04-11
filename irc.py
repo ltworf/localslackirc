@@ -238,7 +238,7 @@ class Client:
                 log('Impossible to find user ', dest)
 
     def _listhandler(self, cmd: bytes) -> None:
-        for c in self.sl_client.channels():
+        for c in self.sl_client.channels(refresh=True):
             self._sendreply(Replies.RPL_LIST, c.real_topic, ['#' + c.name, str(c.num_members)])
         self._sendreply(Replies.RPL_LISTEND, 'End of LIST')
 
