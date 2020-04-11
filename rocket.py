@@ -236,7 +236,9 @@ class Rocket:
                 )
         return {i.id_ for i in data.records}
 
-    def channels(self) -> List[Channel]:
+    def channels(self, refresh: bool=False) -> List[Channel]:
+        if refresh:
+            self._update_channels()
         return self._channels
 
     def get_channel(self, id_: str) -> Channel:

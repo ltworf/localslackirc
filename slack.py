@@ -455,10 +455,7 @@ class Slack:
         return self._get_members_cache[id_]
 
     @lru_cache()
-    def channels(self) -> List[Channel]:
-        """
-        Returns the list of slack channels
-        """
+    def _channels(self) -> List[Channel]:
         result: List[Channel] = []
         r = self.client.api_call("conversations.list", exclude_archived=True,
                 types='public_channel,private_channel,mpim', limit=1000)
@@ -468,6 +465,15 @@ class Slack:
         else:
             raise ResponseException(response)
 
+    def channels(self, refresh: bool = False) -> List[Channel]:
+        """
+        Returns the list of slack channels
+
+        if refresh is set, the local cache is cleared
+        """
+        if refresh:
+            self._channels.cache_clear()
+        return self._channels()
 
     @lru_cache()
     def get_channel(self, id_: str) -> Channel:
@@ -477,11 +483,9 @@ class Slack:
         raises KeyError if it doesn't exist.
         """
         for i in range(2):
-            for c in self.channels():
+            for c in self.channels(refresh=bool(i)):
                 if c.id == id_:
                     return c
-            if i == 0:
-                self.channels.cache_clear()
         raise KeyError()
 
     @lru_cache()
@@ -492,11 +496,9 @@ class Slack:
         raises KeyError if it doesn't exist.
         """
         for i in range(2):
-            for c in self.channels():
+            for c in self.channels(refresh=bool(i)):
                 if c.name == name:
                     return c
-            if i == 0:
-                self.channels.cache_clear()
         raise KeyError()
 
     @property
