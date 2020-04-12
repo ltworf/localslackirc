@@ -269,6 +269,7 @@ class HistoryBotMessage(NamedTuple):
     text: str
     bot_id: Optional[str]
     username: str = 'bot'
+    ts: float = 0
 
 
 class HistoryMessage(NamedTuple):
@@ -305,6 +306,11 @@ SlackEvent = Union[
 
 @attrs
 class SlackStatus:
+    """
+    Not related to the slack API.
+    This is a structure used internally by this module to
+    save the status on disk.
+    """
     last_timestamp: float = attrib(default=0.0)
 
 class Slack:
@@ -331,6 +337,8 @@ class Slack:
         if self._status.last_timestamp == 0:
             return
 
+        last_timestamp = self._status.last_timestamp
+
         for channel in self.channels():
             if not channel.is_member:
                 continue
@@ -340,7 +348,7 @@ class Slack:
                 r = self.client.api_call(
                     'conversations.history',
                     channel=channel.id,
-                    oldest=self._status.last_timestamp,
+                    oldest=last_timestamp,
                     limit=1000,
                     cursor=cursor,
                 )
@@ -352,6 +360,13 @@ class Slack:
                     break
 
                 for msg in response.messages:
+                    # The last seen message is sent again, skip it
+                    if msg.ts == last_timestamp:
+                        continue
+                    # Update the last seen timestamp
+                    if self._status.last_timestamp < msg.ts:
+                        self._status.last_timestamp = msg.ts
+                    # Inject the events
                     if isinstance(msg, HistoryMessage):
                         self._internalevents.append(Message(
                             channel=channel.id,
