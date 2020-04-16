@@ -8,11 +8,84 @@ after they shut down their IRC gateway.
 
 Since at my workplace they waited for me to implement all this to decide to
 switch to Rocket.Chat (or retard chat, as I like to call it), it now has
-support for doing the same thing with Rocket.Chat.
+support for doing the same thing with Rocket.Chat. However they switched back
+to slack so rchat support could use some help.
 
+Running localslackirc
+=====================
 
-Options to Obtain a Slack token
-===============================
+The preferred way is to have Debian Testing and install from the repository.
+You can grab the latest .deb and sources from:
+https://github.com/ltworf/localslackirc/releases
+
+All the options are documented in the man page. Execute
+
+```bash
+man man/localslackirc.1
+```
+
+To read the page without installing localslackirc on the system.
+
+There is a`localslackirc` binary but the preferred way is to run it
+using systemd.
+
+Systemd
+-------
+
+When installed from the .deb you will find a configuration template file in
+`/etc/localslackirc.d/example`.
+
+Create a copy of it in the same directory and edit the copy.
+
+You can create several copies to use several slack workspaces.
+
+Tell systemd to start localslackirc and make sure the ports do not collide.
+
+`instancename` is the name of the file.
+
+```bash
+# To start the instance
+sudo systemctl start localslackirc@instancename.service
+# To start the instance at every boot
+sudo systemctl enable localslackirc@instancename.service
+```
+
+Docker
+------
+
+Create a configuration file basing it on `localslackirc.d/example`
+
+```bash
+# Create the container
+docker build -t localslackirc -f docker/Dockerfile .
+
+# Run localslackirc
+docker run -d -p 9007:9007 --name=mylocalslackirc --env-file configfile localslackirc
+```
+
+Sources
+-------
+
+# Requirements
+
+* At least Python 3.8
+* The modules indicated in `requirements.txt`
+
+Check the manpage for the parameters.
+
+```bash
+./irc.py
+```
+
+Obtain a token
+==============
+
+Before localslackirc can do anything useful, you need to obtain a token.
+
+Your token should be placed inside the configuration file.
+
+Obtain a token from slack
+-------------------------
 
 * Retrieve a slack token from https://api.slack.com/docs/oauth-test-tokens
 
@@ -31,7 +104,7 @@ This step is only needed if your token starts with `xoxc-`.
 
 * Run this javascript code:
 
-```
+```js
 q=JSON.parse(localStorage.localConfig_v2)["teams"];
 var authToken=q[Object.keys(q)[0]]["token"];
 
@@ -60,36 +133,22 @@ formData.append('token', authToken);
 
 
 Obtain a Rocket.Chat token
-==========================
+--------------------------
 
 Look for "Personal Access Tokens" in the settings and generate one there.
 
 You will need to pass your URL, like this `--rc-url wss://rchat.com/websocket`.
 
 
-Using Token
-===========
-
-Your Slack token should be placed inside a file named `.localslackirc` inside your home directory.
-
-Any location works, with the '-t' argument to the desired location. eg: ```python3 irc.py -t /home/me/slack/token.txt```
-
 Using localslackirc
 ===================
 
-* Start localslackirc by running `python3 irc.py` - you should see a connection message similar to the this:
-```
-{'ok': True, 'url': 'wss://cerberus-xxxx.lb.slack-msgs.com/websocket/jhvbT8578765JHBfrewgsdy7', 'team': {'id': 'ZZZ789012', 'name': 'Some Team', 'domain': 'someteam'}, 'self': {'id': 'XXX123456', 'name': 'your name'}}
-```
+After installing localslackirc and obtaining the token, it is the time
+to connect to localslackirc with the IRC client.
 
-
-* Now point your irc client to localslackirc (127.0.0.1:9007)
-  * login to localslackirc using your Slack username
-  * after your connected, list the channels in your irc client and select the ones you want to join.
-
-## Automatically joining channels
-To automatically connect to the Slack channels you are in open localslackirc with the -j argument
-```python3 irc.py -j```
+* Connect to the IRC server created by localslackirc (by default 127.0.0.1:9007)
+* Use your Slack username as your nickname
+* If you left autojoin on, your client will automatically join your slack channels.
 
 ## Sending files
 You can use `/sendfile #destination filepath` to send files. Destination can be a channel or a user.
@@ -127,56 +186,6 @@ And you should see the following message in your irssi:
 22:15:36 [<slackname>] -!- serenity miniircd-1.2.1 o o
 22:15:36 [<slackname>] -!- There are 1 users and 0 services on 1 server
 ...
-```
-
-Installing localslackirc
-========================
-
-It is packaged for Debian (and Ubuntu), alternatively you can install from sources.
-
-
-Requirements
-------------
-
-* At least Python 3.8
-* The modules indicated in `requirements.txt`
-
-
-Using a docker container to run localslackirc
----------------------------------------------
-
-Inside `docker` directory there is a dockerfile to generate a container that runs `localslackirc`.
-In order to use it follow the instructions:
-
-```
-# docker build -t localslackirc -f docker/Dockerfile .
-
-```
-
-If everything went fine you should have a new container running localslackirc.
-
-Create a configuration file basing it on `localslackirc.d/example`
-
-To start your new container:
-
-```
-docker run -d -p 9007:9007 --name=mylocalslackirc --env-file configfile localslackirc
-```
-
-Connecting to multiple slack instances
-======================================
-
-To do this, run several instances of localslackirc on different ports.
-
-To simplify the procedure, a service called `localslackirc@.service` is provided. It can be used to manage several instances.
-
-It is enough to copy the example configuration file in /etc/localslackirc.d/instancename and then tell systemd about the new instance by running:
-
-```bash
-# To start the instance
-sudo systemctl start localslackirc@instancename.service
-# To start the instance at every boot
-sudo systemctl enable localslackirc@instancename.service
 ```
 
 IRC Channel
