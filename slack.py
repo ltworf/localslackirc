@@ -334,17 +334,24 @@ class Slack:
         Obtain the history from the last known event and
         inject fake events as if the messages are coming now.
         '''
+        log('Fetching history...')
+
         if self._status.last_timestamp == 0:
+            log('No last known timestamp. Unable to fetch history')
             return
 
         last_timestamp = self._status.last_timestamp
+        dt = datetime.datetime.fromtimestamp(last_timestamp)
+        log(f'Last known timestamp {dt}')
 
         for channel in self.channels():
             if not channel.is_member:
                 continue
+            log(f'Downloading logs from channel {channel.name_normalized}')
 
             cursor = None
             while True: # Loop to iterate the cursor
+                log('Calling cursor')
                 r = self.client.api_call(
                     'conversations.history',
                     channel=channel.id,
