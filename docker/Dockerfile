@@ -6,4 +6,4 @@ RUN python3 -m pip install -r /localslackirc/requirements.txt a
 COPY *.py /localslackirc/
 COPY slackclient/*.py /localslackirc/slackclient/
 USER localslackirc
-ENTRYPOINT echo ${SLACKTOKEN} > ~/.localslackirc && PYTHONPATH=/localslackirc python3 /localslackirc/irc.py -o -i "0.0.0.0"
+ENTRYPOINT PYTHONPATH=/localslackirc python3 /localslackirc/irc.py -o -i "0.0.0.0"
