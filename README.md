@@ -66,7 +66,7 @@ docker run -d -p 9007:9007 --name=mylocalslackirc --env-file configfile localsla
 Sources
 -------
 
-# Requirements
+### Requirements
 
 * At least Python 3.8
 * The modules indicated in `requirements.txt`
