@@ -581,8 +581,12 @@ def main() -> None:
                                 help='The rocketchat URL. Setting this changes the mode from slack to rocketchat')
     parser.add_argument('-f', '--status-file', type=str, action='store', dest='status_file', required=False, default=None,
                                 help='Path to the file to keep the internal status.')
+    parser.add_argument('--log-suffix', type=str, action='store', dest='log_suffix', default='',
+                                help='Set a suffix for the syslog identifier')
 
     args = parser.parse_args()
+
+    openlog(environ.get('LOG_SUFFIX', args.log_suffix))
 
     status_file_str: Optional[str] = environ.get('STATUS_FILE', args.status_file)
     status_file = None

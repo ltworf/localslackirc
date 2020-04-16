@@ -1,4 +1,4 @@
-.TH localslackirc 1 "Feb 29, 2020" "IRC gateway for slack and rocket.chat"
+.TH localslackirc 1 "Apr 16, 2020" "IRC gateway for slack and rocket.chat"
 .SH NAME
 localslackirc
 \- Creates an IRC server running locally, which acts as a gateway to slack or rocket.chat for one user.
@@ -50,6 +50,13 @@ Setting this changes the mode from slack to rocket.chat.
 .TP
 .B -f --status-file
 Path to the file keeping the status. When this is set, it allows for the history to be loaded on start.
+.TP
+.B --log-suffix
+Instead of using localslackirc as ident for syslog, this appends a custom string, separated by a -.
+.br
+This is useful when running several instances, to be able to distinguish the logs.
+.br
+The default .service file uses this. Of course journald keeps track of the services but this makes it easier to have the information on text dumps or other logging daemons such as rsyslog.
 .SH TOKEN
 The access token is (unless specified otherwise) located in ~/.localslackirc, for information on how to obtain your token, check the README file.
 .SH ENVIRONMENT
@@ -86,6 +93,9 @@ Alternative to --autojoin
 .TP
 .B NOUSERLIST
 Alternative to --nouserlist
+.TP
+.B LOG_SUFFIX
+Alternative to --log-suffix
 .SH WEB
 .BR https://github.com/ltworf/localslackirc
 
