@@ -17,19 +17,35 @@
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
 from os import isatty
-from syslog import *
+from syslog import LOG_INFO, syslog
+from syslog import openlog as _openlog
 
 __all__ = [
-    'log'
+    'log',
+    'openlog'
 ]
 
 
 tty = isatty(1) and isatty(2)
 
-openlog('localslackirc')
+
+def openlog(suffix: str) -> None:
+    """
+    Opens the syslog connection if needed
+    otherwise does nothing.
+    """
+    if tty:
+        return
+    if suffix:
+        suffix = f'-{suffix}'
+    _openlog(f'localslackirc{suffix}')
 
 
 def log(*args) -> None:
+    """
+    Logs to stdout or to syslog depending on if
+    running with a terminal attached.
+    """
     if tty:
         print(*args)
         return
