@@ -30,7 +30,7 @@ Before=localslackirc.service
 [Service]
 Type=simple
 Restart=always
-ExecStart=/usr/bin/localslackirc --status-file /var/tmp/localslackirc-status-%i
+ExecStart=/usr/bin/localslackirc --status-file /var/tmp/localslackirc-status-%i --log-suffix %i
 # Log
 StandardOutput=journal
 StandardError=journal
