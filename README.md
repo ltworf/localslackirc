@@ -155,10 +155,12 @@ In order to use it follow the instructions:
 
 If everything went fine you should have a new container running localslackirc.
 
+Create a configuration file basing it on `localslackirc.d/example`
+
 To start your new container:
 
 ```
-docker run -d -p 9007:9007 --name=mylocalslackirc -e 'SLACKTOKEN=MYSLACKTOKEN' localslackirc
+docker run -d -p 9007:9007 --name=mylocalslackirc --env-file configfile localslackirc
 ```
 
 Connecting to multiple slack instances
