@@ -273,11 +273,13 @@ class HistoryBotMessage(NamedTuple):
     ts: float = 0
 
 
-class HistoryMessage(NamedTuple):
-    type: Literal['message']
-    user: str
-    text: str
-    ts: float
+@attrs
+class HistoryMessage:
+    type: Literal['message'] = attrib()
+    user: str = attrib()
+    text: str = attrib()
+    ts: float = attrib()
+    files: List[File] = attrib(factory=list)
 
 
 class NextCursor(NamedTuple):
@@ -381,6 +383,11 @@ class Slack:
                             text=msg.text,
                             user=msg.user
                         ))
+                        # The attached files
+                        for f in msg.files:
+                            f.channels.append(channel.id)
+                            self._internalevents.append(f.announce())
+
                     elif isinstance(msg, HistoryBotMessage):
                         self._internalevents.append(MessageBot(
                             type='message', subtype='bot_message',
