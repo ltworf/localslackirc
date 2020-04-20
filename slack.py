@@ -273,7 +273,7 @@ class HistoryBotMessage:
     username: str = attrib(default='bot')
     ts: float = attrib(default=0)
     files: List[File] = attrib(factory=list)
-    thread_ts: Optional[float] = attrib(default=None)
+    thread_ts: Optional[str] = attrib(default=None)
 
 
 @attrs
@@ -283,7 +283,7 @@ class HistoryMessage:
     text: str = attrib()
     ts: float = attrib()
     files: List[File] = attrib(factory=list)
-    thread_ts: Optional[float] = attrib(default=None)
+    thread_ts: Optional[str] = attrib(default=None)
 
 
 class NextCursor(NamedTuple):
