@@ -107,7 +107,7 @@ class Client:
         if self.nick != self.sl_client.login_info.self.name.encode('ascii'):
             self._sendreply(Replies.ERR_ERRONEUSNICKNAME, 'Incorrect nickname, use %s' % self.sl_client.login_info.self.name)
 
-    def _sendreply(self, code: Union[int,Replies], message: Union[str,bytes], extratokens: List[Union[str,bytes]] = []) -> None:
+    def _sendreply(self, code: Union[int,Replies], message: Union[str,bytes], extratokens: Iterable[Union[str,bytes]] = []) -> None:
         codeint = code if isinstance(code, int) else code.value
         bytemsg = message if isinstance(message, bytes) else message.encode('utf8')
 
