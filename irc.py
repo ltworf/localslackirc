@@ -55,6 +55,7 @@ _SLACK_SUBSTITUTIONS = [
 
 class Replies(Enum):
     RPL_LUSERCLIENT = 251
+    RPL_USERHOST = 302
     RPL_UNAWAY = 305
     RPL_NOWAWAY = 306
     RPL_ENDOFWHO = 315
@@ -106,7 +107,7 @@ class Client:
         if self.nick != self.sl_client.login_info.self.name.encode('ascii'):
             self._sendreply(Replies.ERR_ERRONEUSNICKNAME, 'Incorrect nickname, use %s' % self.sl_client.login_info.self.name)
 
-    def _sendreply(self, code: Union[int,Replies], message: Union[str,bytes], extratokens: List[Union[str,bytes]] = []) -> None:
+    def _sendreply(self, code: Union[int,Replies], message: Union[str,bytes], extratokens: Iterable[Union[str,bytes]] = []) -> None:
         codeint = code if isinstance(code, int) else code.value
         bytemsg = message if isinstance(message, bytes) else message.encode('utf8')
 
@@ -298,6 +299,15 @@ class Client:
             self.sl_client.kick(channel, user)
         except Exception as e:
             self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Error: %s' % e)
+
+    def _userhosthandler(self, cmd: bytes) -> None:
+        nicknames = cmd.split(b' ')
+        del nicknames[0] # Remove the command itself
+        #TODO replace + with - in case of away
+        #TODO append a * to the nickname for OP
+
+        replies = (b'%s=+unknown' % i for i in nicknames)
+        self._sendreply(Replies.RPL_USERHOST, '', replies)
 
     def _invitehandler(self, cmd: bytes) -> None:
         _, username, channel_b = cmd.split(b' ', 2)
@@ -517,7 +527,7 @@ class Client:
             b'sendfile': self._sendfilehandler,
             #QUIT
             #CAP LS
-            #USERHOST
+            b'USERHOST': self._userhosthandler,
             #Unknown command:  b'whois TAMARRO'
         }
 
