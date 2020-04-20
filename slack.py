@@ -336,7 +336,7 @@ class Slack:
         else:
             self._status = load(json.loads(previous_status), SlackStatus)
 
-    def _thread_history(self, channel: str, thread_id: float) -> List[Union[HistoryMessage, HistoryBotMessage]]:
+    def _thread_history(self, channel: str, thread_id: str) -> List[Union[HistoryMessage, HistoryBotMessage]]:
         r: List[Union[HistoryMessage, HistoryBotMessage]] = []
         cursor = None
         while True:
