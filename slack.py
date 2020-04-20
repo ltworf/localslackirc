@@ -339,7 +339,9 @@ class Slack:
     def _thread_history(self, channel: str, thread_id: str) -> List[Union[HistoryMessage, HistoryBotMessage]]:
         r: List[Union[HistoryMessage, HistoryBotMessage]] = []
         cursor = None
+        log('Thread history', channel, thread_id)
         while True:
+            log('Cursor')
             p = self.client.api_call(
                 'conversations.replies',
                 channel=channel,
