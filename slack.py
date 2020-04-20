@@ -336,6 +336,30 @@ class Slack:
         else:
             self._status = load(json.loads(previous_status), SlackStatus)
 
+    def _thread_history(self, channel: str, thread_id: float) -> List[Union[HistoryMessage, HistoryBotMessage]]:
+        r: List[Union[HistoryMessage, HistoryBotMessage]] = []
+        cursor = None
+        while True:
+            p = self.client.api_call(
+                'conversations.replies',
+                channel=channel,
+                ts=thread_id,
+                limit=1000,
+                cursor=cursor,
+            )
+            try:
+                response = load(p, History)
+            except Exception as e:
+                    log('Failed to parse', e)
+                    log(p)
+                    break
+            r += [i for i in response.messages if i.ts != i.thread_ts]
+            if response.has_more and response.response_metadata:
+                cursor = response.response_metadata.next_cursor
+            else:
+                break
+        return r
+
     def _history(self) -> None:
         '''
         Obtain the history from the last known event and
