@@ -55,6 +55,7 @@ _SLACK_SUBSTITUTIONS = [
 
 class Replies(Enum):
     RPL_LUSERCLIENT = 251
+    RPL_USERHOST = 302
     RPL_UNAWAY = 305
     RPL_NOWAWAY = 306
     RPL_ENDOFWHO = 315
@@ -299,6 +300,15 @@ class Client:
         except Exception as e:
             self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Error: %s' % e)
 
+    def _userhosthandler(self, cmd: bytes) -> None:
+        nicknames = cmd.split(b' ')
+        del nicknames[0] # Remove the command itself
+        #TODO replace + with - in case of away
+        #TODO append a * to the nickname for OP
+
+        replies = (b'%s=+unknown' % i for i in nicknames)
+        self._sendreply(Replies.RPL_USERHOST, '', replies)
+
     def _invitehandler(self, cmd: bytes) -> None:
         _, username, channel_b = cmd.split(b' ', 2)
         channel = self.sl_client.get_channel_by_name(channel_b.decode()[1:])
@@ -512,7 +522,7 @@ class Client:
             b'sendfile': self._sendfilehandler,
             #QUIT
             #CAP LS
-            #USERHOST
+            b'USERHOST': self._userhosthandler,
             #Unknown command:  b'whois TAMARRO'
         }
 
