@@ -396,14 +396,27 @@ class Slack:
                     log('Failed to parse', e)
                     log(r)
                     break
+                msg_list = list(response.messages)
+                while msg_list:
+                    msg = msg_list.pop(0)
 
-                for msg in response.messages:
                     # The last seen message is sent again, skip it
                     if msg.ts == last_timestamp:
                         continue
                     # Update the last seen timestamp
                     if self._status.last_timestamp < msg.ts:
                         self._status.last_timestamp = msg.ts
+
+                    # The attached files
+                    for f in msg.files:
+                        f.channels.append(channel.id)
+                        self._internalevents.append(f.announce())
+
+                    # History for the thread
+                    if msg.thread_ts:
+                        l = self._thread_history(channel.id, msg.thread_ts)
+                        msg_list = l + msg_list
+
                     # Inject the events
                     if isinstance(msg, HistoryMessage):
                         self._internalevents.append(Message(
@@ -411,11 +424,6 @@ class Slack:
                             text=msg.text,
                             user=msg.user
                         ))
-                        # The attached files
-                        for f in msg.files:
-                            f.channels.append(channel.id)
-                            self._internalevents.append(f.announce())
-
                     elif isinstance(msg, HistoryBotMessage):
                         self._internalevents.append(MessageBot(
                             type='message', subtype='bot_message',
