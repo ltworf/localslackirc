@@ -311,8 +311,13 @@ class Client:
     def _whohandler(self, cmd: bytes) -> None:
         _, name = cmd.split(b' ', 1)
         if not name.startswith(b'#'):
-            log('WHO not supported on ', name)
+            try:
+                user = self.sl_client.get_user_by_name(name.decode())
+            except KeyError:
+                return
+            self._sendreply(Replies.RPL_WHOREPLY, '0 %s' % user.real_name, [name, user.name, '127.0.0.1', self.hostname, user.name, 'H'])
             return
+
         try:
             channel = self.sl_client.get_channel_by_name(name.decode()[1:])
         except KeyError:
