@@ -264,13 +264,16 @@ class TopicChange:
     user: str = attrib()
 
 
-class HistoryBotMessage(NamedTuple):
-    type: Literal['message']
-    subtype: Literal['bot_message']
-    text: str
-    bot_id: Optional[str]
-    username: str = 'bot'
-    ts: float = 0
+@attrs
+class HistoryBotMessage:
+    type: Literal['message'] = attrib()
+    subtype: Literal['bot_message'] = attrib()
+    text: str = attrib()
+    bot_id: Optional[str] = attrib()
+    username: str = attrib(default='bot')
+    ts: float = attrib(default=0)
+    files: List[File] = attrib(factory=list)
+    thread_ts: Optional[float] = attrib(default=None)
 
 
 @attrs
@@ -280,6 +283,7 @@ class HistoryMessage:
     text: str = attrib()
     ts: float = attrib()
     files: List[File] = attrib(factory=list)
+    thread_ts: Optional[float] = attrib(default=None)
 
 
 class NextCursor(NamedTuple):
