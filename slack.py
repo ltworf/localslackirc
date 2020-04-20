@@ -181,17 +181,18 @@ class Profile(NamedTuple):
     is_ultra_restricted: bool = False
 
 
-class File(NamedTuple):
-    id: str
-    url_private: str
-    size: int
-    user: str
-    name: Optional[str] = None
-    title: Optional[str] = None
-    mimetype: Optional[str] = None
-    channels: List[str] = list()
-    groups: List[str] = list()
-    ims: List[str] = list()
+@attrs
+class File:
+    id: str = attrib()
+    url_private: str = attrib()
+    size: int = attrib()
+    user: str = attrib()
+    name: Optional[str] = attrib(default=None)
+    title: Optional[str] = attrib(default=None)
+    mimetype: Optional[str] = attrib(default=None)
+    channels: List[str] = attrib(factory=list)
+    groups: List[str] = attrib(factory=list)
+    ims: List[str] = attrib(factory=list)
 
     def announce(self) -> Message:
         """
@@ -272,11 +273,13 @@ class HistoryBotMessage(NamedTuple):
     ts: float = 0
 
 
-class HistoryMessage(NamedTuple):
-    type: Literal['message']
-    user: str
-    text: str
-    ts: float
+@attrs
+class HistoryMessage:
+    type: Literal['message'] = attrib()
+    user: str = attrib()
+    text: str = attrib()
+    ts: float = attrib()
+    files: List[File] = attrib(factory=list)
 
 
 class NextCursor(NamedTuple):
@@ -380,6 +383,11 @@ class Slack:
                             text=msg.text,
                             user=msg.user
                         ))
+                        # The attached files
+                        for f in msg.files:
+                            f.channels.append(channel.id)
+                            self._internalevents.append(f.announce())
+
                     elif isinstance(msg, HistoryBotMessage):
                         self._internalevents.append(MessageBot(
                             type='message', subtype='bot_message',
