@@ -360,6 +360,8 @@ class Slack:
                 cursor = response.response_metadata.next_cursor
             else:
                 break
+        log('Thread fetched')
+        r[0].thread_ts = None
         return r
 
     def _history(self) -> None:
@@ -418,6 +420,7 @@ class Slack:
                     if msg.thread_ts:
                         l = self._thread_history(channel.id, msg.thread_ts)
                         msg_list = l + msg_list
+                        continue
 
                     # Inject the events
                     if isinstance(msg, HistoryMessage):
