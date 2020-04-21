@@ -1,11 +1,11 @@
-localslackirc (1.8-1) UNRELEASED; urgency=medium
+localslackirc (1.8-1) unstable; urgency=medium
 
   * New upstream release
   * Require python3.8 at least
   * Depend on python3-attr
   * Bump dependency on typedload
 
- -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Sun, 01 Mar 2020 12:47:17 +0100
+ -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Tue, 21 Apr 2020 14:32:17 +0100
 
 localslackirc (1.7-1) unstable; urgency=medium
 
