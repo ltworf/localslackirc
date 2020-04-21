@@ -417,7 +417,7 @@ class Slack:
                         self._internalevents.append(f.announce())
 
                     # History for the thread
-                    if msg.thread_ts:
+                    if  msg.thread_ts and float(msg.thread_ts) == msg.ts:
                         l = self._thread_history(channel.id, msg.thread_ts)
                         msg_list = l + msg_list
                         continue
