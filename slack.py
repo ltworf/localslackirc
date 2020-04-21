@@ -264,13 +264,16 @@ class TopicChange:
     user: str = attrib()
 
 
-class HistoryBotMessage(NamedTuple):
-    type: Literal['message']
-    subtype: Literal['bot_message']
-    text: str
-    bot_id: Optional[str]
-    username: str = 'bot'
-    ts: float = 0
+@attrs
+class HistoryBotMessage:
+    type: Literal['message'] = attrib()
+    subtype: Literal['bot_message'] = attrib()
+    text: str = attrib()
+    bot_id: Optional[str] = attrib()
+    username: str = attrib(default='bot')
+    ts: float = attrib(default=0)
+    files: List[File] = attrib(factory=list)
+    thread_ts: Optional[str] = attrib(default=None)
 
 
 @attrs
@@ -280,6 +283,7 @@ class HistoryMessage:
     text: str = attrib()
     ts: float = attrib()
     files: List[File] = attrib(factory=list)
+    thread_ts: Optional[str] = attrib(default=None)
 
 
 class NextCursor(NamedTuple):
@@ -332,6 +336,34 @@ class Slack:
         else:
             self._status = load(json.loads(previous_status), SlackStatus)
 
+    def _thread_history(self, channel: str, thread_id: str) -> List[Union[HistoryMessage, HistoryBotMessage]]:
+        r: List[Union[HistoryMessage, HistoryBotMessage]] = []
+        cursor = None
+        log('Thread history', channel, thread_id)
+        while True:
+            log('Cursor')
+            p = self.client.api_call(
+                'conversations.replies',
+                channel=channel,
+                ts=thread_id,
+                limit=1000,
+                cursor=cursor,
+            )
+            try:
+                response = load(p, History)
+            except Exception as e:
+                    log('Failed to parse', e)
+                    log(p)
+                    break
+            r += [i for i in response.messages if i.ts != i.thread_ts]
+            if response.has_more and response.response_metadata:
+                cursor = response.response_metadata.next_cursor
+            else:
+                break
+        log('Thread fetched')
+        r[0].thread_ts = None
+        return r
+
     def _history(self) -> None:
         '''
         Obtain the history from the last known event and
@@ -368,14 +400,29 @@ class Slack:
                     log('Failed to parse', e)
                     log(r)
                     break
+                msg_list = list(response.messages)
+                while msg_list:
+                    msg = msg_list.pop(0)
 
-                for msg in response.messages:
                     # The last seen message is sent again, skip it
                     if msg.ts == last_timestamp:
                         continue
                     # Update the last seen timestamp
                     if self._status.last_timestamp < msg.ts:
                         self._status.last_timestamp = msg.ts
+
+                    # The attached files
+                    for f in msg.files:
+                        f.channels.append(channel.id)
+                        self._internalevents.append(f.announce())
+
+                    # History for the thread
+                    if  msg.thread_ts and float(msg.thread_ts) == msg.ts:
+                        l = self._thread_history(channel.id, msg.thread_ts)
+                        l.reverse()
+                        msg_list = l + msg_list
+                        continue
+
                     # Inject the events
                     if isinstance(msg, HistoryMessage):
                         self._internalevents.append(Message(
@@ -383,11 +430,6 @@ class Slack:
                             text=msg.text,
                             user=msg.user
                         ))
-                        # The attached files
-                        for f in msg.files:
-                            f.channels.append(channel.id)
-                            self._internalevents.append(f.announce())
-
                     elif isinstance(msg, HistoryBotMessage):
                         self._internalevents.append(MessageBot(
                             type='message', subtype='bot_message',
