@@ -1,12 +1,14 @@
 1.8
-* Support @everyone
-* Parse URLs sent from slack with a label
-* Require python3.8
+* Chat and thread history is retrieved and injected
 * Aware of new channels the user is added to
+* Parse URLs sent from slack with a label
+* Requires at least python3.8
+* Improved documentation
+* Improved logging
 * Various crashes fixed
-* Ctrl+C now works at the 1st attempt
+* Better handling of signals
 * Can join slack channels without doing so from the app
-* Chat history is retrieved and injected
+* Support @everyone
 
 1.7
 * Logs are more useful
