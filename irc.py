@@ -94,6 +94,8 @@ class Client:
         self.sl_client = sl_client
         self.nouserlist = nouserlist
         self.autojoin = autojoin
+        self._usersent = False # Used to hold all events until the IRC client sends the initial USER message
+        self._held_events: List[slack.SlackEvent] = []
 
         if self.provider == Provider.SLACK:
             self.substitutions = _SLACK_SUBSTITUTIONS
@@ -155,6 +157,11 @@ class Client:
                 channel_name = '#%s' % sl_chan.name_normalized
                 self.parted_channels.add(channel_name.encode('utf-8'))
 
+        # Eventual channel joining done, sending the held events
+        self._usersent = True
+        for ev in self._held_events:
+            self.slack_event(ev)
+        self._held_events = []
 
     def _pinghandler(self, cmd: bytes) -> None:
         _, lbl = cmd.split(b' ', 1)
@@ -480,6 +487,9 @@ class Client:
             self.s.send(b':%s!%s@127.0.0.1 PART %s\n' % (name, rname, dest))
 
     def slack_event(self, sl_ev: slack.SlackEvent) -> None:
+        if not self._usersent:
+            self._held_events.append(sl_ev)
+            return
         if isinstance(sl_ev, slack.MessageDelete):
             self._message(sl_ev, '[deleted]')
         elif isinstance(sl_ev, slack.Message):
