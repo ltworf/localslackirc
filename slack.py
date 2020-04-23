@@ -17,12 +17,12 @@
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
 import datetime
+from dataclasses import dataclass, field
 from functools import lru_cache
 import json
 from time import sleep, time
 from typing import *
 
-from attr import attrs, attrib
 from typedload import load, dump
 
 from diff import seddiff
@@ -130,19 +130,19 @@ class ActionMessage(Message):
     pass
 
 
-@attrs
+@dataclass
 class GroupJoined:
-    type: Literal['group_joined'] = attrib()
-    channel: Channel = attrib()
+    type: Literal['group_joined']
+    channel: Channel
 
 
-@attrs
+@dataclass
 class MessageEdit:
-    type: Literal['message'] = attrib()
-    subtype: Literal['message_changed'] = attrib()
-    channel: str = attrib()
-    previous: NoChanMessage = attrib(metadata={'name': 'previous_message'})
-    current: NoChanMessage = attrib(metadata={'name': 'message'})
+    type: Literal['message']
+    subtype: Literal['message_changed']
+    channel: str
+    previous: NoChanMessage = field(metadata={'name': 'previous_message'})
+    current: NoChanMessage = field(metadata={'name': 'message'})
 
     @property
     def is_changed(self) -> bool:
@@ -157,12 +157,12 @@ class MessageEdit:
         )
 
 
-@attrs
+@dataclass
 class MessageDelete:
-    type: Literal['message'] = attrib()
-    subtype: Literal['message_deleted'] = attrib()
-    channel: str = attrib()
-    previous_message: NoChanMessage = attrib()
+    type: Literal['message']
+    subtype: Literal['message_deleted']
+    channel: str
+    previous_message: NoChanMessage
 
     @property
     def user(self) -> str:
@@ -181,18 +181,18 @@ class Profile(NamedTuple):
     is_ultra_restricted: bool = False
 
 
-@attrs
+@dataclass
 class File:
-    id: str = attrib()
-    url_private: str = attrib()
-    size: int = attrib()
-    user: str = attrib()
-    name: Optional[str] = attrib(default=None)
-    title: Optional[str] = attrib(default=None)
-    mimetype: Optional[str] = attrib(default=None)
-    channels: List[str] = attrib(factory=list)
-    groups: List[str] = attrib(factory=list)
-    ims: List[str] = attrib(factory=list)
+    id: str
+    url_private: str
+    size: int
+    user: str
+    name: Optional[str] = None
+    title: Optional[str] = None
+    mimetype: Optional[str] = None
+    channels: List[str] = field(default_factory=list)
+    groups: List[str] = field(default_factory=list)
+    ims: List[str] = field(default_factory=list)
 
     def announce(self) -> Message:
         """
@@ -210,22 +210,22 @@ class File:
         )
 
 
-@attrs
+@dataclass
 class FileShared:
-    type: Literal['file_shared'] = attrib()
-    file_id: str = attrib()
-    user_id: str = attrib()
-    ts: float = attrib()
+    type: Literal['file_shared']
+    file_id: str
+    user_id: str
+    ts: float
 
 
-@attrs
+@dataclass
 class MessageBot:
-    type: Literal['message'] = attrib()
-    subtype: Literal['bot_message'] = attrib()
-    text: str = attrib()
-    username: str = attrib()
-    channel: str = attrib()
-    bot_id: Optional[str] = attrib(default=None)
+    type: Literal['message']
+    subtype: Literal['bot_message']
+    text: str
+    username: str
+    channel: str
+    bot_id: Optional[str] = None
 
 
 class User(NamedTuple):
@@ -255,35 +255,35 @@ class Leave(NamedTuple):
     channel: str
 
 
-@attrs
+@dataclass
 class TopicChange:
-    type: Literal['message'] = attrib()
-    subtype: Literal['group_topic'] = attrib()
-    topic: str = attrib()
-    channel: str = attrib()
-    user: str = attrib()
+    type: Literal['message']
+    subtype: Literal['group_topic']
+    topic: str
+    channel: str
+    user: str
 
 
-@attrs
+@dataclass
 class HistoryBotMessage:
-    type: Literal['message'] = attrib()
-    subtype: Literal['bot_message'] = attrib()
-    text: str = attrib()
-    bot_id: Optional[str] = attrib()
-    username: str = attrib(default='bot')
-    ts: float = attrib(default=0)
-    files: List[File] = attrib(factory=list)
-    thread_ts: Optional[str] = attrib(default=None)
+    type: Literal['message']
+    subtype: Literal['bot_message']
+    text: str
+    bot_id: Optional[str]
+    username: str = 'bot'
+    ts: float = 0
+    files: List[File] = field(default_factory=list)
+    thread_ts: Optional[str] = None
 
 
-@attrs
+@dataclass
 class HistoryMessage:
-    type: Literal['message'] = attrib()
-    user: str = attrib()
-    text: str = attrib()
-    ts: float = attrib()
-    files: List[File] = attrib(factory=list)
-    thread_ts: Optional[str] = attrib(default=None)
+    type: Literal['message']
+    user: str
+    text: str
+    ts: float
+    files: List[File] = field(default_factory=list)
+    thread_ts: Optional[str] = None
 
 
 class NextCursor(NamedTuple):
@@ -311,14 +311,14 @@ SlackEvent = Union[
 ]
 
 
-@attrs
+@dataclass
 class SlackStatus:
     """
     Not related to the slack API.
     This is a structure used internally by this module to
     save the status on disk.
     """
-    last_timestamp: float = attrib(default=0.0)
+    last_timestamp: float = 0.0
 
 class Slack:
     def __init__(self, token: str, cookie: Optional[str], previous_status: Optional[bytes]) -> None:
