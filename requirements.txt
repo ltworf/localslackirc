@@ -1,4 +1,3 @@
-attrs
 requests
 typedload>=2
 websocket-client
