@@ -13,7 +13,7 @@ Rules-Requires-Root: no
 Package: localslackirc
 Architecture: all
 Depends: ${misc:Depends}, ${python3:Depends}, python3-typedload (>= 2),
- python3-websocket, python3-requests, python3-attr
+ python3-websocket, python3-requests
 Description: IRC gateway for slack, running on localhost for one user
  This project is a replacement for slack's IRC gateway that they dropped.
  .
