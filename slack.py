@@ -30,6 +30,7 @@ from slackclient import SlackClient
 from slackclient.client import LoginInfo
 from log import *
 
+
 USELESS_EVENTS = {
     'channel_marked',
     'group_marked',
@@ -43,14 +44,6 @@ USELESS_EVENTS = {
     'file_created',
     'desktop_notification',
 }
-
-
-def _loadwrapper(value, type_):
-    try:
-        return load(value, type_)
-    except Exception as e:
-        log(e)
-        pass
 
 
 class ResponseException(Exception):
@@ -246,11 +239,13 @@ class IM(NamedTuple):
 
 
 class Join(NamedTuple):
+    type: Literal['member_joined_channel']
     user: str
     channel: str
 
 
 class Leave(NamedTuple):
+    type: Literal['member_left_channel']
     user: str
     channel: str
 
@@ -520,7 +515,7 @@ class Slack:
         # Generate all the Join events, if this is not the 1st iteration
         if id_ in self._get_members_cache:
             for i in newusers.difference(cached):
-                self._internalevents.append(Join(user=i, channel=id_))
+                self._internalevents.append(Join('member_joined_channel',    user=i, channel=id_))
 
         self._get_members_cache[id_] = cached.union(newusers)
         self._get_members_cache_cursor[id_] = r.get('response_metadata', {}).get('next_cursor')
@@ -771,6 +766,7 @@ class Slack:
                 continue
 
             for event in events:
+                t = event.get('type')
                 ts = float(event.get('ts', 0))
 
                 if ts > self._status.last_timestamp:
@@ -780,20 +776,31 @@ class Slack:
                     self._sent_by_self.remove(ts)
                     continue
 
+                if t in USELESS_EVENTS:
+                        continue
+
                 try:
-                    yield load(
+                    ev = load(
                         event,
-                        Union[TopicChange, FileShared, MessageBot, MessageEdit, MessageDelete, GroupJoined]
+                        Union[TopicChange, FileShared, MessageBot, MessageEdit, MessageDelete, GroupJoined, Join, Leave]
                     )
                 except Exception:
-                    pass
+                    ev = None
 
-                t = event.get('type')
+                if isinstance(ev, Join):
+                    self._get_members_cache[ev.channel].add(ev.user)
+                elif isinstance(ev, Leave):
+                    self._get_members_cache[ev.channel].remove(ev.user)
+
+                if ev:
+                    yield ev
+
+
                 subt = event.get('subtype')
 
                 try:
                     if t == 'message' and (not subt or subt == 'me_message'):
-                        msg = _loadwrapper(event, Message)
+                        msg = load(event, Message)
 
                         # In private chats, pretend that my own messages
                         # sent from another client actually come from
@@ -806,15 +813,7 @@ class Slack:
                         else:
                             yield msg
                     elif t == 'message' and subt == 'slackbot_response':
-                        yield _loadwrapper(event, Message)
-                    elif t == 'member_joined_channel':
-                        j = _loadwrapper(event, Join)
-                        self._get_members_cache[j.channel].add(j.user)
-                        yield j
-                    elif t == 'member_left_channel':
-                        j = _loadwrapper(event, Leave)
-                        self._get_members_cache[j.channel].remove(j.user)
-                        yield j
+                        yield load(event, Message)
                     elif t == 'user_change':
                         # Changes in the user, drop it from cache
                         u = load(event['user'], User)
@@ -822,8 +821,6 @@ class Slack:
                             del self._usercache[u.id]
                             #FIXME don't know if it is wise, maybe it gets lost forever del self._usermapcache[u.name]
                         #TODO make an event for this
-                    elif t in USELESS_EVENTS:
-                        continue
                     else:
                         log(event)
                 except Exception as e:
