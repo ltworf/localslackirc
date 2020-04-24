@@ -239,11 +239,13 @@ class IM(NamedTuple):
 
 
 class Join(NamedTuple):
+    type: Literal['member_joined_channel']
     user: str
     channel: str
 
 
 class Leave(NamedTuple):
+    type: Literal['member_left_channel']
     user: str
     channel: str
 
@@ -513,7 +515,7 @@ class Slack:
         # Generate all the Join events, if this is not the 1st iteration
         if id_ in self._get_members_cache:
             for i in newusers.difference(cached):
-                self._internalevents.append(Join(user=i, channel=id_))
+                self._internalevents.append(Join('member_joined_channel',    user=i, channel=id_))
 
         self._get_members_cache[id_] = cached.union(newusers)
         self._get_members_cache_cursor[id_] = r.get('response_metadata', {}).get('next_cursor')
