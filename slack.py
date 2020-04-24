@@ -780,12 +780,21 @@ class Slack:
                         continue
 
                 try:
-                    yield load(
+                    ev = load(
                         event,
-                        Union[TopicChange, FileShared, MessageBot, MessageEdit, MessageDelete, GroupJoined]
+                        Union[TopicChange, FileShared, MessageBot, MessageEdit, MessageDelete, GroupJoined, Join, Leave]
                     )
                 except Exception:
-                    pass
+                    ev = None
+
+                if isinstance(ev, Join):
+                    self._get_members_cache[ev.channel].add(ev.user)
+                elif isinstance(ev, Leave):
+                    self._get_members_cache[ev.channel].remove(ev.user)
+
+                if ev:
+                    yield ev
+
 
                 subt = event.get('subtype')
 
@@ -805,14 +814,6 @@ class Slack:
                             yield msg
                     elif t == 'message' and subt == 'slackbot_response':
                         yield load(event, Message)
-                    elif t == 'member_joined_channel':
-                        j = load(event, Join)
-                        self._get_members_cache[j.channel].add(j.user)
-                        yield j
-                    elif t == 'member_left_channel':
-                        l = load(event, Leave)
-                        self._get_members_cache[l.channel].remove(l.user)
-                        yield l
                     elif t == 'user_change':
                         # Changes in the user, drop it from cache
                         u = load(event['user'], User)
