@@ -30,6 +30,7 @@ from slackclient import SlackClient
 from slackclient.client import LoginInfo
 from log import *
 
+
 USELESS_EVENTS = {
     'channel_marked',
     'group_marked',
@@ -43,14 +44,6 @@ USELESS_EVENTS = {
     'file_created',
     'desktop_notification',
 }
-
-
-def _loadwrapper(value, type_):
-    try:
-        return load(value, type_)
-    except Exception as e:
-        log(e)
-        pass
 
 
 class ResponseException(Exception):
@@ -793,7 +786,7 @@ class Slack:
 
                 try:
                     if t == 'message' and (not subt or subt == 'me_message'):
-                        msg = _loadwrapper(event, Message)
+                        msg = load(event, Message)
 
                         # In private chats, pretend that my own messages
                         # sent from another client actually come from
@@ -806,15 +799,15 @@ class Slack:
                         else:
                             yield msg
                     elif t == 'message' and subt == 'slackbot_response':
-                        yield _loadwrapper(event, Message)
+                        yield load(event, Message)
                     elif t == 'member_joined_channel':
-                        j = _loadwrapper(event, Join)
+                        j = load(event, Join)
                         self._get_members_cache[j.channel].add(j.user)
                         yield j
                     elif t == 'member_left_channel':
-                        j = _loadwrapper(event, Leave)
-                        self._get_members_cache[j.channel].remove(j.user)
-                        yield j
+                        l = load(event, Leave)
+                        self._get_members_cache[l.channel].remove(l.user)
+                        yield l
                     elif t == 'user_change':
                         # Changes in the user, drop it from cache
                         u = load(event['user'], User)
