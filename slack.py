@@ -766,6 +766,7 @@ class Slack:
                 continue
 
             for event in events:
+                t = event.get('type')
                 ts = float(event.get('ts', 0))
 
                 if ts > self._status.last_timestamp:
@@ -775,6 +776,9 @@ class Slack:
                     self._sent_by_self.remove(ts)
                     continue
 
+                if t in USELESS_EVENTS:
+                        continue
+
                 try:
                     yield load(
                         event,
@@ -783,7 +787,6 @@ class Slack:
                 except Exception:
                     pass
 
-                t = event.get('type')
                 subt = event.get('subtype')
 
                 try:
@@ -817,8 +820,6 @@ class Slack:
                             del self._usercache[u.id]
                             #FIXME don't know if it is wise, maybe it gets lost forever del self._usermapcache[u.name]
                         #TODO make an event for this
-                    elif t in USELESS_EVENTS:
-                        continue
                     else:
                         log(event)
                 except Exception as e:
