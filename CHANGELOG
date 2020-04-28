@@ -1,5 +1,5 @@
 1.9
-* Remove some dependencies
+* Remove attr dependency
 
 1.8
 * Chat and thread history is retrieved and injected
