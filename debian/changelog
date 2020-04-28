@@ -1,9 +1,9 @@
-localslackirc (1.9-1) UNRELEASED; urgency=medium
+localslackirc (1.9-1) unstable; urgency=high
 
   * New upstream release
   * Do not depend on python3-attr
 
- -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Tue, 21 Apr 2020 14:41:25 +0200
+ -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Tue, 28 Apr 2020 20:26:35 +0200
 
 localslackirc (1.8-1) unstable; urgency=medium
 
