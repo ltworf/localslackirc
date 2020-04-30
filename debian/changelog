@@ -2,7 +2,13 @@ localslackirc (1.10-1) UNRELEASED; urgency=medium
 
   * New upstream release
 
- -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Tue, 28 Apr 2020 21:35:01 +0200
+ -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Thu, 30 Apr 2020 16:06:15 +0200
+
+localslackirc (1.9-2) unstable; urgency=high
+
+  * Add needed build-deps (Closes: #959089)
+
+ -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Thu, 30 Apr 2020 15:56:23 +0200
 
 localslackirc (1.9-1) unstable; urgency=high
 
