@@ -378,14 +378,14 @@ class Client:
 
         matches = list(re.finditer(regex, msg))
         matches.reverse() # I want to replace from end to start or the positions get broken
-        for i in matches:
-            username = i.string[i.start():i.end()]
+        for m in matches:
+            username = m.string[m.start():m.end()]
             if username.startswith('://'):
                 continue # Match inside a url
             elif self.provider == Provider.SLACK:
-                msg = msg[0:i.start()] + '<@%s>' % self.sl_client.get_user_by_name(username).id + msg[i.end():]
+                msg = msg[0:m.start()] + '<@%s>' % self.sl_client.get_user_by_name(username).id + msg[m.end():]
             elif self.provider == Provider.ROCKETCHAT:
-                msg = msg[0:i.start()] + f'@{username}' + msg[i.end():]
+                msg = msg[0:m.start()] + f'@{username}' + msg[m.end():]
         return msg
 
     def parse_message(self, msg: str) -> Iterator[bytes]:
