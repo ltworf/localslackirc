@@ -96,6 +96,8 @@ class Client:
         self.autojoin = autojoin
         self._usersent = False # Used to hold all events until the IRC client sends the initial USER message
         self._held_events: List[slack.SlackEvent] = []
+        self._magic_users_id = 0
+        self._magic_regex: Optional[re.Pattern] = None
 
         if self.provider == Provider.SLACK:
             self.substitutions = _SLACK_SUBSTITUTIONS
@@ -373,8 +375,17 @@ class Client:
 
         # Extremely inefficient code to generate mentions
         # Just doing them client-side on the receiving end is too mainstream
-        regexs = (r'((://\S*){0,1}\b%s\b)' % username for username in self.sl_client.get_usernames())
-        regex = '|'.join(regexs)
+
+
+        if self._magic_users_id == id(self.sl_client.get_usernames()):
+            regex = self._magic_regex
+            assert regex
+        else:
+            usernames = self.sl_client.get_usernames()
+            self._magic_users_id = id(usernames)
+            regexs = (r'((://\S*){0,1}\b%s\b)' % username for username in usernames)
+            regex = re.compile('|'.join(regexs))
+            self._magic_regex = regex
 
         matches = list(re.finditer(regex, msg))
         matches.reverse() # I want to replace from end to start or the positions get broken
