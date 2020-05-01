@@ -373,14 +373,19 @@ class Client:
 
         # Extremely inefficient code to generate mentions
         # Just doing them client-side on the receiving end is too mainstream
-        for username in self.sl_client.get_usernames():
-            if len(username) < 3: continue
-            m = re.search(r'\b%s\b' % username, msg)
-            if m:
-                if self.provider == Provider.SLACK:
-                    msg = msg[0:m.start()] + '<@%s>' % self.sl_client.get_user_by_name(username).id + msg[m.end():]
-                elif self.provider == Provider.ROCKETCHAT:
-                    msg = msg[0:m.start()] + f'@{username}' + msg[m.end():]
+        regexs = (r'((://\S*){0,1}\b%s\b)' % username for username in self.sl_client.get_usernames())
+        regex = '|'.join(regexs)
+
+        matches = list(re.finditer(regex, msg))
+        matches.reverse() # I want to replace from end to start or the positions get broken
+        for i in matches:
+            username = i.string[i.start():i.end()]
+            if username.startswith('://'):
+                continue # Match inside a url
+            elif self.provider == Provider.SLACK:
+                msg = msg[0:i.start()] + '<@%s>' % self.sl_client.get_user_by_name(username).id + msg[i.end():]
+            elif self.provider == Provider.ROCKETCHAT:
+                msg = msg[0:i.start()] + f'@{username}' + msg[i.end():]
         return msg
 
     def parse_message(self, msg: str) -> Iterator[bytes]:
