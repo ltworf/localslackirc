@@ -382,6 +382,7 @@ class Client:
             assert regex
         else:
             usernames = self.sl_client.get_usernames()
+            assert usernames
             self._magic_users_id = id(usernames)
             regexs = (r'((://\S*){0,1}\b%s\b)' % username for username in usernames)
             regex = re.compile('|'.join(regexs))
