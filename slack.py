@@ -606,6 +606,7 @@ class Slack:
     def get_user_by_name(self, name: str) -> User:
         return self._usermapcache[name]
 
+    @lru_cache
     def get_usernames(self) -> List[str]:
         return list(self._usermapcache.keys())
 
@@ -619,6 +620,7 @@ class Slack:
             for user in load(r['members'], List[User]):
                 self._usercache[user.id] = user
                 self._usermapcache[user.name] = user
+            self.get_usernames.cache_clear()
 
     def get_user(self, id_: str) -> User:
         """
@@ -634,6 +636,8 @@ class Slack:
         if response.ok:
             u = load(r['user'], User)
             self._usercache[id_] = u
+            if u.name not in self._usermapcache:
+                self.get_usernames.cache_clear()
             self._usermapcache[u.name] = u
             return u
         else:
