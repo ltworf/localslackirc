@@ -18,7 +18,8 @@
 
 import unittest
 
-from irc import _MENTIONS_REGEXP, _CHANNEL_MENTIONS_REGEXP, _URL_REGEXP
+from irc import _MENTIONS_REGEXP, _CHANNEL_MENTIONS_REGEXP, _URL_REGEXP, Client, Provider
+from slack import User
 
 
 class TestTesto(unittest.TestCase):
@@ -36,3 +37,59 @@ class TestTesto(unittest.TestCase):
         for url, expected in cases:
             m = _URL_REGEXP.search(url)
             assert m is None if expected is None else m.groups() == expected
+
+class TestMagic(unittest.TestCase):
+
+    def setUp(self):
+        class MockClient:
+            def __init__(self):
+                self.usernames = ['LtWorf']
+            def get_usernames(self):
+                return self.usernames
+            def get_user_by_name(self, username):
+                return User(username, username, None)
+
+        self.mock_client = MockClient()
+        self.client = Client(None, self.mock_client, False, True, Provider.SLACK)
+
+    def test_no_replace(self):
+        '''
+        Check that no substitutions are done on regular strings and nickname in url
+        '''
+        cases = [
+            'ciao',
+            'http://LtWorf/',
+            'ciao https://link.com/LtWorf',
+            'ciao https://link.com/LtWorf?param',
+        ]
+        for i in cases:
+            assert self.client._addmagic(i) == i
+
+    def test_regex_cache(self):
+        '''
+        Check that the regex is cached and invalidated properly
+        '''
+        self.client._addmagic('ciao')
+        initial = id(self.client._magic_regex)
+        self.client._addmagic('ciao')
+        assert initial == id(self.client._magic_regex)
+        self.client._addmagic('ciao')
+        assert initial == id(self.client._magic_regex)
+        self.mock_client.usernames = ['myself', 'yourself']
+        self.client._addmagic('ciao')
+        assert initial != id(self.client._magic_regex)
+
+    def test_escapes(self):
+        assert self.client._addmagic('<') == '&lt;'
+        assert self.client._addmagic('>ciao') == '&gt;ciao'
+
+    def test_annoyiances(self):
+        self.client._addmagic('ciao @here') == 'ciao <!here>'
+        self.client._addmagic('ciao @channel') == 'ciao <!channel>'
+        self.client._addmagic('ciao @everyone </') == 'ciao <!everyone> &lt;/'
+
+    def test_mentions(self):
+        assert self.client._addmagic('ciao LtWorf') == 'ciao <@LtWorf>'
+        assert self.client._addmagic('LtWorf: ciao') == '<@LtWorf>: ciao'
+        assert self.client._addmagic('_LtWorf') == '_LtWorf'
+        assert self.client._addmagic('LtWorf: http://link/user=LtWorf') == '<@LtWorf>: http://link/user=LtWorf'

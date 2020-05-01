@@ -43,7 +43,7 @@ from log import *
 # How slack expresses mentioning users
 _MENTIONS_REGEXP = re.compile(r'<@([0-9A-Za-z]+)>')
 _CHANNEL_MENTIONS_REGEXP = re.compile(r'<#[A-Z0-9]+\|([A-Z0-9\-a-z]+)>')
-_URL_REGEXP=re.compile(r'<([a-z0-9\-\.]+)://([^\s\|]+)[\|]{0,1}([^<>]*)>')
+_URL_REGEXP = re.compile(r'<([a-z0-9\-\.]+)://([^\s\|]+)[\|]{0,1}([^<>]*)>')
 
 
 _SLACK_SUBSTITUTIONS = [
@@ -96,6 +96,8 @@ class Client:
         self.autojoin = autojoin
         self._usersent = False # Used to hold all events until the IRC client sends the initial USER message
         self._held_events: List[slack.SlackEvent] = []
+        self._magic_users_id = 0
+        self._magic_regex: Optional[re.Pattern] = None
 
         if self.provider == Provider.SLACK:
             self.substitutions = _SLACK_SUBSTITUTIONS
@@ -373,14 +375,29 @@ class Client:
 
         # Extremely inefficient code to generate mentions
         # Just doing them client-side on the receiving end is too mainstream
-        for username in self.sl_client.get_usernames():
-            if len(username) < 3: continue
-            m = re.search(r'\b%s\b' % username, msg)
-            if m:
-                if self.provider == Provider.SLACK:
-                    msg = msg[0:m.start()] + '<@%s>' % self.sl_client.get_user_by_name(username).id + msg[m.end():]
-                elif self.provider == Provider.ROCKETCHAT:
-                    msg = msg[0:m.start()] + f'@{username}' + msg[m.end():]
+
+
+        if self._magic_users_id == id(self.sl_client.get_usernames()):
+            regex = self._magic_regex
+            assert regex
+        else:
+            usernames = self.sl_client.get_usernames()
+            assert usernames
+            self._magic_users_id = id(usernames)
+            regexs = (r'((://\S*){0,1}\b%s\b)' % username for username in usernames)
+            regex = re.compile('|'.join(regexs))
+            self._magic_regex = regex
+
+        matches = list(re.finditer(regex, msg))
+        matches.reverse() # I want to replace from end to start or the positions get broken
+        for m in matches:
+            username = m.string[m.start():m.end()]
+            if username.startswith('://'):
+                continue # Match inside a url
+            elif self.provider == Provider.SLACK:
+                msg = msg[0:m.start()] + '<@%s>' % self.sl_client.get_user_by_name(username).id + msg[m.end():]
+            elif self.provider == Provider.ROCKETCHAT:
+                msg = msg[0:m.start()] + f'@{username}' + msg[m.end():]
         return msg
 
     def parse_message(self, msg: str) -> Iterator[bytes]:
