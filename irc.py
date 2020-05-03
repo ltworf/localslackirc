@@ -313,15 +313,11 @@ class Client:
 
         if b'*' in username:
             ... #No intention of supporting wildcards for now
+        uusername = username.decode()
         try:
-            user = self.sl_client.get_user_by_name(username.decode())
+            user = self.sl_client.get_user_by_name(uusername)
         except KeyError:
-            ... #FIXME error unknown user
-
-
-
-
-
+            self._sendreply(Replies.ERR_NOSUCHNICK, f'Unknown user {uusername}')
 
     def _kickhandler(self, cmd: bytes) -> None:
         _, channel_b, username, message = cmd.split(b' ', 3)
