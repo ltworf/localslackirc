@@ -58,7 +58,13 @@ class Replies(Enum):
     RPL_USERHOST = 302
     RPL_UNAWAY = 305
     RPL_NOWAWAY = 306
+    RPL_WHOISUSER = 311
+    RPL_WHOISSERVER = 312
+    RPL_WHOISOPERATOR = 313
     RPL_ENDOFWHO = 315
+    RPL_WHOISIDLE = 317
+    RPL_ENDOFWHOIS = 318
+    RPL_WHOISCHANNELS = 319
     RPL_LIST = 322
     RPL_LISTEND = 323
     RPL_CHANNELMODEIS = 324
@@ -66,6 +72,7 @@ class Replies(Enum):
     RPL_WHOREPLY = 352
     RPL_NAMREPLY = 353
     RPL_ENDOFNAMES = 366
+    ERR_NOSUCHNICK = 401
     ERR_NOSUCHCHANNEL = 403
     ERR_UNKNOWNCOMMAND = 421
     ERR_FILEERROR = 424
@@ -299,6 +306,31 @@ class Client:
             self.sl_client.topic(channel, topic)
         except Exception:
             self._sendreply(Replies.ERR_UNKNOWNCOMMAND, f'Unable to set topic to {topic}')
+
+    def _whoishandler(self, cmd: bytes) -> None:
+        users = cmd.split(b' ')
+        del users[0]
+
+        if len(users) > 1:
+            self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Server parameter is not supported')
+
+        # Seems that oftc only responds to the last one
+        username = users.pop()
+
+        if b'*' in username:
+            self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Wildcards are not supported')
+        uusername = username.decode()
+        try:
+            user = self.sl_client.get_user_by_name(uusername)
+        except KeyError:
+            self._sendreply(Replies.ERR_NOSUCHNICK, f'Unknown user {uusername}')
+
+        self._sendreply(Replies.RPL_WHOISUSER, user.real_name, [username, '', 'localhost'])
+        if user.profile.email:
+            self._sendreply(Replies.RPL_WHOISUSER, f'email: {user.profile.email}', [username, '', 'localhost'])
+        if user.is_admin:
+            self._sendreply(Replies.RPL_WHOISOPERATOR, f'{uusername} is an IRC operator', [username])
+        self._sendreply(Replies.RPL_ENDOFWHOIS, '', extratokens=[username])
 
     def _kickhandler(self, cmd: bytes) -> None:
         _, channel_b, username, message = cmd.split(b' ', 3)
@@ -555,7 +587,7 @@ class Client:
             #QUIT
             #CAP LS
             b'USERHOST': self._userhosthandler,
-            #Unknown command:  b'whois TAMARRO'
+            b'whois': self._whoishandler,
         }
 
         if cmdid in handlers:

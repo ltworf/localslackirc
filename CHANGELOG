@@ -1,5 +1,6 @@
 1.10
 * Do not insert mentions inside URLs
+* Support /whois
 
 1.9
 * Chat history is held and injected when the IRC client is ready

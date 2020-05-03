@@ -487,7 +487,7 @@ class Slack:
         if not response.ok:
             raise ResponseException(response)
 
-    def get_members(self, id_: str) -> Set[str]:
+    def get_members(self, channel: Union[str, Channel]) -> Set[str]:
         """
         Returns the list (as a set) of users in a channel.
 
@@ -497,6 +497,11 @@ class Slack:
 
         When events happen, the cache needs to be updated or cleared.
         """
+        if isinstance(channel, Channel):
+            id_ = channel.id
+        else:
+            id_ = channel
+
         cached = self._get_members_cache.get(id_, set())
         cursor = self._get_members_cache_cursor.get(id_)
         if cursor == '':
