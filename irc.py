@@ -301,6 +301,28 @@ class Client:
         except Exception:
             self._sendreply(Replies.ERR_UNKNOWNCOMMAND, f'Unable to set topic to {topic}')
 
+    def _whoishandler(self, cmd: bytes) -> None:
+        users = cmd.split(b' ')
+        del users[0]
+
+        if len(users) > 1:
+            ... #FIXME error about not supporting server parameter
+
+        # Seems that oftc only responds to the last one
+        username = users.pop()
+
+        if b'*' in username:
+            ... #No intention of supporting wildcards for now
+        try:
+            user = self.sl_client.get_user_by_name(username.decode())
+        except KeyError:
+            ... #FIXME error unknown user
+
+
+
+
+
+
     def _kickhandler(self, cmd: bytes) -> None:
         _, channel_b, username, message = cmd.split(b' ', 3)
         channel = self.sl_client.get_channel_by_name(channel_b.decode()[1:])
@@ -556,7 +578,7 @@ class Client:
             #QUIT
             #CAP LS
             b'USERHOST': self._userhosthandler,
-            #Unknown command:  b'whois TAMARRO'
+            b'whois': self._whoishandler,
         }
 
         if cmdid in handlers:
