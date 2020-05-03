@@ -312,13 +312,13 @@ class Client:
         del users[0]
 
         if len(users) > 1:
-            ... #FIXME error about not supporting server parameter
+            self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Server parameter is not supported')
 
         # Seems that oftc only responds to the last one
         username = users.pop()
 
         if b'*' in username:
-            ... #No intention of supporting wildcards for now
+            self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Wildcards are not supported')
         uusername = username.decode()
         try:
             user = self.sl_client.get_user_by_name(uusername)
