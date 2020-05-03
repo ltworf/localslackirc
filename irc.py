@@ -326,6 +326,8 @@ class Client:
             self._sendreply(Replies.ERR_NOSUCHNICK, f'Unknown user {uusername}')
 
         self._sendreply(Replies.RPL_WHOISUSER, user.real_name, [username, '', 'localhost'])
+        if user.profile.email:
+            self._sendreply(Replies.RPL_WHOISUSER, f'email: {user.profile.email}', [username, '', 'localhost'])
         if user.is_admin:
             self._sendreply(Replies.RPL_WHOISOPERATOR, f'{uusername} is an IRC operator', [username])
         self._sendreply(Replies.RPL_ENDOFWHOIS, '', extratokens=[username])
