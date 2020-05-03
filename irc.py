@@ -325,6 +325,11 @@ class Client:
         except KeyError:
             self._sendreply(Replies.ERR_NOSUCHNICK, f'Unknown user {uusername}')
 
+        self._sendreply(Replies.RPL_WHOISUSER, user.real_name, [username, '', 'localhost'])
+        if user.is_admin:
+            self._sendreply(Replies.RPL_WHOISOPERATOR, f'{uusername} is an IRC operator', [username])
+        self._sendreply(Replies.RPL_ENDOFWHOIS, '', extratokens=[username])
+
     def _kickhandler(self, cmd: bytes) -> None:
         _, channel_b, username, message = cmd.split(b' ', 3)
         channel = self.sl_client.get_channel_by_name(channel_b.decode()[1:])
