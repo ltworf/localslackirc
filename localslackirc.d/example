@@ -9,6 +9,9 @@
 #
 # Make sure that the file is not world readable, since
 # it contains the access token.
+#
+# To start the instance at every boot
+# sudo systemctl enable localslackirc@filename.service
 
 
 # The port to listen to, for the IRC client to connect to
@@ -34,6 +37,7 @@ AUTOJOIN=true
 
 # Networking
 #IP_ADDRESS=127.0.0.1
+# Do not enable this unless you know what you are doing!
 #OVERRIDE_LOCAL_IP=false
 
 # Do not fetch the user list (for huge instances)
