@@ -28,6 +28,7 @@ install:
 	# install extras
 	install -m644 -D CHANGELOG $${DESTDIR:-/}/usr/share/doc/localslackirc/CHANGELOG
 	install -m644 -D README.md $${DESTDIR:-/}/usr/share/doc/localslackirc/README.md
+	install -m644 -D SECURITY.md $${DESTDIR:-/}/usr/share/doc/localslackirc/SECURITY.md
 	install -m644 -D man/localslackirc.1 $${DESTDIR:-/}/usr/share/man/man1/localslackirc.1
 	install -m644 -D localslackirc.d/example $${DESTDIR:-/}/etc/localslackirc.d/example
 	install -m644 -D systemd/localslackirc@.service $${DESTDIR:-/}/lib/systemd/system/localslackirc@.service
@@ -48,6 +49,7 @@ dist:
 		localslackirc/CHANGELOG \
 		localslackirc/LICENSE \
 		localslackirc/README.md \
+		localslackirc/SECURITY.md \
 		localslackirc/requirements.txt \
 		localslackirc/docker/Dockerfile \
 		localslackirc/man \
