@@ -1,6 +1,6 @@
-localslackirc (1.10-1) UNRELEASED; urgency=medium
+localslackirc (1.10-1) unstable; urgency=high
 
-  * New upstream release
+  * New upstream release (Closes: #963308)
 
  -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Thu, 30 Apr 2020 16:06:15 +0200
 
