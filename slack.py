@@ -789,9 +789,9 @@ class Slack:
                         continue
 
                 try:
-                    ev = load(
+                    ev: Optional[Union[TopicChange, FileShared, MessageBot, MessageEdit, MessageDelete, GroupJoined, Join, Leave]] = load(
                         event,
-                        Union[TopicChange, FileShared, MessageBot, MessageEdit, MessageDelete, GroupJoined, Join, Leave]
+                        Union[TopicChange, FileShared, MessageBot, MessageEdit, MessageDelete, GroupJoined, Join, Leave]  # type: ignore
                     )
                 except Exception:
                     ev = None
