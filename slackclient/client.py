@@ -26,7 +26,6 @@ from .exceptions import *
 import json
 from typing import Any, Dict, List, NamedTuple, Optional
 
-from requests.packages.urllib3.util.url import parse_url
 import requests
 from ssl import SSLWantReadError
 from typedload import load
