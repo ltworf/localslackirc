@@ -239,7 +239,7 @@ class Client:
         else:
             action = False
 
-        message = self._addmagic(msg.decode('utf8'))
+        message = await self._addmagic(msg.decode('utf8'))
 
         if dest.startswith(b'#'):
             await self.sl_client.send_message(
@@ -393,7 +393,7 @@ class Client:
         ))
         await self.s.drain()
 
-    def _addmagic(self, msg: str) -> str:
+    async def _addmagic(self, msg: str) -> str:
         """
         Adds magic codes and various things to
         outgoing messages
