@@ -104,7 +104,7 @@ class SlackClient:
             return self._websocket.fileno()
         return None
 
-    def rtm_connect(self, timeout: Optional[int] = None, **kwargs) -> LoginInfo:
+    def rtm_connect(self, timeout: Optional[int] = None) -> LoginInfo:
         """
         Connects to the RTM API - https://api.slack.com/rtm
         :Args:
@@ -113,7 +113,7 @@ class SlackClient:
 
         # rtm.start returns user and channel info, rtm.connect does not.
         connect_method = "rtm.connect"
-        reply = self._api_requester.do(connect_method, timeout=timeout, post_data=kwargs, files=None)
+        reply = self._api_requester.do(connect_method, timeout=timeout, files=None)
 
         if reply.status_code != 200:
             raise SlackConnectionError("RTM connection attempt failed")
