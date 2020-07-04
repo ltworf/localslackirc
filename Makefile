@@ -3,7 +3,7 @@ all:
 
 .PHONY: lint
 lint:
-	MYPYPATH=stubs mypy --config-file mypy.conf irc.py
+	mypy --config-file mypy.conf irc.py
 
 .PHONY: test
 test: lint
@@ -56,8 +56,7 @@ dist:
 		localslackirc/tests \
 		localslackirc/localslackirc.d \
 		localslackirc/systemd \
-		localslackirc/mypy.conf \
-		localslackirc/stubs/
+		localslackirc/mypy.conf
 	mv ../localslackirc.tar.gz localslackirc_`head -1 CHANGELOG`.orig.tar.gz
 	gpg --detach-sign -a *.orig.tar.gz
 
