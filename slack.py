@@ -605,7 +605,7 @@ class Slack:
             return load(r['channels'], List[IM])
         raise ResponseException(response)
 
-    def get_user_by_name(self, name: str) -> User:
+    async def get_user_by_name(self, name: str) -> User:
         return self._usermapcache[name]
 
     @lru_cache

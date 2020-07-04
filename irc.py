@@ -250,7 +250,7 @@ class Client:
         else:
             try:
                 await self.sl_client.send_message_to_user(
-                    self.sl_client.get_user_by_name(dest.decode()).id,
+                    await self.sl_client.get_user_by_name(dest.decode()).id,
                     message,
                     action,
                 )
@@ -280,7 +280,7 @@ class Client:
             if channel_name.startswith('#'):
                 dest = await self.sl_client.get_channel_by_name(channel_name[1:]).id
             else:
-                dest = self.sl_client.get_user_by_name(channel_name).id
+                dest = await self.sl_client.get_user_by_name(channel_name).id
         except KeyError:
             await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find destination: {channel_name}')
             return
@@ -324,7 +324,7 @@ class Client:
             await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Wildcards are not supported')
         uusername = username.decode()
         try:
-            user = self.sl_client.get_user_by_name(uusername)
+            user = await self.sl_client.get_user_by_name(uusername)
         except KeyError:
             await self._sendreply(Replies.ERR_NOSUCHNICK, f'Unknown user {uusername}')
 
@@ -338,7 +338,7 @@ class Client:
     async def _kickhandler(self, cmd: bytes) -> None:
         _, channel_b, username, message = cmd.split(b' ', 3)
         channel = await self.sl_client.get_channel_by_name(channel_b.decode()[1:])
-        user = self.sl_client.get_user_by_name(username.decode())
+        user = await self.sl_client.get_user_by_name(username.decode())
         try:
             await self.sl_client.kick(channel, user)
         except Exception as e:
@@ -356,7 +356,7 @@ class Client:
     async def _invitehandler(self, cmd: bytes) -> None:
         _, username, channel_b = cmd.split(b' ', 2)
         channel = await self.sl_client.get_channel_by_name(channel_b.decode()[1:])
-        user = self.sl_client.get_user_by_name(username.decode())
+        user = await self.sl_client.get_user_by_name(username.decode())
         try:
             await self.sl_client.invite(channel, user)
         except Exception as e:
@@ -366,7 +366,7 @@ class Client:
         _, name = cmd.split(b' ', 1)
         if not name.startswith(b'#'):
             try:
-                user = self.sl_client.get_user_by_name(name.decode())
+                user = await self.sl_client.get_user_by_name(name.decode())
             except KeyError:
                 return
             await self._sendreply(Replies.RPL_WHOREPLY, '0 %s' % user.real_name, [name, user.name, '127.0.0.1', self.hostname, user.name, 'H'])
@@ -431,7 +431,7 @@ class Client:
             if username.startswith('://'):
                 continue # Match inside a url
             elif self.provider == Provider.SLACK:
-                msg = msg[0:m.start()] + '<@%s>' % self.sl_client.get_user_by_name(username).id + msg[m.end():]
+                msg = msg[0:m.start()] + '<@%s>' % await self.sl_client.get_user_by_name(username).id + msg[m.end():]
             elif self.provider == Provider.ROCKETCHAT:
                 msg = msg[0:m.start()] + f'@{username}' + msg[m.end():]
         return msg
