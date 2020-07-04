@@ -56,10 +56,10 @@ class SlackClient:
     def __init__(self, token: str, cookie: Optional[str]) -> None:
         # Slack client configs
         self._token = token
-        self._coockie = cookie
+        self._cookie = cookie
 
         # RTM configs
-        self._websocket: Optional[WebSocket] = None
+        self._websocket: Optional[websockets.client.WebSocketClientProtocol] = None
 
     async def _do(self, request: str, post_data: Dict[str,str], timeout: Optional[float], files: Optional[Dict]):
         """
@@ -152,7 +152,8 @@ class SlackClient:
         return response_json
 
     async def rtm_read(self) -> List[Dict[str, Any]]:
-        json_data = await self._websocket.recv()
+        assert self._websocket
+        json_data: str = await self._websocket.recv()  # type: ignore
         data = []
         if json_data != '':
             for d in json_data.split('\n'):
