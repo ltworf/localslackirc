@@ -492,8 +492,8 @@ class Client:
         """
         Sends a message to the irc client
         """
-        if hasattr(sl_ev, 'user'):
-            source = await self.sl_client.get_user(sl_ev.user).name.encode('utf8')  # type: ignore
+        if not isinstance(sl_ev, slack.MessageBot):
+            source = (await self.sl_client.get_user(sl_ev.user)).name.encode('utf8')
         else:
             source = b'bot'
         try:
