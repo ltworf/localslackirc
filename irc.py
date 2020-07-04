@@ -436,62 +436,57 @@ class Client:
                 msg = msg[0:m.start()] + f'@{username}' + msg[m.end():]
         return msg
 
-    async def parse_message(self, msg: str) -> Iterator[bytes]:
-        for i in msg.split('\n'):
-            if not i:
-                continue
+    async def parse_message(self, i: str) -> bytes:
+        # Replace all mentions with @user
+        while True:
+            mention = _MENTIONS_REGEXP.search(i)
+            if not mention:
+                break
+            i = (
+                i[0:mention.span()[0]] +
+                (await self.sl_client.get_user(mention.groups()[0])).name +
+                i[mention.span()[1]:]
+            )
 
-            # Replace all mentions with @user
+        # Replace all channel mentions
+        if self.provider == Provider.SLACK:
             while True:
-                mention = _MENTIONS_REGEXP.search(i)
+                mention = _CHANNEL_MENTIONS_REGEXP.search(i)
                 if not mention:
                     break
                 i = (
                     i[0:mention.span()[0]] +
-                    (await self.sl_client.get_user(mention.groups()[0])).name +
+                    '#' +
+                    mention.groups()[0] +
                     i[mention.span()[1]:]
                 )
 
-            # Replace all channel mentions
-            if self.provider == Provider.SLACK:
-                while True:
-                    mention = _CHANNEL_MENTIONS_REGEXP.search(i)
-                    if not mention:
-                        break
-                    i = (
-                        i[0:mention.span()[0]] +
-                        '#' +
-                        mention.groups()[0] +
-                        i[mention.span()[1]:]
-                    )
+            while True:
+                url = _URL_REGEXP.search(i)
+                if not url:
+                    break
+                schema, path, label = url.groups()
+                i = (
+                    i[0:url.span()[0]] +
+                    f'{schema}://{path}' +
+                    (f' ({label})' if label else '') +
+                    i[url.span()[1]:]
+                )
 
-                while True:
-                    url = _URL_REGEXP.search(i)
-                    if not url:
-                        break
-                    schema, path, label = url.groups()
-                    i = (
-                        i[0:url.span()[0]] +
-                        f'{schema}://{path}' +
-                        (f' ({label})' if label else '') +
-                        i[url.span()[1]:]
-                    )
+        for s in self.substitutions:
+            i = i.replace(s[0], s[1])
 
-            for s in self.substitutions:
-                i = i.replace(s[0], s[1])
+        encoded = i.encode('utf8')
 
-            encoded = i.encode('utf8')
+        if self.provider == Provider.SLACK:
+            encoded = encoded.replace(b'<!here>', b'yelling [%s]' % self.nick)
+            encoded = encoded.replace(b'<!channel>', b'YELLING LOUDER [%s]' % self.nick)
+            encoded = encoded.replace(b'<!everyone>', b'DEAFENING YELL [%s]' % self.nick)
+        elif self.provider == Provider.ROCKETCHAT:
+            encoded = encoded.replace(b'@here', b'yelling [%s]' % self.nick)
+            encoded = encoded.replace(b'@channel', b'YELLING LOUDER [%s]' % self.nick)
 
-            if self.provider == Provider.SLACK:
-                encoded = encoded.replace(b'<!here>', b'yelling [%s]' % self.nick)
-                encoded = encoded.replace(b'<!channel>', b'YELLING LOUDER [%s]' % self.nick)
-                encoded = encoded.replace(b'<!everyone>', b'DEAFENING YELL [%s]' % self.nick)
-            elif self.provider == Provider.ROCKETCHAT:
-                encoded = encoded.replace(b'@here', b'yelling [%s]' % self.nick)
-                encoded = encoded.replace(b'@channel', b'YELLING LOUDER [%s]' % self.nick)
-
-            yield encoded
-
+        return encoded
 
     async def _message(self, sl_ev: Union[slack.Message, slack.MessageDelete, slack.MessageBot, slack.ActionMessage], prefix: str=''):
         """
@@ -511,13 +506,17 @@ class Client:
         if dest in self.parted_channels:
             # Ignoring messages, channel was left on IRC
             return
-        for msg in await self.parse_message(prefix + sl_ev.text):
+
+        for msg in (prefix + sl_ev.text).split('\n'):
+            if not msg:
+                continue
+            i = await self.parse_message(msg)
             if isinstance(sl_ev, slack.ActionMessage):
-                msg = b'\x01ACTION ' + msg + b'\x01'
-            self.sendmsg(
+                i = b'\x01ACTION ' + i + b'\x01'
+            await self.sendmsg(
                 source,
                 dest,
-                msg
+                i
             )
 
     async def _joined_parted(self, sl_ev: Union[slack.Join, slack.Leave], joined: bool) -> None:
@@ -762,7 +761,6 @@ def main() -> None:
 async def from_irc(reader, ircclient: Client):
     while True:
         cmd = await reader.readline()
-        log(cmd)
         await ircclient.command(cmd.strip())
 
 async def to_irc(sl_client: Union[slack.Slack], ircclient: Client):
