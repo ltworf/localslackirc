@@ -89,7 +89,7 @@ MPIM_HIDE_DELAY = datetime.timedelta(days=50)
 
 
 class Client:
-    def __init__(self, s: asyncio.streams.StreamWriter, sl_client: Union[slack.Slack, rocket.Rocket], nouserlist: bool, autojoin: bool, provider: Provider):
+    def __init__(self, s: asyncio.streams.StreamWriter, sl_client: Union[slack.Slack], nouserlist: bool, autojoin: bool, provider: Provider):
         self.nick = b''
         self.username = b''
         self.realname = b''
@@ -721,8 +721,10 @@ def main() -> None:
         previous_status = status_file.read_bytes()
 
     if rc_url:
-        sl_client: Union[slack.Slack, rocket.Rocket] = rocket.Rocket(rc_url, token, previous_status)
-        provider = Provider.ROCKETCHAT
+        #FIXME
+        #sl_client: Union[slack.Slack] = rocket.Rocket(rc_url, token, previous_status)
+        #provider = Provider.ROCKETCHAT
+        raise NotImplementedError('No rocket chat at this moment')
     else:
         sl_client = slack.Slack(token, cookie, previous_status)
         provider = Provider.SLACK
@@ -763,7 +765,7 @@ async def from_irc(reader, ircclient: Client):
         log(cmd)
         await ircclient.command(cmd.strip())
 
-async def to_irc(sl_client: Union[slack.Slack, rocket.Rocket], ircclient: Client):
+async def to_irc(sl_client: Union[slack.Slack], ircclient: Client):
     while True:
         ev = await sl_client.event()
         if ev:
