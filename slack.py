@@ -761,7 +761,7 @@ class Slack:
             try:
                 self.login_info = await self.client.rtm_connect()
                 sleeptime = 1
-                self._history()
+                await self._history()
             except Exception as e:
                 log(f'Connection to slack failed {e}')
                 await asyncio.sleep(sleeptime)

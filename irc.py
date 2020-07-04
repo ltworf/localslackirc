@@ -17,12 +17,12 @@
 #
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
+import asyncio
 import atexit
 import datetime
 from enum import Enum
 from pathlib import Path
 import re
-import select
 import signal
 import socket
 import argparse
@@ -89,7 +89,7 @@ MPIM_HIDE_DELAY = datetime.timedelta(days=50)
 
 
 class Client:
-    def __init__(self, s, sl_client: Union[slack.Slack, rocket.Rocket], nouserlist: bool, autojoin: bool, provider: Provider):
+    def __init__(self, s: asyncio.streams.StreamWriter, sl_client: Union[slack.Slack, rocket.Rocket], nouserlist: bool, autojoin: bool, provider: Provider):
         self.nick = b''
         self.username = b''
         self.realname = b''
@@ -111,14 +111,14 @@ class Client:
         else:
             self.substitutions = []
 
-    def _nickhandler(self, cmd: bytes) -> None:
+    async def _nickhandler(self, cmd: bytes) -> None:
         _, nick = cmd.split(b' ', 1)
         self.nick = nick.strip()
         assert self.sl_client.login_info
         if self.nick != self.sl_client.login_info.self.name.encode('ascii'):
-            self._sendreply(Replies.ERR_ERRONEUSNICKNAME, 'Incorrect nickname, use %s' % self.sl_client.login_info.self.name)
+            await self._sendreply(Replies.ERR_ERRONEUSNICKNAME, 'Incorrect nickname, use %s' % self.sl_client.login_info.self.name)
 
-    def _sendreply(self, code: Union[int,Replies], message: Union[str,bytes], extratokens: Iterable[Union[str,bytes]] = []) -> None:
+    async def _sendreply(self, code: Union[int,Replies], message: Union[str,bytes], extratokens: Iterable[Union[str,bytes]] = []) -> None:
         codeint = code if isinstance(code, int) else code.value
         bytemsg = message if isinstance(message, bytes) else message.encode('utf8')
 
@@ -126,33 +126,34 @@ class Client:
 
         extratokens.insert(0, self.nick)
 
-        self.s.send(b':%s %03d %s :%s\n' % (
+        self.s.write(b':%s %03d %s :%s\n' % (
             self.hostname,
             codeint,
             b' '.join(i if isinstance(i, bytes) else i.encode('utf8') for i in extratokens),
             bytemsg,
         ))
+        await self.s.drain()
 
 
-    def _userhandler(self, cmd: bytes) -> None:
+    async def _userhandler(self, cmd: bytes) -> None:
         #TODO USER salvo 8 * :Salvatore Tomaselli
         assert self.sl_client.login_info
-        self._sendreply(1, 'Welcome to localslackirc')
-        self._sendreply(2, 'Your team name is: %s' % self.sl_client.login_info.team.name)
-        self._sendreply(2, 'Your team domain is: %s' % self.sl_client.login_info.team.domain)
-        self._sendreply(2, 'Your nickname must be: %s' % self.sl_client.login_info.self.name)
-        self._sendreply(Replies.RPL_LUSERCLIENT, 'There are 1 users and 0 services on 1 server')
+        await self._sendreply(1, 'Welcome to localslackirc')
+        await self._sendreply(2, 'Your team name is: %s' % self.sl_client.login_info.team.name)
+        await self._sendreply(2, 'Your team domain is: %s' % self.sl_client.login_info.team.domain)
+        await self._sendreply(2, 'Your nickname must be: %s' % self.sl_client.login_info.self.name)
+        await self._sendreply(Replies.RPL_LUSERCLIENT, 'There are 1 users and 0 services on 1 server')
 
         if self.autojoin and not self.nouserlist:
             # We're about to load many users for each chan; instead of requesting each
             # profile on its own, batch load the full directory.
-            self.sl_client.prefetch_users()
+            await self.sl_client.prefetch_users()
 
         if self.autojoin:
 
             mpim_cutoff = datetime.datetime.utcnow() - MPIM_HIDE_DELAY
 
-            for sl_chan in self.sl_client.channels():
+            for sl_chan in await self.sl_client.channels():
                 if not sl_chan.is_member:
                     continue
 
@@ -160,9 +161,9 @@ class Client:
                     continue
 
                 channel_name = '#%s' % sl_chan.name_normalized
-                self._send_chan_info(channel_name.encode('utf-8'), sl_chan)
+                await self._send_chan_info(channel_name.encode('utf-8'), sl_chan)
         else:
-            for sl_chan in self.sl_client.channels():
+            for sl_chan in await self.sl_client.channels():
                 channel_name = '#%s' % sl_chan.name_normalized
                 self.parted_channels.add(channel_name.encode('utf-8'))
 
@@ -172,11 +173,12 @@ class Client:
             self.slack_event(ev)
         self._held_events = []
 
-    def _pinghandler(self, cmd: bytes) -> None:
+    async def _pinghandler(self, cmd: bytes) -> None:
         _, lbl = cmd.split(b' ', 1)
-        self.s.send(b':%s PONG %s %s\n' % (self.hostname, self.hostname, lbl))
+        self.s.write(b':%s PONG %s %s\n' % (self.hostname, self.hostname, lbl))
+        await self.s.drain()
 
-    def _joinhandler(self, cmd: bytes) -> None:
+    async def _joinhandler(self, cmd: bytes) -> None:
         _, channel_name_b = cmd.split(b' ', 1)
 
         if channel_name_b in self.parted_channels:
@@ -184,28 +186,28 @@ class Client:
 
         channel_name = channel_name_b[1:].decode()
         try:
-            slchan = self.sl_client.get_channel_by_name(channel_name)
+            slchan = await self.sl_client.get_channel_by_name(channel_name)
         except Exception:
-            self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find channel: {channel_name}')
+            await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find channel: {channel_name}')
             return
 
         if not slchan.is_member:
             try:
-                self.sl_client.join(slchan)
+                await self.sl_client.join(slchan)
             except Exception:
-                self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to join server channel: {channel_name}')
+                await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to join server channel: {channel_name}')
 
         try:
-            self._send_chan_info(channel_name_b, slchan)
+            await self._send_chan_info(channel_name_b, slchan)
         except Exception:
-            self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to join channel: {channel_name}')
+            await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to join channel: {channel_name}')
 
-    def _send_chan_info(self, channel_name: bytes, slchan: slack.Channel):
+    async def _send_chan_info(self, channel_name: bytes, slchan: slack.Channel):
         if not self.nouserlist:
             userlist: List[bytes] = []
-            for i in self.sl_client.get_members(slchan.id):
+            for i in await self.sl_client.get_members(slchan.id):
                 try:
-                    u = self.sl_client.get_user(i)
+                    u = await self.sl_client.get_user(i)
                 except Exception:
                     continue
                 if u.deleted:
@@ -217,12 +219,13 @@ class Client:
 
             users = b' '.join(userlist)
 
-        self.s.send(b':%s!salvo@127.0.0.1 JOIN %s\n' % (self.nick, channel_name))
-        self._sendreply(Replies.RPL_TOPIC, slchan.real_topic, [channel_name])
-        self._sendreply(Replies.RPL_NAMREPLY, b'' if self.nouserlist else users, ['=', channel_name])
-        self._sendreply(Replies.RPL_ENDOFNAMES, 'End of NAMES list', [channel_name])
+        self.s.write(b':%s!salvo@127.0.0.1 JOIN %s\n' % (self.nick, channel_name))
+        await self.s.drain()
+        await self._sendreply(Replies.RPL_TOPIC, slchan.real_topic, [channel_name])
+        await self._sendreply(Replies.RPL_NAMREPLY, b'' if self.nouserlist else users, ['=', channel_name])
+        await self._sendreply(Replies.RPL_ENDOFNAMES, 'End of NAMES list', [channel_name])
 
-    def _privmsghandler(self, cmd: bytes) -> None:
+    async def _privmsghandler(self, cmd: bytes) -> None:
         _, dest, msg = cmd.split(b' ', 2)
         if msg.startswith(b':'):
             msg = msg[1:]
@@ -239,14 +242,14 @@ class Client:
         message = self._addmagic(msg.decode('utf8'))
 
         if dest.startswith(b'#'):
-            self.sl_client.send_message(
-                self.sl_client.get_channel_by_name(dest[1:].decode()).id,
+            await self.sl_client.send_message(
+                await self.sl_client.get_channel_by_name(dest[1:].decode()).id,
                 message,
                 action,
             )
         else:
             try:
-                self.sl_client.send_message_to_user(
+                await self.sl_client.send_message_to_user(
                     self.sl_client.get_user_by_name(dest.decode()).id,
                     message,
                     action,
@@ -254,140 +257,141 @@ class Client:
             except Exception:
                 log('Impossible to find user ', dest)
 
-    def _listhandler(self, cmd: bytes) -> None:
-        for c in self.sl_client.channels(refresh=True):
-            self._sendreply(Replies.RPL_LIST, c.real_topic, ['#' + c.name, str(c.num_members)])
-        self._sendreply(Replies.RPL_LISTEND, 'End of LIST')
+    async def _listhandler(self, cmd: bytes) -> None:
+        for c in await self.sl_client.channels(refresh=True):
+            await self._sendreply(Replies.RPL_LIST, c.real_topic, ['#' + c.name, str(c.num_members)])
+        await self._sendreply(Replies.RPL_LISTEND, 'End of LIST')
 
-    def _modehandler(self, cmd: bytes) -> None:
+    async def _modehandler(self, cmd: bytes) -> None:
         params = cmd.split(b' ', 2)
-        self._sendreply(Replies.RPL_CHANNELMODEIS, '', [params[1], '+'])
+        await self._sendreply(Replies.RPL_CHANNELMODEIS, '', [params[1], '+'])
 
-    def _sendfilehandler(self, cmd: bytes) -> None:
+    async def _sendfilehandler(self, cmd: bytes) -> None:
         #/sendfile #destination filename
         params = cmd.split(b' ', 2)
         try:
             channel_name = params[1].decode('utf8')
             filename = params[2].decode('utf8')
         except IndexError:
-            self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Syntax: /sendreply #channel filename')
+            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Syntax: /sendreply #channel filename')
             return
 
         try:
             if channel_name.startswith('#'):
-                dest = self.sl_client.get_channel_by_name(channel_name[1:]).id
+                dest = await self.sl_client.get_channel_by_name(channel_name[1:]).id
             else:
                 dest = self.sl_client.get_user_by_name(channel_name).id
         except KeyError:
-            self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find destination: {channel_name}')
+            await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find destination: {channel_name}')
             return
 
         try:
-            self.sl_client.send_file(dest, filename)
-            self._sendreply(0, 'Upload of %s completed' % filename)
+            await self.sl_client.send_file(dest, filename)
+            await self._sendreply(0, 'Upload of %s completed' % filename)
         except Exception as e:
-            self._sendreply(Replies.ERR_FILEERROR, f'Unable to send file {e}')
+            await self._sendreply(Replies.ERR_FILEERROR, f'Unable to send file {e}')
 
-    def _parthandler(self, cmd: bytes) -> None:
+    async def _parthandler(self, cmd: bytes) -> None:
         _, name = cmd.split(b' ', 1)
         self.parted_channels.add(name)
 
-    def _awayhandler(self, cmd: bytes) -> None:
+    async def _awayhandler(self, cmd: bytes) -> None:
         is_away = b' ' in cmd
-        self.sl_client.away(is_away)
+        await self.sl_client.away(is_away)
         response = Replies.RPL_NOWAWAY if is_away else Replies.RPL_UNAWAY
-        self._sendreply(response, 'Away status changed')
+        await self._sendreply(response, 'Away status changed')
 
-    def _topichandler(self, cmd: bytes) -> None:
+    async def _topichandler(self, cmd: bytes) -> None:
         _, channel_b, topic_b = cmd.split(b' ', 2)
         topic = topic_b.decode()[1:]
-        channel = self.sl_client.get_channel_by_name(channel_b.decode()[1:])
+        channel = await self.sl_client.get_channel_by_name(channel_b.decode()[1:])
         try:
-            self.sl_client.topic(channel, topic)
+            await self.sl_client.topic(channel, topic)
         except Exception:
-            self._sendreply(Replies.ERR_UNKNOWNCOMMAND, f'Unable to set topic to {topic}')
+            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, f'Unable to set topic to {topic}')
 
-    def _whoishandler(self, cmd: bytes) -> None:
+    async def _whoishandler(self, cmd: bytes) -> None:
         users = cmd.split(b' ')
         del users[0]
 
         if len(users) > 1:
-            self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Server parameter is not supported')
+            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Server parameter is not supported')
 
         # Seems that oftc only responds to the last one
         username = users.pop()
 
         if b'*' in username:
-            self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Wildcards are not supported')
+            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Wildcards are not supported')
         uusername = username.decode()
         try:
             user = self.sl_client.get_user_by_name(uusername)
         except KeyError:
-            self._sendreply(Replies.ERR_NOSUCHNICK, f'Unknown user {uusername}')
+            await self._sendreply(Replies.ERR_NOSUCHNICK, f'Unknown user {uusername}')
 
-        self._sendreply(Replies.RPL_WHOISUSER, user.real_name, [username, '', 'localhost'])
+        await self._sendreply(Replies.RPL_WHOISUSER, user.real_name, [username, '', 'localhost'])
         if user.profile.email:
-            self._sendreply(Replies.RPL_WHOISUSER, f'email: {user.profile.email}', [username, '', 'localhost'])
+            await self._sendreply(Replies.RPL_WHOISUSER, f'email: {user.profile.email}', [username, '', 'localhost'])
         if user.is_admin:
-            self._sendreply(Replies.RPL_WHOISOPERATOR, f'{uusername} is an IRC operator', [username])
-        self._sendreply(Replies.RPL_ENDOFWHOIS, '', extratokens=[username])
+            await self._sendreply(Replies.RPL_WHOISOPERATOR, f'{uusername} is an IRC operator', [username])
+        await self._sendreply(Replies.RPL_ENDOFWHOIS, '', extratokens=[username])
 
-    def _kickhandler(self, cmd: bytes) -> None:
+    async def _kickhandler(self, cmd: bytes) -> None:
         _, channel_b, username, message = cmd.split(b' ', 3)
-        channel = self.sl_client.get_channel_by_name(channel_b.decode()[1:])
+        channel = await self.sl_client.get_channel_by_name(channel_b.decode()[1:])
         user = self.sl_client.get_user_by_name(username.decode())
         try:
-            self.sl_client.kick(channel, user)
+            await self.sl_client.kick(channel, user)
         except Exception as e:
-            self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Error: %s' % e)
+            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Error: %s' % e)
 
-    def _userhosthandler(self, cmd: bytes) -> None:
+    async def _userhosthandler(self, cmd: bytes) -> None:
         nicknames = cmd.split(b' ')
         del nicknames[0] # Remove the command itself
         #TODO replace + with - in case of away
         #TODO append a * to the nickname for OP
 
         replies = (b'%s=+unknown' % i for i in nicknames)
-        self._sendreply(Replies.RPL_USERHOST, '', replies)
+        await self._sendreply(Replies.RPL_USERHOST, '', replies)
 
-    def _invitehandler(self, cmd: bytes) -> None:
+    async def _invitehandler(self, cmd: bytes) -> None:
         _, username, channel_b = cmd.split(b' ', 2)
-        channel = self.sl_client.get_channel_by_name(channel_b.decode()[1:])
+        channel = await self.sl_client.get_channel_by_name(channel_b.decode()[1:])
         user = self.sl_client.get_user_by_name(username.decode())
         try:
-            self.sl_client.invite(channel, user)
+            await self.sl_client.invite(channel, user)
         except Exception as e:
-            self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Error: %s' % e)
+            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Error: %s' % e)
 
-    def _whohandler(self, cmd: bytes) -> None:
+    async def _whohandler(self, cmd: bytes) -> None:
         _, name = cmd.split(b' ', 1)
         if not name.startswith(b'#'):
             try:
                 user = self.sl_client.get_user_by_name(name.decode())
             except KeyError:
                 return
-            self._sendreply(Replies.RPL_WHOREPLY, '0 %s' % user.real_name, [name, user.name, '127.0.0.1', self.hostname, user.name, 'H'])
+            await self._sendreply(Replies.RPL_WHOREPLY, '0 %s' % user.real_name, [name, user.name, '127.0.0.1', self.hostname, user.name, 'H'])
             return
 
         try:
-            channel = self.sl_client.get_channel_by_name(name.decode()[1:])
+            channel = await self.sl_client.get_channel_by_name(name.decode()[1:])
         except KeyError:
             return
 
-        for i in self.sl_client.get_members(channel.id):
+        for i in await self.sl_client.get_members(channel.id):
             try:
-                user = self.sl_client.get_user(i)
-                self._sendreply(Replies.RPL_WHOREPLY, '0 %s' % user.real_name, [name, user.name, '127.0.0.1', self.hostname, user.name, 'H'])
+                user = await self.sl_client.get_user(i)
+                await self._sendreply(Replies.RPL_WHOREPLY, '0 %s' % user.real_name, [name, user.name, '127.0.0.1', self.hostname, user.name, 'H'])
             except Exception:
                 pass
-        self._sendreply(Replies.RPL_ENDOFWHO, 'End of WHO list', [name])
+        await self._sendreply(Replies.RPL_ENDOFWHO, 'End of WHO list', [name])
 
-    def sendmsg(self, from_: bytes, to: bytes, message: bytes) -> None:
-        self.s.send(b':%s!salvo@127.0.0.1 PRIVMSG %s :%s\n' % (
+    async def sendmsg(self, from_: bytes, to: bytes, message: bytes) -> None:
+        self.s.write(b':%s!salvo@127.0.0.1 PRIVMSG %s :%s\n' % (
             from_,
             to, #private message, or a channel
             message,
         ))
+        await self.s.drain()
 
     def _addmagic(self, msg: str) -> str:
         """
@@ -432,7 +436,7 @@ class Client:
                 msg = msg[0:m.start()] + f'@{username}' + msg[m.end():]
         return msg
 
-    def parse_message(self, msg: str) -> Iterator[bytes]:
+    async def parse_message(self, msg: str) -> Iterator[bytes]:
         for i in msg.split('\n'):
             if not i:
                 continue
@@ -444,7 +448,7 @@ class Client:
                     break
                 i = (
                     i[0:mention.span()[0]] +
-                    self.sl_client.get_user(mention.groups()[0]).name +
+                    await self.sl_client.get_user(mention.groups()[0]).name +
                     i[mention.span()[1]:]
                 )
 
@@ -489,16 +493,16 @@ class Client:
             yield encoded
 
 
-    def _message(self, sl_ev: Union[slack.Message, slack.MessageDelete, slack.MessageBot, slack.ActionMessage], prefix: str=''):
+    async def _message(self, sl_ev: Union[slack.Message, slack.MessageDelete, slack.MessageBot, slack.ActionMessage], prefix: str=''):
         """
         Sends a message to the irc client
         """
         if hasattr(sl_ev, 'user'):
-            source = self.sl_client.get_user(sl_ev.user).name.encode('utf8')  # type: ignore
+            source = await self.sl_client.get_user(sl_ev.user).name.encode('utf8')  # type: ignore
         else:
             source = b'bot'
         try:
-            dest = b'#' + self.sl_client.get_channel(sl_ev.channel).name.encode('utf8')
+            dest = b'#' + await self.sl_client.get_channel(sl_ev.channel).name.encode('utf8')
         except KeyError:
             dest = self.nick
         except Exception as e:
@@ -507,7 +511,7 @@ class Client:
         if dest in self.parted_channels:
             # Ignoring messages, channel was left on IRC
             return
-        for msg in self.parse_message(prefix + sl_ev.text):
+        for msg in await self.parse_message(prefix + sl_ev.text):
             if isinstance(sl_ev, slack.ActionMessage):
                 msg = b'\x01ACTION ' + msg + b'\x01'
             self.sendmsg(
@@ -516,54 +520,55 @@ class Client:
                 msg
             )
 
-    def _joined_parted(self, sl_ev: Union[slack.Join, slack.Leave], joined: bool) -> None:
+    async def _joined_parted(self, sl_ev: Union[slack.Join, slack.Leave], joined: bool) -> None:
         """
         Handle join events from slack, by sending a JOIN notification
         to IRC.
         """
-        user = self.sl_client.get_user(sl_ev.user)
+        user = await self.sl_client.get_user(sl_ev.user)
         if user.deleted:
             return
-        channel = self.sl_client.get_channel(sl_ev.channel)
+        channel = await self.sl_client.get_channel(sl_ev.channel)
         dest = b'#' + channel.name.encode('utf8')
         if dest in self.parted_channels:
             return
         name = user.name.encode('utf8')
         rname = user.real_name.replace(' ', '_').encode('utf8')
         if joined:
-            self.s.send(b':%s!%s@127.0.0.1 JOIN :%s\n' % (name, rname, dest))
+            self.s.write(b':%s!%s@127.0.0.1 JOIN :%s\n' % (name, rname, dest))
         else:
-            self.s.send(b':%s!%s@127.0.0.1 PART %s\n' % (name, rname, dest))
+            self.s.write(b':%s!%s@127.0.0.1 PART %s\n' % (name, rname, dest))
+        await self.s.drain()
 
-    def slack_event(self, sl_ev: slack.SlackEvent) -> None:
+    async def slack_event(self, sl_ev: slack.SlackEvent) -> None:
         if not self._usersent:
             self._held_events.append(sl_ev)
             return
         if isinstance(sl_ev, slack.MessageDelete):
-            self._message(sl_ev, '[deleted]')
+            await self._message(sl_ev, '[deleted]')
         elif isinstance(sl_ev, slack.Message):
-            self._message(sl_ev)
+            await self._message(sl_ev)
         elif isinstance(sl_ev, slack.ActionMessage):
-            self._message(sl_ev)
+            await self._message(sl_ev)
         elif isinstance(sl_ev, slack.MessageEdit):
             if sl_ev.is_changed:
-                self._message(sl_ev.diffmsg)
+                await self._message(sl_ev.diffmsg)
         elif isinstance(sl_ev, slack.MessageBot):
-            self._message(sl_ev, '[%s]' % sl_ev.username)
+            await self._message(sl_ev, '[%s]' % sl_ev.username)
         elif isinstance(sl_ev, slack.FileShared):
-            f = self.sl_client.get_file(sl_ev)
-            self._message(f.announce())
+            f = await self.sl_client.get_file(sl_ev)
+            await self._message(f.announce())
         elif isinstance(sl_ev, slack.Join):
-            self._joined_parted(sl_ev, True)
+            await self._joined_parted(sl_ev, True)
         elif isinstance(sl_ev, slack.Leave):
-            self._joined_parted(sl_ev, False)
+            await self._joined_parted(sl_ev, False)
         elif isinstance(sl_ev, slack.TopicChange):
-            self._sendreply(Replies.RPL_TOPIC, sl_ev.topic, ['#' + self.sl_client.get_channel(sl_ev.channel).name])
+            await self._sendreply(Replies.RPL_TOPIC, sl_ev.topic, ['#' + await self.sl_client.get_channel(sl_ev.channel).name])
         elif isinstance(sl_ev, slack.GroupJoined):
             channel_name = '#%s' % sl_ev.channel.name_normalized
-            self._send_chan_info(channel_name.encode('utf-8'), sl_ev.channel)
+            await self._send_chan_info(channel_name.encode('utf-8'), sl_ev.channel)
 
-    def command(self, cmd: bytes) -> None:
+    async def command(self, cmd: bytes) -> None:
         if b' ' in cmd:
             cmdid, _ = cmd.split(b' ', 1)
         else:
@@ -591,9 +596,9 @@ class Client:
         }
 
         if cmdid in handlers:
-            handlers[cmdid](cmd)
+            await handlers[cmdid](cmd)
         else:
-            self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Unknown command', [cmdid])
+            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Unknown command', [cmdid])
             log('Unknown command: ', cmd)
 
 
@@ -722,47 +727,49 @@ def main() -> None:
         sl_client = slack.Slack(token, cookie, previous_status)
         provider = Provider.SLACK
 
+    # Parameters are dealt with
+
     atexit.register(exit_hook, status_file, sl_client)
     term_f = lambda _, __: sys.exit(0)
     signal.signal(signal.SIGHUP, term_f )
     signal.signal(signal.SIGTERM, term_f)
 
-    sl_events = sl_client.events_iter()
-    serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    serversocket.bind((ip, port))
-    serversocket.listen(1)
+    async def irc_listener() -> None:
+        serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        serversocket.bind((ip, port))
+        serversocket.listen(1)
 
-    poller = select.poll()
+        s, _ = serversocket.accept()
+        reader, writer = await asyncio.open_connection(sock=s)
+
+        ircclient = Client(writer, sl_client, nouserlist, autojoin, provider)
+
+        from_irc_task = asyncio.create_task(from_irc(reader, ircclient))
+        to_irc_task = asyncio.create_task(to_irc(sl_client, ircclient))
+        await from_irc_task
+        await to_irc_task
 
     while True:
-        s, _ = serversocket.accept()
-        ircclient = Client(s, sl_client, nouserlist, autojoin, provider)
+        asyncio.run(irc_listener())
+        #try:
 
-        poller.register(s.fileno(), select.POLLIN)
-        if sl_client.fileno is not None:
-            poller.register(sl_client.fileno, select.POLLIN)
+        #except Exception:
+            #pass
 
-        # Main loop
-        timeout = 2
-        while True:
-            s_event: List[Tuple[int,int]] = poller.poll(timeout)
-            sl_event = next(sl_events)
+async def from_irc(reader, ircclient: Client):
+    while True:
+        cmd = await reader.readline()
+        log(cmd)
+        await ircclient.command(cmd.strip())
 
-            if s_event:
-                text = s.recv(1024)
-                if len(text) == 0:
-                    break
-                #FIXME handle the case when there is more to be read
-                for i in text.split(b'\n')[:-1]:
-                    i = i.strip()
-                    if i:
-                        ircclient.command(i)
+async def to_irc(sl_client: Union[slack.Slack, rocket.Rocket], ircclient: Client):
+    while True:
+        ev = await sl_client.event()
+        if ev:
+            log(ev)
+            await ircclient.slack_event(ev)
 
-            while sl_event:
-                log(sl_event)
-                ircclient.slack_event(sl_event)
-                sl_event = next(sl_events)
 
 if __name__ == '__main__':
     while True:
