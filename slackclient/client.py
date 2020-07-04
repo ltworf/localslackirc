@@ -107,7 +107,7 @@ class SlackClient:
 
         # rtm.start returns user and channel info, rtm.connect does not.
         connect_method = "rtm.connect"
-        reply = await self._api_requester.do(connect_method, timeout=timeout, files=None)
+        reply = await self._api_requester.do(connect_method, timeout=timeout, post_data={}, files=None)
 
         if reply.status_code != 200:
             raise SlackConnectionError("RTM connection attempt failed")
