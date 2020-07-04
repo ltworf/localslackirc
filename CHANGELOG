@@ -1,4 +1,5 @@
 1.11
+* Greatly reduced CPU usage
 
 1.10
 * Do not insert mentions inside URLs
