@@ -37,7 +37,6 @@ from websocket._exceptions import WebSocketConnectionClosedException
 class SlackRequest(NamedTuple):
     token: str
     cookie: Optional[str]
-    proxies: Optional[Dict[str,str]]
 
     def do(self, request: str, post_data: Dict[str,str], timeout: Optional[float], files: Optional[Dict]):
         """
@@ -68,7 +67,6 @@ class SlackRequest(NamedTuple):
             data=post_data,
             timeout=timeout,
             files=files,
-            proxies=self.proxies
         )
 
 
@@ -93,11 +91,10 @@ class SlackClient:
     The SlackClient object owns the websocket connection and all attached channel information.
     """
 
-    def __init__(self, token: str, cookie: Optional[str], proxies: Optional[Dict[str,str]] = None) -> None:
+    def __init__(self, token: str, cookie: Optional[str]) -> None:
         # Slack client configs
         self._token = token
-        self._proxies = proxies
-        self._api_requester = SlackRequest(token, cookie, proxies)
+        self._api_requester = SlackRequest(token, cookie)
 
         # RTM configs
         self._websocket: Optional[WebSocket] = None
@@ -130,20 +127,8 @@ class SlackClient:
             raise SlackLoginError(reply=login_data)
 
     def _connect_slack_websocket(self, ws_url):
-        """Uses http proxy if available"""
-        if self._proxies and 'http' in self._proxies:
-            parts = parse_url(self._proxies['http'])
-            proxy_host, proxy_port = parts.host, parts.port
-            auth = parts.auth
-            proxy_auth = auth and auth.split(':')
-        else:
-            proxy_auth, proxy_port, proxy_host = None, None, None
-
         try:
-            self._websocket = create_connection(ws_url,
-                                               http_proxy_host=proxy_host,
-                                               http_proxy_port=proxy_port,
-                                               http_proxy_auth=proxy_auth)
+            self._websocket = create_connection(ws_url)
             self._websocket.sock.setblocking(0)  # type: ignore
         except Exception as e:
             raise SlackConnectionError(message=str(e))
