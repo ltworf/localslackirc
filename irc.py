@@ -243,14 +243,14 @@ class Client:
 
         if dest.startswith(b'#'):
             await self.sl_client.send_message(
-                await self.sl_client.get_channel_by_name(dest[1:].decode()).id,
+                (await self.sl_client.get_channel_by_name(dest[1:].decode())).id,
                 message,
                 action,
             )
         else:
             try:
                 await self.sl_client.send_message_to_user(
-                    await self.sl_client.get_user_by_name(dest.decode()).id,
+                    (await self.sl_client.get_user_by_name(dest.decode())).id,
                     message,
                     action,
                 )
@@ -278,9 +278,9 @@ class Client:
 
         try:
             if channel_name.startswith('#'):
-                dest = await self.sl_client.get_channel_by_name(channel_name[1:]).id
+                dest = (await self.sl_client.get_channel_by_name(channel_name[1:])).id
             else:
-                dest = await self.sl_client.get_user_by_name(channel_name).id
+                dest = (await self.sl_client.get_user_by_name(channel_name)).id
         except KeyError:
             await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find destination: {channel_name}')
             return
@@ -431,7 +431,7 @@ class Client:
             if username.startswith('://'):
                 continue # Match inside a url
             elif self.provider == Provider.SLACK:
-                msg = msg[0:m.start()] + '<@%s>' % await self.sl_client.get_user_by_name(username).id + msg[m.end():]
+                msg = msg[0:m.start()] + '<@%s>' % (await self.sl_client.get_user_by_name(username)).id + msg[m.end():]
             elif self.provider == Provider.ROCKETCHAT:
                 msg = msg[0:m.start()] + f'@{username}' + msg[m.end():]
         return msg
@@ -448,7 +448,7 @@ class Client:
                     break
                 i = (
                     i[0:mention.span()[0]] +
-                    await self.sl_client.get_user(mention.groups()[0]).name +
+                    (await self.sl_client.get_user(mention.groups()[0])).name +
                     i[mention.span()[1]:]
                 )
 
@@ -502,7 +502,7 @@ class Client:
         else:
             source = b'bot'
         try:
-            dest = b'#' + await self.sl_client.get_channel(sl_ev.channel).name.encode('utf8')
+            dest = b'#' + (await self.sl_client.get_channel(sl_ev.channel)).name.encode('utf8')
         except KeyError:
             dest = self.nick
         except Exception as e:
@@ -563,7 +563,7 @@ class Client:
         elif isinstance(sl_ev, slack.Leave):
             await self._joined_parted(sl_ev, False)
         elif isinstance(sl_ev, slack.TopicChange):
-            await self._sendreply(Replies.RPL_TOPIC, sl_ev.topic, ['#' + await self.sl_client.get_channel(sl_ev.channel).name])
+            await self._sendreply(Replies.RPL_TOPIC, sl_ev.topic, ['#' + (await self.sl_client.get_channel(sl_ev.channel)).name])
         elif isinstance(sl_ev, slack.GroupJoined):
             channel_name = '#%s' % sl_ev.channel.name_normalized
             await self._send_chan_info(channel_name.encode('utf-8'), sl_ev.channel)
