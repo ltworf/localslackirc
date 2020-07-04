@@ -29,15 +29,14 @@ from typing import Any, Dict, List, NamedTuple, Optional
 import requests
 from ssl import SSLWantReadError
 from typedload import load
-from websocket import create_connection, WebSocket
-from websocket._exceptions import WebSocketConnectionClosedException
+import websockets
 
 
 class SlackRequest(NamedTuple):
     token: str
     cookie: Optional[str]
 
-    def do(self, request: str, post_data: Dict[str,str], timeout: Optional[float], files: Optional[Dict]):
+    async def do(self, request: str, post_data: Dict[str,str], timeout: Optional[float], files: Optional[Dict]):
         """
         Perform a POST request to the Slack Web API
 
@@ -59,6 +58,7 @@ class SlackRequest(NamedTuple):
         if self.cookie:
             headers['cookie'] = self.cookie
 
+        #FIXME Use some async library here
         # Submit the request
         return requests.post(
             url,
@@ -98,13 +98,7 @@ class SlackClient:
         # RTM configs
         self._websocket: Optional[WebSocket] = None
 
-    @property
-    def fileno(self) -> Optional[int]:
-        if self._websocket is not None:
-            return self._websocket.fileno()
-        return None
-
-    def rtm_connect(self, timeout: Optional[int] = None) -> LoginInfo:
+    async def rtm_connect(self, timeout: Optional[int] = None) -> LoginInfo:
         """
         Connects to the RTM API - https://api.slack.com/rtm
         :Args:
@@ -113,50 +107,19 @@ class SlackClient:
 
         # rtm.start returns user and channel info, rtm.connect does not.
         connect_method = "rtm.connect"
-        reply = self._api_requester.do(connect_method, timeout=timeout, files=None)
+        reply = await self._api_requester.do(connect_method, timeout=timeout, files=None)
 
         if reply.status_code != 200:
             raise SlackConnectionError("RTM connection attempt failed")
 
         login_data = reply.json()
         if login_data["ok"]:
-            self._connect_slack_websocket(login_data['url'])
+            self._websocket = await websockets.connect(login_data['url'])
             return load(login_data, LoginInfo)
         else:
             raise SlackLoginError(reply=login_data)
 
-    def _connect_slack_websocket(self, ws_url):
-        try:
-            self._websocket = create_connection(ws_url)
-            self._websocket.sock.setblocking(0)  # type: ignore
-        except Exception as e:
-            raise SlackConnectionError(message=str(e))
-
-    def _websocket_read(self) -> str:
-        """
-        Returns data if available, otherwise ''. Newlines indicate multiple
-        messages
-        """
-        if self._websocket is None:
-            raise SlackConnectionError("Unable to send due to closed RTM websocket")
-
-        data = ''
-        while True:
-            try:
-                data += "{0}\n".format(self._websocket.recv())
-            except SSLWantReadError:
-                # errno 2 occurs when trying to read or write data, but more
-                # data needs to be received on the underlying TCP transport
-                # before the request can be fulfilled.
-                #
-                # Python 2.7.9+ and Python 3.3+ give this its own exception,
-                # SSLWantReadError
-                return ''
-            except WebSocketConnectionClosedException:
-                raise SlackConnectionError("Unable to send due to closed RTM websocket")
-            return data.rstrip()
-
-    def api_call(self, method: str, timeout: Optional[float] = None, **kwargs) -> Dict[str, Any]:
+    async def api_call(self, method: str, timeout: Optional[float] = None, **kwargs) -> Dict[str, Any]:
         """
         Call the Slack Web API as documented here: https://api.slack.com/web
 
@@ -190,13 +153,13 @@ class SlackClient:
             files = kwargs.pop('files')
         else:
             files = None
-        response = self._api_requester.do(method, kwargs, timeout, files)
+        response = await self._api_requester.do(method, kwargs, timeout, files)
         response_json = json.loads(response.text)
         response_json["headers"] = dict(response.headers)
         return response_json
 
-    def rtm_read(self) -> List[Dict[str, Any]]:
-        json_data = self._websocket_read()
+    async def rtm_read(self) -> List[Dict[str, Any]]:
+        json_data = await self._websocket.recv()
         data = []
         if json_data != '':
             for d in json_data.split('\n'):
