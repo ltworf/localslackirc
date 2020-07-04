@@ -32,43 +32,6 @@ from typedload import load
 import websockets
 
 
-class SlackRequest(NamedTuple):
-    token: str
-    cookie: Optional[str]
-
-    async def do(self, request: str, post_data: Dict[str,str], timeout: Optional[float], files: Optional[Dict]):
-        """
-        Perform a POST request to the Slack Web API
-
-        Args:
-            request (str): the method to call from the Slack API. For example: 'channels.list'
-            timeout (float): stop waiting for a response after a given number of seconds
-            post_data (dict): key/value arguments to pass for the request. For example:
-                {'channel': 'CABC12345'}
-        """
-        domain = "slack.com"
-
-        url = f'https://{domain}/api/{request}'
-
-        # Set user-agent and auth headers
-        headers = {
-            'user-agent': 'localslackirc',
-            'Authorization': f'Bearer {self.token}'
-        }
-        if self.cookie:
-            headers['cookie'] = self.cookie
-
-        #FIXME Use some async library here
-        # Submit the request
-        return requests.post(
-            url,
-            headers=headers,
-            data=post_data,
-            timeout=timeout,
-            files=files,
-        )
-
-
 class Team(NamedTuple):
     id: str
     name: str
@@ -93,10 +56,40 @@ class SlackClient:
     def __init__(self, token: str, cookie: Optional[str]) -> None:
         # Slack client configs
         self._token = token
-        self._api_requester = SlackRequest(token, cookie)
+        self._coockie = cookie
 
         # RTM configs
         self._websocket: Optional[WebSocket] = None
+
+    async def _do(self, request: str, post_data: Dict[str,str], timeout: Optional[float], files: Optional[Dict]):
+        """
+        Perform a POST request to the Slack Web API
+
+        Args:
+            request (str): the method to call from the Slack API. For example: 'channels.list'
+            timeout (float): stop waiting for a response after a given number of seconds
+            post_data (dict): key/value arguments to pass for the request. For example:
+                {'channel': 'CABC12345'}
+        """
+        url = f'https://slack.com/api/{request}'
+
+        # Set user-agent and auth headers
+        headers = {
+            'user-agent': 'localslackirc',
+            'Authorization': f'Bearer {self._token}'
+        }
+        if self._cookie:
+            headers['cookie'] = self._cookie
+
+        #FIXME Use some async library here
+        # Submit the request
+        return requests.post(
+            url,
+            headers=headers,
+            data=post_data,
+            timeout=timeout,
+            files=files,
+        )
 
     async def rtm_connect(self, timeout: Optional[int] = None) -> LoginInfo:
         """
@@ -107,7 +100,7 @@ class SlackClient:
 
         # rtm.start returns user and channel info, rtm.connect does not.
         connect_method = "rtm.connect"
-        reply = await self._api_requester.do(connect_method, timeout=timeout, post_data={}, files=None)
+        reply = await self._do(connect_method, timeout=timeout, post_data={}, files=None)
 
         if reply.status_code != 200:
             raise SlackConnectionError("RTM connection attempt failed")
@@ -153,7 +146,7 @@ class SlackClient:
             files = kwargs.pop('files')
         else:
             files = None
-        response = await self._api_requester.do(method, kwargs, timeout, files)
+        response = await self._do(method, kwargs, timeout, files)
         response_json = json.loads(response.text)
         response_json["headers"] = dict(response.headers)
         return response_json
