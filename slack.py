@@ -16,11 +16,12 @@
 #
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
+import asyncio
 import datetime
 from dataclasses import dataclass, field
 from functools import lru_cache
 import json
-from time import sleep, time
+from time import time
 from typing import *
 
 from typedload import load, dump
@@ -331,13 +332,13 @@ class Slack:
         else:
             self._status = load(json.loads(previous_status), SlackStatus)
 
-    def _thread_history(self, channel: str, thread_id: str) -> List[Union[HistoryMessage, HistoryBotMessage]]:
+    async def _thread_history(self, channel: str, thread_id: str) -> List[Union[HistoryMessage, HistoryBotMessage]]:
         r: List[Union[HistoryMessage, HistoryBotMessage]] = []
         cursor = None
         log('Thread history', channel, thread_id)
         while True:
             log('Cursor')
-            p = self.client.api_call(
+            p = await self.client.api_call(
                 'conversations.replies',
                 channel=channel,
                 ts=thread_id,
@@ -359,7 +360,7 @@ class Slack:
         r[0].thread_ts = None
         return r
 
-    def _history(self) -> None:
+    async def _history(self) -> None:
         '''
         Obtain the history from the last known event and
         inject fake events as if the messages are coming now.
@@ -374,7 +375,7 @@ class Slack:
         dt = datetime.datetime.fromtimestamp(last_timestamp)
         log(f'Last known timestamp {dt}')
 
-        for channel in self.channels():
+        for channel in await self.channels():
             if not channel.is_member:
                 continue
             log(f'Downloading logs from channel {channel.name_normalized}')
@@ -382,7 +383,7 @@ class Slack:
             cursor = None
             while True: # Loop to iterate the cursor
                 log('Calling cursor')
-                r = self.client.api_call(
+                r = await self.client.api_call(
                     'conversations.history',
                     channel=channel.id,
                     oldest=last_timestamp,
@@ -413,7 +414,7 @@ class Slack:
 
                     # History for the thread
                     if  msg.thread_ts and float(msg.thread_ts) == msg.ts:
-                        l = self._thread_history(channel.id, msg.thread_ts)
+                        l = await self._thread_history(channel.id, msg.thread_ts)
                         l.reverse()
                         msg_list = l + msg_list
                         continue
@@ -446,35 +447,35 @@ class Slack:
         return json.dumps(dump(self._status), ensure_ascii=True).encode('ascii')
 
 
-    def away(self, is_away: bool) -> None:
+    async def away(self, is_away: bool) -> None:
         """
         Forces the aways status or lets slack decide
         """
         status = 'away' if is_away else 'auto'
-        r = self.client.api_call('users.setPresence', presence=status)
+        r = await self.client.api_call('users.setPresence', presence=status)
         response = load(r, Response)
         if not response.ok:
             raise ResponseException(response)
 
-    def topic(self, channel: Channel, topic: str) -> None:
-        r = self.client.api_call('conversations.setTopic', channel=channel.id, topic=topic)
+    async def topic(self, channel: Channel, topic: str) -> None:
+        r = await self.client.api_call('conversations.setTopic', channel=channel.id, topic=topic)
         response = load(r, Response)
         if not response.ok:
             raise ResponseException(response)
 
-    def kick(self, channel: Channel, user: User) -> None:
-        r = self.client.api_call('conversations.kick', channel=channel.id, user=user.id)
+    async def kick(self, channel: Channel, user: User) -> None:
+        r = await self.client.api_call('conversations.kick', channel=channel.id, user=user.id)
         response = load(r, Response)
         if not response.ok:
             raise ResponseException(response)
 
-    def join(self, channel: Channel) -> None:
-        r = self.client.api_call('conversations.join', channel=channel.id)
+    async def join(self, channel: Channel) -> None:
+        r = await self.client.api_call('conversations.join', channel=channel.id)
         response = load(r, Response)
         if not response.ok:
             raise ResponseException(response)
 
-    def invite(self, channel: Channel, user: Union[User, List[User]]) -> None:
+    async def invite(self, channel: Channel, user: Union[User, List[User]]) -> None:
         if isinstance(user, User):
             ids = user.id
         else:
@@ -482,12 +483,12 @@ class Slack:
                 raise ValueError('No more than 30 users allowed')
             ids = ','.join(i.id for i in user)
 
-        r = self.client.api_call('conversations.invite', channel=channel.id, users=ids)
+        r = await self.client.api_call('conversations.invite', channel=channel.id, users=ids)
         response = load(r, Response)
         if not response.ok:
             raise ResponseException(response)
 
-    def get_members(self, channel: Union[str, Channel]) -> Set[str]:
+    async def get_members(self, channel: Union[str, Channel]) -> Set[str]:
         """
         Returns the list (as a set) of users in a channel.
 
@@ -510,7 +511,7 @@ class Slack:
         kwargs = {}
         if cursor:
             kwargs['cursor'] = cursor
-        r = self.client.api_call('conversations.members', channel=id_, limit=5000, **kwargs)  # type: ignore
+        r = await self.client.api_call('conversations.members', channel=id_, limit=5000, **kwargs)  # type: ignore
         response = load(r, Response)
         if not response.ok:
             raise ResponseException(response)
@@ -527,9 +528,9 @@ class Slack:
         return self._get_members_cache[id_]
 
     @lru_cache()
-    def _channels(self) -> List[Channel]:
+    async def _channels(self) -> List[Channel]:
         result: List[Channel] = []
-        r = self.client.api_call("conversations.list", exclude_archived=True,
+        r = await self.client.api_call("conversations.list", exclude_archived=True,
                 types='public_channel,private_channel,mpim', limit=1000)
         response = load(r, Response)
         if response.ok:
@@ -537,7 +538,7 @@ class Slack:
         else:
             raise ResponseException(response)
 
-    def channels(self, refresh: bool = False) -> List[Channel]:
+    async def channels(self, refresh: bool = False) -> List[Channel]:
         """
         Returns the list of slack channels
 
@@ -545,52 +546,48 @@ class Slack:
         """
         if refresh:
             self._channels.cache_clear()
-        return self._channels()
+        return await self._channels()
 
     @lru_cache()
-    def get_channel(self, id_: str) -> Channel:
+    async def get_channel(self, id_: str) -> Channel:
         """
         Returns a channel object from a slack channel id
 
         raises KeyError if it doesn't exist.
         """
         for i in range(2):
-            for c in self.channels(refresh=bool(i)):
+            for c in await self.channels(refresh=bool(i)):
                 if c.id == id_:
                     return c
         raise KeyError()
 
     @lru_cache()
-    def get_channel_by_name(self, name: str) -> Channel:
+    async def get_channel_by_name(self, name: str) -> Channel:
         """
         Returns a channel object from a slack channel id
 
         raises KeyError if it doesn't exist.
         """
         for i in range(2):
-            for c in self.channels(refresh=bool(i)):
+            for c in await self.channels(refresh=bool(i)):
                 if c.name == name:
                     return c
         raise KeyError()
 
-    @property
-    def fileno(self) -> Optional[int]:
-        return self.client.fileno
-
-    def get_im(self, im_id: str) -> Optional[IM]:
+    async def get_im(self, im_id: str) -> Optional[IM]:
         if not im_id.startswith('D'):
             return None
         for uid, imid in self._imcache.items():
             if im_id == imid:
                 return IM(user=uid, id=imid)
 
-        for im in self.get_ims():
+        for im in await self.get_ims():
             self._imcache[im.user] = im.id
             if im.id == im_id:
                 return im;
         return None
 
-    def get_ims(self) -> List[IM]:
+    async def get_ims(self) -> List[IM]:
         """
         Returns a list of the IMs
 
@@ -598,7 +595,7 @@ class Slack:
         need to have an ID to send to, you can't send directly to
         a user.
         """
-        r = self.client.api_call(
+        r = await self.client.api_call(
             "conversations.list",
             exclude_archived=True,
             types='im', limit=1000
@@ -615,11 +612,11 @@ class Slack:
     def get_usernames(self) -> List[str]:
         return list(self._usermapcache.keys())
 
-    def prefetch_users(self) -> None:
+    async def prefetch_users(self) -> None:
         """
         Prefetch all team members for the slack team.
         """
-        r = self.client.api_call("users.list")
+        r = await self.client.api_call("users.list")
         response = load(r, Response)
         if response.ok:
             for user in load(r['members'], List[User]):
@@ -627,7 +624,7 @@ class Slack:
                 self._usermapcache[user.name] = user
             self.get_usernames.cache_clear()
 
-    def get_user(self, id_: str) -> User:
+    async def get_user(self, id_: str) -> User:
         """
         Returns a user object from a slack user id
 
@@ -636,7 +633,7 @@ class Slack:
         if id_ in self._usercache:
             return self._usercache[id_]
 
-        r = self.client.api_call("users.info", user=id_)
+        r = await self.client.api_call("users.info", user=id_)
         response = load(r, Response)
         if response.ok:
             u = load(r['user'], User)
@@ -648,26 +645,26 @@ class Slack:
         else:
             raise KeyError(response)
 
-    def get_file(self, f: Union[FileShared, str]) -> File:
+    async def get_file(self, f: Union[FileShared, str]) -> File:
         """
         Returns a file object
         """
         fileid = f if isinstance(f, str) else f.file_id
-        r = self.client.api_call("files.info", file=fileid)
+        r = await self.client.api_call("files.info", file=fileid)
         response = load(r, Response)
         if response.ok:
             return load(r['file'], File)
         else:
             raise KeyError(response)
 
-    def send_file(self, channel_id: str, filename: str) -> None:
+    async def send_file(self, channel_id: str, filename: str) -> None:
         """
         Send a file to a channel or group or whatever
         """
         with open(filename, 'rb') as f:
             files = {'file': f}
 
-            r = self.client.api_call(
+            r = await self.client.api_call(
                 'files.upload',
                 channels=channel_id,
                 files=files,
@@ -689,7 +686,7 @@ class Slack:
         for i in r:
             self._sent_by_self.remove(i)
 
-    def send_message(self, channel_id: str, msg: str, action: bool) -> None:
+    async def send_message(self, channel_id: str, msg: str, action: bool) -> None:
         """
         Send a message to a channel or group or whatever
         """
@@ -697,7 +694,7 @@ class Slack:
             api = 'chat.meMessage'
         else:
             api = 'chat.postMessage'
-        r = self.client.api_call(
+        r = await self.client.api_call(
             api,
             channel=channel_id,
             text=msg,
@@ -709,7 +706,7 @@ class Slack:
             return
         raise ResponseException(response)
 
-    def send_message_to_user(self, user_id: str, msg: str, action: bool):
+    async def send_message_to_user(self, user_id: str, msg: str, action: bool):
         """
         Send a message to a user, pass the user id
         """
@@ -725,14 +722,14 @@ class Slack:
             # Find the channel id
             found = False
             # Iterate over all the existing conversations
-            for i in self.get_ims():
+            for i in await self.get_ims():
                 if i.user == user_id:
                     channel_id = i.id
                     found = True
                     break
             # A conversation does not exist, create one
             if not found:
-                r = self.client.api_call(
+                r = await self.client.api_call(
                     "im.open",
                     return_im=True,
                     user=user_id,
@@ -746,93 +743,91 @@ class Slack:
 
         self.send_message(channel_id, msg, action)
 
-    def events_iter(self) -> Iterator[Optional[SlackEvent]]:
+    async def event(self) -> Optional[SlackEvent]:
         """
-        This yields an event or None. Don't call it without sleeps
+        This returns the events from the slack websocket
         """
+        #FIXME this sleeptime thing is broken
         sleeptime = 1
+        if self._internalevents:
+            return self._internalevents.pop()
 
-        while True:
-            while self._internalevents:
-                yield self._internalevents.pop()
-
+        try:
+            events = await self.client.rtm_read()
+            sleeptime = 1
+        except Exception:
+            events = []
+            log('Connecting to slack...')
             try:
-                events = self.client.rtm_read()
-            except Exception:
-                events = []
-                log('Connecting to slack...')
-                try:
-                    self.login_info = self.client.rtm_connect()
-                    sleeptime = 1
-                    self._history()
-                except Exception as e:
-                    log(f'Connection to slack failed {e}')
-                    sleep(sleeptime)
-                    if sleeptime <= 120:  # max reconnection interval at 2 minutes
-                        sleeptime *= 2
-                    continue
-                log('Connected to slack')
+                self.login_info = await self.client.rtm_connect()
+                sleeptime = 1
+                self._history()
+            except Exception as e:
+                log(f'Connection to slack failed {e}')
+                await asyncio.sleep(sleeptime)
+                if sleeptime <= 120:  # max reconnection interval at 2 minutes
+                    sleeptime *= 2
+                return None
+            log('Connected to slack')
+
+        for event in events:
+            t = event.get('type')
+            ts = float(event.get('ts', 0))
+
+            if ts > self._status.last_timestamp:
+                self._status.last_timestamp = ts
+
+            if ts in self._sent_by_self:
+                self._sent_by_self.remove(ts)
                 continue
 
-            for event in events:
-                t = event.get('type')
-                ts = float(event.get('ts', 0))
+            if t in USELESS_EVENTS:
+                continue
 
-                if ts > self._status.last_timestamp:
-                    self._status.last_timestamp = ts
+            try:
+                ev: Optional[Union[TopicChange, FileShared, MessageBot, MessageEdit, MessageDelete, GroupJoined, Join, Leave]] = load(
+                    event,
+                    Union[TopicChange, FileShared, MessageBot, MessageEdit, MessageDelete, GroupJoined, Join, Leave]  # type: ignore
+                )
+            except Exception:
+                ev = None
 
-                if ts in self._sent_by_self:
-                    self._sent_by_self.remove(ts)
-                    continue
+            if isinstance(ev, Join):
+                self._get_members_cache[ev.channel].add(ev.user)
+            elif isinstance(ev, Leave):
+                self._get_members_cache[ev.channel].remove(ev.user)
 
-                if t in USELESS_EVENTS:
-                        continue
+            if ev:
+                return ev
 
-                try:
-                    ev: Optional[Union[TopicChange, FileShared, MessageBot, MessageEdit, MessageDelete, GroupJoined, Join, Leave]] = load(
-                        event,
-                        Union[TopicChange, FileShared, MessageBot, MessageEdit, MessageDelete, GroupJoined, Join, Leave]  # type: ignore
-                    )
-                except Exception:
-                    ev = None
+            subt = event.get('subtype')
 
-                if isinstance(ev, Join):
-                    self._get_members_cache[ev.channel].add(ev.user)
-                elif isinstance(ev, Leave):
-                    self._get_members_cache[ev.channel].remove(ev.user)
+            try:
+                if t == 'message' and (not subt or subt == 'me_message'):
+                    msg = load(event, Message)
 
-                if ev:
-                    yield ev
-
-
-                subt = event.get('subtype')
-
-                try:
-                    if t == 'message' and (not subt or subt == 'me_message'):
-                        msg = load(event, Message)
-
-                        # In private chats, pretend that my own messages
-                        # sent from another client actually come from
-                        # the other user, and prepend them with "I say: "
-                        im = self.get_im(msg.channel)
-                        if im and im.user != msg.user:
-                            msg = Message(user=im.user, text='I say: ' + msg.text, channel=im.id)
-                        if subt == 'me_message':
-                            yield ActionMessage(*msg)
-                        else:
-                            yield msg
-                    elif t == 'message' and subt == 'slackbot_response':
-                        yield load(event, Message)
-                    elif t == 'user_change':
-                        # Changes in the user, drop it from cache
-                        u = load(event['user'], User)
-                        if u.id in self._usercache:
-                            del self._usercache[u.id]
-                            #FIXME don't know if it is wise, maybe it gets lost forever del self._usermapcache[u.name]
-                        #TODO make an event for this
+                    # In private chats, pretend that my own messages
+                    # sent from another client actually come from
+                    # the other user, and prepend them with "I say: "
+                    im = await self.get_im(msg.channel)
+                    if im and im.user != msg.user:
+                        msg = Message(user=im.user, text='I say: ' + msg.text, channel=im.id)
+                    if subt == 'me_message':
+                        return ActionMessage(*msg)
                     else:
-                        log(event)
-                except Exception as e:
-                    log('Exception: %s' % e)
+                        return msg
+                elif t == 'message' and subt == 'slackbot_response':
+                    return load(event, Message)
+                elif t == 'user_change':
+                    # Changes in the user, drop it from cache
+                    u = load(event['user'], User)
+                    if u.id in self._usercache:
+                        del self._usercache[u.id]
+                        #FIXME don't know if it is wise, maybe it gets lost forever del self._usermapcache[u.name]
+                    #TODO make an event for this
+                else:
+                    log(event)
+            except Exception as e:
+                log('Exception: %s' % e)
             self._triage_sent_by_self()
-            yield None
+        return None
