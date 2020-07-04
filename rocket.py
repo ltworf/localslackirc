@@ -25,8 +25,7 @@ from time import sleep, monotonic
 from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple, Union, Iterator
 import uuid
 
-from websocket import create_connection, WebSocket
-from websocket._exceptions import WebSocketConnectionClosedException
+import websockets
 import typedload.dataloader
 
 from slack import Channel, File, FileShared, IM, Message, MessageEdit, Profile, SlackEvent, Topic, User, NoChanMessage
@@ -149,7 +148,7 @@ class Rocket:
         login
         and update channels
         '''
-        self._websocket = create_connection(self.url)
+        self._websocket = websockets.connect(self.url)
         self._websocket.sock.setblocking(0)
         self._send_json(
             {
@@ -295,10 +294,6 @@ class Rocket:
         u = self.get_user(user_id)
         data = self.loader.load(self._call('createDirectMessage', [u.name], True), DirectChannel)
         self.send_message(data.rid, msg, action)
-
-    @property
-    def fileno(self) -> Optional[int]:
-        return self._websocket.fileno()
 
     def _read(self, event_id: Optional[str] = None, subs_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
         try:
