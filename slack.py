@@ -19,7 +19,6 @@
 import asyncio
 import datetime
 from dataclasses import dataclass, field
-from functools import lru_cache
 import json
 from time import time
 from typing import *
@@ -322,6 +321,7 @@ class Slack:
         self._usercache: Dict[str, User] = {}
         self._usermapcache: Dict[str, User] = {}
         self._imcache: Dict[str, str] = {}
+        self._channelscache: List[Channel] = []
         self._get_members_cache: Dict[str, Set[str]] = {}
         self._get_members_cache_cursor: Dict[str, Optional[str]] = {}
         self._internalevents: List[SlackEvent] = []
@@ -527,14 +527,17 @@ class Slack:
         self._get_members_cache_cursor[id_] = r.get('response_metadata', {}).get('next_cursor')
         return self._get_members_cache[id_]
 
-    @lru_cache()
     async def _channels(self) -> List[Channel]:
+        if self._channelscache:
+            return self._channelscache
+
         result: List[Channel] = []
         r = await self.client.api_call("conversations.list", exclude_archived=True,
                 types='public_channel,private_channel,mpim', limit=1000)
         response = load(r, Response)
         if response.ok:
-            return load(r['channels'], List[Channel])
+            self._channelscache = load(r['channels'], List[Channel])
+            return self._channelscache
         else:
             raise ResponseException(response)
 
@@ -545,10 +548,9 @@ class Slack:
         if refresh is set, the local cache is cleared
         """
         if refresh:
-            self._channels.cache_clear()
+            self._channelscache.clear()
         return await self._channels()
 
-    @lru_cache()
     async def get_channel(self, id_: str) -> Channel:
         """
         Returns a channel object from a slack channel id
@@ -561,7 +563,6 @@ class Slack:
                     return c
         raise KeyError()
 
-    @lru_cache()
     async def get_channel_by_name(self, name: str) -> Channel:
         """
         Returns a channel object from a slack channel id
@@ -608,9 +609,8 @@ class Slack:
     async def get_user_by_name(self, name: str) -> User:
         return self._usermapcache[name]
 
-    @lru_cache
-    def get_usernames(self) -> List[str]:
-        return list(self._usermapcache.keys())
+    def get_usernames(self) -> Iterable[str]:
+        return self._usermapcache.keys()
 
     async def prefetch_users(self) -> None:
         """
@@ -622,7 +622,6 @@ class Slack:
             for user in load(r['members'], List[User]):
                 self._usercache[user.id] = user
                 self._usermapcache[user.name] = user
-            self.get_usernames.cache_clear()
 
     async def get_user(self, id_: str) -> User:
         """
@@ -638,8 +637,6 @@ class Slack:
         if response.ok:
             u = load(r['user'], User)
             self._usercache[id_] = u
-            if u.name not in self._usermapcache:
-                self.get_usernames.cache_clear()
             self._usermapcache[u.name] = u
             return u
         else:
