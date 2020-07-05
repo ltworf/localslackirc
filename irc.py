@@ -772,11 +772,7 @@ async def to_irc(sl_client: Union[slack.Slack], ircclient: Client):
 
 
 if __name__ == '__main__':
-    while True:
-        try:
-            main()
-        except KeyboardInterrupt:
-            break
-        except Exception as e:
-            traceback.print_last()
-            pass
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass
