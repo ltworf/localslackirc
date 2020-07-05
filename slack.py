@@ -754,7 +754,7 @@ class Slack:
 
             self._imcache[user_id] = channel_id
 
-        self.send_message(channel_id, msg, action)
+        await self.send_message(channel_id, msg, action)
 
     async def event(self) -> Optional[SlackEvent]:
         """
