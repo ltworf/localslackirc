@@ -709,11 +709,13 @@ def main() -> None:
     # Parameters are dealt with
 
     atexit.register(exit_hook, status_file, sl_client)
-    term_f = lambda _, __: sys.exit(0)
-    signal.signal(signal.SIGHUP, term_f )
-    signal.signal(signal.SIGTERM, term_f)
+    term_f = lambda: sys.exit(0)
 
     async def irc_listener() -> None:
+        asyncio.get_running_loop().add_signal_handler(signal.SIGHUP, term_f)
+        asyncio.get_running_loop().add_signal_handler(signal.SIGTERM, term_f)
+        asyncio.get_running_loop().add_signal_handler(signal.SIGINT, term_f)
+
         serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         serversocket.bind((ip, port))
