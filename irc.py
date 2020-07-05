@@ -411,8 +411,6 @@ class Client:
 
         # Extremely inefficient code to generate mentions
         # Just doing them client-side on the receiving end is too mainstream
-
-
         if self._magic_users_id == id(self.sl_client.get_usernames()):
             regex = self._magic_regex
             assert regex
