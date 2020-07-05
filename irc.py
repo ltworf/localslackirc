@@ -728,6 +728,7 @@ def main() -> None:
         serversocket.listen(1)
 
         s, _ = serversocket.accept()
+        serversocket.close()
         reader, writer = await asyncio.open_connection(sock=s)
 
         await sl_client.login()
