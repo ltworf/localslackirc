@@ -337,7 +337,8 @@ class Slack:
         """
         Set the login_info field
         """
-        self.login_info = await self.client.login()
+        log('Login in slack')
+        self.login_info = await self.client.login(15)
 
     async def _thread_history(self, channel: str, thread_id: str) -> List[Union[HistoryMessage, HistoryBotMessage]]:
         r: List[Union[HistoryMessage, HistoryBotMessage]] = []
