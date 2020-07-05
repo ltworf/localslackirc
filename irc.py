@@ -33,7 +33,7 @@ from os.path import expanduser
 import pwd
 from socket import gethostname
 import sys
-import traceback
+import time
 
 import slack
 from log import *
