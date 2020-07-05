@@ -33,7 +33,7 @@ from os.path import expanduser
 import pwd
 from socket import gethostname
 import sys
-import traceback
+import time
 
 import slack
 from log import *
@@ -50,6 +50,9 @@ _SLACK_SUBSTITUTIONS = [
     ('&gt;', '>'),
     ('&lt;', '<'),
 ]
+
+
+class IrcDisconnectError(Exception): ...
 
 
 class Replies(Enum):
@@ -342,6 +345,9 @@ class Client:
         except Exception as e:
             await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Error: %s' % e)
 
+    async def _quithandler(self, cmd: bytes) -> None:
+        raise IrcDisconnectError()
+
     async def _userhosthandler(self, cmd: bytes) -> None:
         nicknames = cmd.split(b' ')
         del nicknames[0] # Remove the command itself
@@ -575,7 +581,7 @@ class Client:
             b'KICK': self._kickhandler,
             b'INVITE': self._invitehandler,
             b'sendfile': self._sendfilehandler,
-            #QUIT
+            b'QUIT': self._quithandler,
             #CAP LS
             b'USERHOST': self._userhosthandler,
             b'whois': self._whoishandler,
@@ -722,6 +728,7 @@ def main() -> None:
         serversocket.listen(1)
 
         s, _ = serversocket.accept()
+        serversocket.close()
         reader, writer = await asyncio.open_connection(sock=s)
 
         await sl_client.login()
@@ -730,19 +737,26 @@ def main() -> None:
 
         from_irc_task = asyncio.create_task(from_irc(reader, ircclient))
         to_irc_task = asyncio.create_task(to_irc(sl_client, ircclient))
+
         await from_irc_task
         await to_irc_task
 
-    while True:
-        asyncio.run(irc_listener())
-        #try:
 
-        #except Exception:
-            #pass
+    while True:
+        try:
+            asyncio.run(irc_listener())
+        except IrcDisconnectError:
+            pass
+        except Exception as e:
+            time.sleep(10)
+
 
 async def from_irc(reader, ircclient: Client):
     while True:
-        cmd = await reader.readline()
+        try:
+            cmd = await reader.readline()
+        except Exception:
+            raise IrcDisconnectError()
         await ircclient.command(cmd.strip())
 
 async def to_irc(sl_client: Union[slack.Slack], ircclient: Client):

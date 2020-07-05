@@ -337,7 +337,8 @@ class Slack:
         """
         Set the login_info field
         """
-        self.login_info = await self.client.login()
+        log('Login in slack')
+        self.login_info = await self.client.login(15)
 
     async def _thread_history(self, channel: str, thread_id: str) -> List[Union[HistoryMessage, HistoryBotMessage]]:
         r: List[Union[HistoryMessage, HistoryBotMessage]] = []
@@ -760,28 +761,19 @@ class Slack:
         """
         This returns the events from the slack websocket
         """
-        #FIXME this sleeptime thing is broken
-        sleeptime = 1
         if self._internalevents:
             return self._internalevents.pop()
 
         try:
             events = await self.client.rtm_read()
-            sleeptime = 1
         except Exception:
             events = []
             log('Connecting to slack...')
-            try:
-                self.login_info = await self.client.rtm_connect()
-                sleeptime = 1
-                await self._history()
-            except Exception as e:
-                log(f'Connection to slack failed {e}')
-                await asyncio.sleep(sleeptime)
-                if sleeptime <= 120:  # max reconnection interval at 2 minutes
-                    sleeptime *= 2
-                return None
+            self.login_info = await self.client.rtm_connect(5)
+            await self._history()
             log('Connected to slack')
+            return None
+
 
         for event in events:
             t = event.get('type')
