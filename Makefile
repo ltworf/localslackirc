@@ -20,7 +20,6 @@ install:
 	install -m644 diff.py $${DESTDIR:-/}/usr/share/localslackirc/
 	install -m644 log.py $${DESTDIR:-/}/usr/share/localslackirc/
 	install -m644 slack.py $${DESTDIR:-/}/usr/share/localslackirc/
-	install -m644 rocket.py $${DESTDIR:-/}/usr/share/localslackirc/
 	install irc.py $${DESTDIR:-/}/usr/share/localslackirc/
 	# Install command
 	install -d $${DESTDIR:-/}/usr/bin/
@@ -41,7 +40,6 @@ dist:
 		localslackirc/diff.py \
 		localslackirc/log.py \
 		localslackirc/slack.py \
-		localslackirc/rocket.py \
 		localslackirc/slackclient/__init__.py \
 		localslackirc/slackclient/client.py \
 		localslackirc/slackclient/exceptions.py \

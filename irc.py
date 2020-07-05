@@ -36,7 +36,6 @@ import sys
 import traceback
 
 import slack
-import rocket
 from log import *
 
 
@@ -81,7 +80,6 @@ class Replies(Enum):
 
 class Provider(Enum):
     SLACK = 0
-    ROCKETCHAT = 1
 
 
 #: Inactivity days to hide a MPIM
@@ -404,10 +402,6 @@ class Client:
             msg = msg.replace('@here', '<!here>')
             msg = msg.replace('@channel', '<!channel>')
             msg = msg.replace('@everyone', '<!everyone>')
-        elif self.provider == Provider.ROCKETCHAT:
-            msg = msg.replace('@yell', '@channel')
-            msg = msg.replace('@shout', '@channel')
-            msg = msg.replace('@attention', '@channel')
 
         # Extremely inefficient code to generate mentions
         # Just doing them client-side on the receiving end is too mainstream
@@ -430,8 +424,6 @@ class Client:
                 continue # Match inside a url
             elif self.provider == Provider.SLACK:
                 msg = msg[0:m.start()] + '<@%s>' % (await self.sl_client.get_user_by_name(username)).id + msg[m.end():]
-            elif self.provider == Provider.ROCKETCHAT:
-                msg = msg[0:m.start()] + f'@{username}' + msg[m.end():]
         return msg
 
     async def parse_message(self, i: str) -> bytes:
@@ -480,9 +472,6 @@ class Client:
             encoded = encoded.replace(b'<!here>', b'yelling [%s]' % self.nick)
             encoded = encoded.replace(b'<!channel>', b'YELLING LOUDER [%s]' % self.nick)
             encoded = encoded.replace(b'<!everyone>', b'DEAFENING YELL [%s]' % self.nick)
-        elif self.provider == Provider.ROCKETCHAT:
-            encoded = encoded.replace(b'@here', b'yelling [%s]' % self.nick)
-            encoded = encoded.replace(b'@channel', b'YELLING LOUDER [%s]' % self.nick)
 
         return encoded
 
@@ -653,8 +642,6 @@ def main() -> None:
     parser.add_argument('-o', '--override', action='store_true',
                                 dest='overridelocalip', required=False,
                                 help='allow non 127. addresses, this is potentially dangerous')
-    parser.add_argument('--rc-url', type=str, action='store', dest='rc_url', default=None, required=False,
-                                help='The rocketchat URL. Setting this changes the mode from slack to rocketchat')
     parser.add_argument('-f', '--status-file', type=str, action='store', dest='status_file', required=False, default=None,
                                 help='Path to the file to keep the internal status.')
     parser.add_argument('--log-suffix', type=str, action='store', dest='log_suffix', default='',
@@ -717,14 +704,8 @@ def main() -> None:
     if status_file is not None and status_file.exists():
         previous_status = status_file.read_bytes()
 
-    if rc_url:
-        #FIXME
-        #sl_client: Union[slack.Slack] = rocket.Rocket(rc_url, token, previous_status)
-        #provider = Provider.ROCKETCHAT
-        raise NotImplementedError('No rocket chat at this moment')
-    else:
-        sl_client = slack.Slack(token, cookie, previous_status)
-        provider = Provider.SLACK
+    sl_client = slack.Slack(token, cookie, previous_status)
+    provider = Provider.SLACK
 
     # Parameters are dealt with
 
