@@ -742,6 +742,8 @@ def main() -> None:
         s, _ = serversocket.accept()
         reader, writer = await asyncio.open_connection(sock=s)
 
+        await sl_client.login()
+
         ircclient = Client(writer, sl_client, nouserlist, autojoin, provider)
 
         from_irc_task = asyncio.create_task(from_irc(reader, ircclient))
