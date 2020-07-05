@@ -96,6 +96,7 @@ class Rocket:
                 id='',
                 name='LtWorf',
             ),
+            url='',
         )
 
     def _update_channels(self) -> None:
