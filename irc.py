@@ -170,7 +170,7 @@ class Client:
         # Eventual channel joining done, sending the held events
         self._usersent = True
         for ev in self._held_events:
-            self.slack_event(ev)
+            await self.slack_event(ev)
         self._held_events = []
 
     async def _pinghandler(self, cmd: bytes) -> None:
