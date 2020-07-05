@@ -333,6 +333,12 @@ class Slack:
         else:
             self._status = load(json.loads(previous_status), SlackStatus)
 
+    async def login(self) -> None:
+        """
+        Set the login_info field
+        """
+        self.login_info = await self.client.login()
+
     async def _thread_history(self, channel: str, thread_id: str) -> List[Union[HistoryMessage, HistoryBotMessage]]:
         r: List[Union[HistoryMessage, HistoryBotMessage]] = []
         cursor = None

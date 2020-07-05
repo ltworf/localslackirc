@@ -46,6 +46,7 @@ class Self(NamedTuple):
 class LoginInfo(NamedTuple):
     team: Team
     self: Self
+    url: str
 
 
 class SlackClient:
@@ -91,26 +92,28 @@ class SlackClient:
             files=files,
         )
 
+    async def login(self, timeout: Optional[int] = None) -> LoginInfo:
+        """
+        Performs a login to slack.
+        """
+        reply = await self._do('rtm.connect', timeout=timeout, post_data={}, files=None)
+        if reply.status_code != 200:
+            raise SlackConnectionError("RTM connection attempt failed")
+        login_data = reply.json()
+        if not login_data["ok"]:
+            raise SlackLoginError(reply=login_data)
+        return load(login_data, LoginInfo)
+
     async def rtm_connect(self, timeout: Optional[int] = None) -> LoginInfo:
         """
         Connects to the RTM API - https://api.slack.com/rtm
         :Args:
             timeout: in seconds
         """
+        r = await self.login()
+        self._websocket = await websockets.connect(r.url)
+        return r
 
-        # rtm.start returns user and channel info, rtm.connect does not.
-        connect_method = "rtm.connect"
-        reply = await self._do(connect_method, timeout=timeout, post_data={}, files=None)
-
-        if reply.status_code != 200:
-            raise SlackConnectionError("RTM connection attempt failed")
-
-        login_data = reply.json()
-        if login_data["ok"]:
-            self._websocket = await websockets.connect(login_data['url'])
-            return load(login_data, LoginInfo)
-        else:
-            raise SlackLoginError(reply=login_data)
 
     async def api_call(self, method: str, timeout: Optional[float] = None, **kwargs) -> Dict[str, Any]:
         """
