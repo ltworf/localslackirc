@@ -32,9 +32,6 @@
 # Auto join channels
 AUTOJOIN=true
 
-# Rocket.Chat URL
-#RC_URL=
-
 # Networking
 #IP_ADDRESS=127.0.0.1
 # Do not enable this unless you know what you are doing!

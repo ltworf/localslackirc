@@ -667,7 +667,6 @@ def main() -> None:
                 'you can override this with -o')
 
     port = int(environ.get('PORT', args.port))
-    rc_url: Optional[str] = environ.get('RC_URL', args.rc_url)
 
     autojoin: bool = environ['AUTOJOIN'].lower() == 'true' if 'AUTOJOIN' in environ else args.autojoin
     nouserlist: bool = environ['NOUSERLIST'].lower() == 'true' if 'NOUSERLIST' in environ else args.nouserlist
