@@ -320,6 +320,7 @@ class Slack:
         self.client = SlackClient(token, cookie)
         self._usercache: Dict[str, User] = {}
         self._usermapcache: Dict[str, User] = {}
+        self._usermapcache_keys: List[str]
         self._imcache: Dict[str, str] = {}
         self._channelscache: List[Channel] = []
         self._get_members_cache: Dict[str, Set[str]] = {}
@@ -609,8 +610,14 @@ class Slack:
     async def get_user_by_name(self, name: str) -> User:
         return self._usermapcache[name]
 
-    def get_usernames(self) -> Iterable[str]:
-        return self._usermapcache.keys()
+    def get_usernames(self) -> List[str]:
+        # To clear this list we want to allocate a new one
+        # This is because the irc code caches a regexp based on the pointer to
+        # the list, and makes the regexp again when the pointer is different.
+        if self._usermapcache_keys:
+            return self._usermapcache_keys
+        self._usermapcache_keys = list(self._usermapcache.keys())
+        return self._usermapcache_keys
 
     async def prefetch_users(self) -> None:
         """
@@ -622,6 +629,7 @@ class Slack:
             for user in load(r['members'], List[User]):
                 self._usercache[user.id] = user
                 self._usermapcache[user.name] = user
+            self._usermapcache_keys = list()
 
     async def get_user(self, id_: str) -> User:
         """
@@ -637,6 +645,8 @@ class Slack:
         if response.ok:
             u = load(r['user'], User)
             self._usercache[id_] = u
+            if u.name not in self._usermapcache:
+                self._usermapcache_keys = list()
             self._usermapcache[u.name] = u
             return u
         else:
