@@ -1,17 +1,16 @@
-.TH localslackirc 1 "Apr 16, 2020" "IRC gateway for slack and rocket.chat"
+.TH localslackirc 1 "Jul 5, 2020" "IRC gateway for slack"
 .SH NAME
 localslackirc
-\- Creates an IRC server running locally, which acts as a gateway to slack or rocket.chat for one user.
+\- Creates an IRC server running locally, which acts as a gateway to slack for one user.
 
 .SH SYNOPSIS
 localslackirc [OPTIONS]
 
 .SH DESCRIPTION
-This command starts an IRC server running on 127.0.0.1:9007 which acts as a gateway to slack or rocket.chat for one user.
+This command starts an IRC server running on 127.0.0.1:9007 which acts as a gateway to slack for one user.
 .br
 To connect to multiple instances it is necessary to run multiple instances of this software.
 .TP
-While basic support for rocket.chat is present, it lacks several features and is not as good as support for slack.
 .SH OPTIONS
 .SS
 .SS Options:
@@ -42,11 +41,6 @@ Automatically join all remote channels.
 Allow listening on addresses that do not start with 127.*
 .br
 This is potentially dangerous.
-.TP
-.B --rc-url RC_URL
-The rocket.chat URL.
-.br
-Setting this changes the mode from slack to rocket.chat.
 .TP
 .B -f --status-file
 Path to the file keeping the status. When this is set, it allows for the history to be loaded on start.

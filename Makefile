@@ -3,7 +3,7 @@ all:
 
 .PHONY: lint
 lint:
-	MYPYPATH=stubs mypy --config-file mypy.conf irc.py
+	mypy --config-file mypy.conf irc.py
 
 .PHONY: test
 test: lint
@@ -20,7 +20,6 @@ install:
 	install -m644 diff.py $${DESTDIR:-/}/usr/share/localslackirc/
 	install -m644 log.py $${DESTDIR:-/}/usr/share/localslackirc/
 	install -m644 slack.py $${DESTDIR:-/}/usr/share/localslackirc/
-	install -m644 rocket.py $${DESTDIR:-/}/usr/share/localslackirc/
 	install irc.py $${DESTDIR:-/}/usr/share/localslackirc/
 	# Install command
 	install -d $${DESTDIR:-/}/usr/bin/
@@ -41,7 +40,6 @@ dist:
 		localslackirc/diff.py \
 		localslackirc/log.py \
 		localslackirc/slack.py \
-		localslackirc/rocket.py \
 		localslackirc/slackclient/__init__.py \
 		localslackirc/slackclient/client.py \
 		localslackirc/slackclient/exceptions.py \
@@ -56,8 +54,7 @@ dist:
 		localslackirc/tests \
 		localslackirc/localslackirc.d \
 		localslackirc/systemd \
-		localslackirc/mypy.conf \
-		localslackirc/stubs/
+		localslackirc/mypy.conf
 	mv ../localslackirc.tar.gz localslackirc_`head -1 CHANGELOG`.orig.tar.gz
 	gpg --detach-sign -a *.orig.tar.gz
 

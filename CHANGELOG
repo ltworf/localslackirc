@@ -1,4 +1,7 @@
 1.11
+* Greatly reduced CPU usage
+* Remove support for RocketChat.
+  I have no way of testing it and it requires severe changes.
 
 1.10
 * Do not insert mentions inside URLs

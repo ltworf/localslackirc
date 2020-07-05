@@ -3,7 +3,7 @@ Section: net
 Priority: optional
 Maintainer: Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>
 Build-Depends: debhelper (>= 12), python3, dh-python, python3-distutils,
- mypy, python3-typedload (>= 2), python3-websocket, python3-requests
+ mypy, python3-typedload (>= 2), python3-websockets, python3-requests
 Standards-Version: 4.5.0
 Homepage: https://github.com/ltworf/localslackirc
 X-Python3-Version: >= 3.8
@@ -13,11 +13,9 @@ Rules-Requires-Root: no
 Package: localslackirc
 Architecture: all
 Depends: ${misc:Depends}, ${python3:Depends}, python3-typedload (>= 2),
- python3-websocket, python3-requests
+ python3-websockets, python3-requests
 Description: IRC gateway for slack, running on localhost for one user
  This project is a replacement for slack's IRC gateway that they dropped.
  .
  One instance of localslackirc connects to one slack account and one
  IRC client, passing the messages between the two.
- .
- Experimentally it also supports Rocket.Chat.
