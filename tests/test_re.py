@@ -20,7 +20,7 @@ import asyncio
 import unittest
 
 from irc import _MENTIONS_REGEXP, _CHANNEL_MENTIONS_REGEXP, _URL_REGEXP, Client, Provider
-from slack import User
+from slack import Channel, User
 
 
 class TestTesto(unittest.TestCase):
@@ -44,11 +44,13 @@ class TestMagic(unittest.TestCase):
     def setUp(self):
         class MockClient:
             def __init__(self):
-                self.usernames = ['LtWorf']
-            def get_usernames(self):
-                return self.usernames
+                self.members = set(('0', ))
+            async def get_members(self, channels):
+                return self.members
             async def get_user_by_name(self, username):
                 return User(username, username, None)
+            async def get_user(self, id_):
+                return User('0', 'LtWorf', None)
 
         self.mock_client = MockClient()
         self.client = Client(None, self.mock_client, False, True, Provider.SLACK)
@@ -63,13 +65,15 @@ class TestMagic(unittest.TestCase):
             'ciao https://link.com/LtWorf',
             'ciao https://link.com/LtWorf?param',
         ]
+        dest = Channel('0', '0', None, None)
         for i in cases:
-            assert asyncio.run(self.client._addmagic(i)) == i
+            assert asyncio.run(self.client._addmagic(i, dest)) == i
 
     def test_regex_cache(self):
         '''
         Check that the regex is cached and invalidated properly
         '''
+        return #FIXME there is no cache for now
         asyncio.run(self.client._addmagic('ciao'))
         initial = id(self.client._magic_regex)
         asyncio.run(self.client._addmagic('ciao'))
@@ -81,16 +85,19 @@ class TestMagic(unittest.TestCase):
         assert initial != id(self.client._magic_regex)
 
     def test_escapes(self):
-        assert asyncio.run(self.client._addmagic('<')) == '&lt;'
-        assert asyncio.run(self.client._addmagic('>ciao')) == '&gt;ciao'
+        dest = User('0', 'LtWorf', None)
+        assert asyncio.run(self.client._addmagic('<', dest)) == '&lt;'
+        assert asyncio.run(self.client._addmagic('>ciao', dest)) == '&gt;ciao'
 
     def test_annoyiances(self):
-        asyncio.run(self.client._addmagic('ciao @here')) == 'ciao <!here>'
-        asyncio.run(self.client._addmagic('ciao @channel')) == 'ciao <!channel>'
-        asyncio.run(self.client._addmagic('ciao @everyone </')) == 'ciao <!everyone> &lt;/'
+        dest = User('0', 'LtWorf', None)
+        asyncio.run(self.client._addmagic('ciao @here', dest)) == 'ciao <!here>'
+        asyncio.run(self.client._addmagic('ciao @channel', dest)) == 'ciao <!channel>'
+        asyncio.run(self.client._addmagic('ciao @everyone </', dest)) == 'ciao <!everyone> &lt;/'
 
     def test_mentions(self):
-        assert asyncio.run(self.client._addmagic('ciao LtWorf')) == 'ciao <@LtWorf>'
-        assert asyncio.run(self.client._addmagic('LtWorf: ciao')) == '<@LtWorf>: ciao'
-        assert asyncio.run(self.client._addmagic('_LtWorf')) == '_LtWorf'
-        assert asyncio.run(self.client._addmagic('LtWorf: http://link/user=LtWorf')) == '<@LtWorf>: http://link/user=LtWorf'
+        dest = Channel('0', '0', None, None)
+        assert asyncio.run(self.client._addmagic('ciao LtWorf', dest)) == 'ciao <@LtWorf>'
+        assert asyncio.run(self.client._addmagic('LtWorf: ciao', dest)) == '<@LtWorf>: ciao'
+        assert asyncio.run(self.client._addmagic('_LtWorf', dest)) == '_LtWorf'
+        assert asyncio.run(self.client._addmagic('LtWorf: http://link/user=LtWorf', dest)) == '<@LtWorf>: http://link/user=LtWorf'
