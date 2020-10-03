@@ -617,15 +617,6 @@ class Slack:
     async def get_user_by_name(self, name: str) -> User:
         return self._usermapcache[name]
 
-    def get_usernames(self) -> List[str]:
-        # To clear this list we want to allocate a new one
-        # This is because the irc code caches a regexp based on the pointer to
-        # the list, and makes the regexp again when the pointer is different.
-        if self._usermapcache_keys:
-            return self._usermapcache_keys
-        self._usermapcache_keys = list(self._usermapcache.keys())
-        return self._usermapcache_keys
-
     async def prefetch_users(self) -> None:
         """
         Prefetch all team members for the slack team.
