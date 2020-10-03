@@ -69,21 +69,6 @@ class TestMagic(unittest.TestCase):
         for i in cases:
             assert asyncio.run(self.client._addmagic(i, dest)) == i
 
-    def test_regex_cache(self):
-        '''
-        Check that the regex is cached and invalidated properly
-        '''
-        return #FIXME there is no cache for now
-        asyncio.run(self.client._addmagic('ciao'))
-        initial = id(self.client._magic_regex)
-        asyncio.run(self.client._addmagic('ciao'))
-        assert initial == id(self.client._magic_regex)
-        asyncio.run(self.client._addmagic('ciao'))
-        assert initial == id(self.client._magic_regex)
-        self.mock_client.usernames = ['myself', 'yourself']
-        asyncio.run(self.client._addmagic('ciao'))
-        assert initial != id(self.client._magic_regex)
-
     def test_escapes(self):
         dest = User('0', 'LtWorf', None)
         assert asyncio.run(self.client._addmagic('<', dest)) == '&lt;'
