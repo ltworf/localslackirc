@@ -104,8 +104,6 @@ class Client:
         self.autojoin = autojoin
         self._usersent = False # Used to hold all events until the IRC client sends the initial USER message
         self._held_events: List[slack.SlackEvent] = []
-        self._magic_users_id = 0
-        self._magic_regex: Optional[re.Pattern] = None
 
         if self.provider == Provider.SLACK:
             self.substitutions = _SLACK_SUBSTITUTIONS
@@ -239,23 +237,28 @@ class Client:
         else:
             action = False
 
-        message = await self._addmagic(msg.decode('utf8'))
-
         if dest.startswith(b'#'):
+            to_channel = True
+            dest_object: Union[slack.User, slack.Channel] = await self.sl_client.get_channel_by_name(dest[1:].decode())
+        else:
+            to_channel = False
+            dest_object = await self.sl_client.get_user_by_name(dest.decode())
+
+
+        message = await self._addmagic(msg.decode('utf8'), dest_object)
+
+        if to_channel:
             await self.sl_client.send_message(
-                (await self.sl_client.get_channel_by_name(dest[1:].decode())).id,
+                dest_object.id,
                 message,
                 action,
             )
         else:
-            try:
-                await self.sl_client.send_message_to_user(
-                    (await self.sl_client.get_user_by_name(dest.decode())).id,
-                    message,
-                    action,
-                )
-            except Exception:
-                log('Impossible to find user ', dest)
+            await self.sl_client.send_message_to_user(
+                dest_object.id,
+                message,
+                action,
+            )
 
     async def _listhandler(self, cmd: bytes) -> None:
         for c in await self.sl_client.channels(refresh=True):
@@ -396,7 +399,7 @@ class Client:
         ))
         await self.s.drain()
 
-    async def _addmagic(self, msg: str) -> str:
+    async def _addmagic(self, msg: str, dest: Union[slack.User, slack.Channel]) -> str:
         """
         Adds magic codes and various things to
         outgoing messages
@@ -408,18 +411,22 @@ class Client:
             msg = msg.replace('@channel', '<!channel>')
             msg = msg.replace('@everyone', '<!everyone>')
 
+        # No nick substitutions for private chats
+        if isinstance(dest, slack.User):
+            return msg
+
+        usernames = []
+        for j in await self.sl_client.get_members(dest):
+            u = await self.sl_client.get_user(j)
+            usernames.append(u.name)
+
+        if len(usernames) == 0:
+            return msg
+
         # Extremely inefficient code to generate mentions
         # Just doing them client-side on the receiving end is too mainstream
-        if self._magic_users_id == id(self.sl_client.get_usernames()):
-            regex = self._magic_regex
-            assert regex
-        else:
-            usernames = self.sl_client.get_usernames()
-            assert usernames
-            self._magic_users_id = id(usernames)
-            regexs = (r'((://\S*){0,1}\b%s\b)' % username for username in usernames)
-            regex = re.compile('|'.join(regexs))
-            self._magic_regex = regex
+        regexs = (r'((://\S*){0,1}\b%s\b)' % username for username in usernames)
+        regex = re.compile('|'.join(regexs))
 
         matches = list(re.finditer(regex, msg))
         matches.reverse() # I want to replace from end to start or the positions get broken
