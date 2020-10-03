@@ -104,6 +104,7 @@ class Client:
         self.autojoin = autojoin
         self._usersent = False # Used to hold all events until the IRC client sends the initial USER message
         self._held_events: List[slack.SlackEvent] = []
+        self._mentions_regex_cache: Dict[str, Optional[re.Pattern]] = {}  # Cache for the regexp to perform mentions. Key is channel id
 
         if self.provider == Provider.SLACK:
             self.substitutions = _SLACK_SUBSTITUTIONS
@@ -399,6 +400,33 @@ class Client:
         ))
         await self.s.drain()
 
+    async def _get_regexp(self, dest: Union[slack.User, slack.Channel]) -> Optional[re.Pattern]:
+        #del self._mentions_regex_cache[sl_ev.channel]
+        # No nick substitutions for private chats
+        if isinstance(dest, slack.User):
+            return None
+
+        dest_id = dest.id
+        # Return from cache
+        if dest_id in self._mentions_regex_cache:
+            return self._mentions_regex_cache[dest_id]
+
+        usernames = []
+        for j in await self.sl_client.get_members(dest):
+            u = await self.sl_client.get_user(j)
+            usernames.append(u.name)
+
+        if len(usernames) == 0:
+            self._mentions_regex_cache[dest_id] = None
+            return None
+
+        # Extremely inefficient code to generate mentions
+        # Just doing them client-side on the receiving end is too mainstream
+        regexs = (r'((://\S*){0,1}\b%s\b)' % username for username in usernames)
+        regex = re.compile('|'.join(regexs))
+        self._mentions_regex_cache[dest_id] = regex
+        return regex
+
     async def _addmagic(self, msg: str, dest: Union[slack.User, slack.Channel]) -> str:
         """
         Adds magic codes and various things to
@@ -411,22 +439,9 @@ class Client:
             msg = msg.replace('@channel', '<!channel>')
             msg = msg.replace('@everyone', '<!everyone>')
 
-        # No nick substitutions for private chats
-        if isinstance(dest, slack.User):
+        regex = await self._get_regexp(dest)
+        if regex is None:
             return msg
-
-        usernames = []
-        for j in await self.sl_client.get_members(dest):
-            u = await self.sl_client.get_user(j)
-            usernames.append(u.name)
-
-        if len(usernames) == 0:
-            return msg
-
-        # Extremely inefficient code to generate mentions
-        # Just doing them client-side on the receiving end is too mainstream
-        regexs = (r'((://\S*){0,1}\b%s\b)' % username for username in usernames)
-        regex = re.compile('|'.join(regexs))
 
         matches = list(re.finditer(regex, msg))
         matches.reverse() # I want to replace from end to start or the positions get broken
@@ -523,6 +538,11 @@ class Client:
         Handle join events from slack, by sending a JOIN notification
         to IRC.
         """
+
+        #Invalidate cache since the users in the channel changed
+        if sl_ev.channel in self._mentions_regex_cache:
+            del self._mentions_regex_cache[sl_ev.channel]
+
         user = await self.sl_client.get_user(sl_ev.user)
         if user.deleted:
             return
