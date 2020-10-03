@@ -380,6 +380,10 @@ class Slack:
             return
 
         last_timestamp = self._status.last_timestamp
+        FOUR_DAYS = 60 * 60 * 24 * 4
+        if time() - last_timestamp > FOUR_DAYS:
+            log('Last timestamp is too old. Defaulting to 4 days.')
+            last_timestamp = time() - FOUR_DAYS
         dt = datetime.datetime.fromtimestamp(last_timestamp)
         log(f'Last known timestamp {dt}')
 
