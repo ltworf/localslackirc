@@ -99,5 +99,6 @@ class TestMagic(unittest.TestCase):
         dest = Channel('0', '0', None, None)
         assert asyncio.run(self.client._addmagic('ciao LtWorf', dest)) == 'ciao <@LtWorf>'
         assert asyncio.run(self.client._addmagic('LtWorf: ciao', dest)) == '<@LtWorf>: ciao'
+        assert asyncio.run(self.client._addmagic('LtWorf: ciao LtWorf', dest)) == '<@LtWorf>: ciao <@LtWorf>'
         assert asyncio.run(self.client._addmagic('_LtWorf', dest)) == '_LtWorf'
         assert asyncio.run(self.client._addmagic('LtWorf: http://link/user=LtWorf', dest)) == '<@LtWorf>: http://link/user=LtWorf'
