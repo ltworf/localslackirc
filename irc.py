@@ -389,9 +389,26 @@ class Client:
         await self._sendreply(Replies.RPL_USERHOST, '', replies)
 
     async def _invitehandler(self, cmd: bytes) -> None:
-        _, username, channel_b = cmd.split(b' ', 2)
-        channel = await self.sl_client.get_channel_by_name(channel_b.decode()[1:])
-        user = await self.sl_client.get_user_by_name(username.decode())
+        try:
+            _, username_b, channel_b = cmd.split(b' ', 2)
+            username = username_b.decode()
+            channel_name = channel_b.decode()[1:]
+        except Exception as e:
+            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Error: %s' % e)
+            return
+
+        try:
+            channel = await self.sl_client.get_channel_by_name(channel_name)
+        except KeyError:
+            await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unknown channel: {channel_name}')
+            return
+
+        try:
+            user = await self.sl_client.get_user_by_name(username)
+        except KeyError:
+            await self._sendreply(Replies.ERR_NOSUCHNICK, f'Unknown user: {username}')
+            return
+
         try:
             await self.sl_client.invite(channel, user)
         except Exception as e:
