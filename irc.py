@@ -351,9 +351,26 @@ class Client:
         await self._sendreply(Replies.RPL_ENDOFWHOIS, '', extratokens=[username])
 
     async def _kickhandler(self, cmd: bytes) -> None:
-        _, channel_b, username, message = cmd.split(b' ', 3)
-        channel = await self.sl_client.get_channel_by_name(channel_b.decode()[1:])
-        user = await self.sl_client.get_user_by_name(username.decode())
+        try:
+            _, channel_b, username_b, message = cmd.split(b' ', 3)
+            channel_name = channel_b.decode()[1:]
+            username = username_b.decode()
+        except Exception as e:
+            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Error: %s' % e)
+            return
+
+        try:
+            channel = await self.sl_client.get_channel_by_name(channel_name)
+        except KeyError:
+            await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unknown channel: {channel_name}')
+            return
+
+        try:
+            user = await self.sl_client.get_user_by_name(username)
+        except KeyError:
+            await self._sendreply(Replies.ERR_NOSUCHNICK, f'Unknown user: {username}')
+            return
+
         try:
             await self.sl_client.kick(channel, user)
         except Exception as e:
