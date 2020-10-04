@@ -327,6 +327,7 @@ class Slack:
         self._get_members_cache_cursor: Dict[str, Optional[str]] = {}
         self._internalevents: List[SlackEvent] = []
         self._sent_by_self: Set[float] = set()
+        self._wsblock: int = 0 # Semaphore to block the socket and avoid events being received before their API call ended.
         self.login_info: Optional[LoginInfo] = None
         if previous_status is None:
             self._status = SlackStatus()
@@ -671,12 +672,10 @@ class Slack:
         Send a file to a channel or group or whatever
         """
         with open(filename, 'rb') as f:
-            files = {'file': f}
-
             r = await self.client.api_call(
                 'files.upload',
                 channels=channel_id,
-                files=files,
+                file=f,
             )
         response = load(r, Response)
         if response.ok:
@@ -703,17 +702,22 @@ class Slack:
             api = 'chat.meMessage'
         else:
             api = 'chat.postMessage'
-        r = await self.client.api_call(
-            api,
-            channel=channel_id,
-            text=msg,
-            as_user=True,
-        )
-        response = load(r, Response)
-        if response.ok and response.ts:
-            self._sent_by_self.add(response.ts)
-            return
-        raise ResponseException(response)
+
+        try:
+            self._wsblock += 1
+            r = await self.client.api_call(
+                api,
+                channel=channel_id,
+                text=msg,
+                as_user=True,
+            )
+            response = load(r, Response)
+            if response.ok and response.ts:
+                self._sent_by_self.add(response.ts)
+                return
+            raise ResponseException(response)
+        finally:
+            self._wsblock -= 1
 
     async def send_message_to_user(self, user_id: str, msg: str, action: bool):
         """
@@ -769,6 +773,8 @@ class Slack:
             log('Connected to slack')
             return None
 
+        while self._wsblock: # Retry until the semaphore is free
+            await asyncio.sleep(0.01)
 
         for event in events:
             t = event.get('type')

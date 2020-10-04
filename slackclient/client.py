@@ -26,7 +26,7 @@ from .exceptions import *
 import json
 from typing import Any, Dict, List, NamedTuple, Optional
 
-import requests
+import aiohttp
 from ssl import SSLWantReadError
 from typedload import load
 import websockets
@@ -62,7 +62,7 @@ class SlackClient:
         # RTM configs
         self._websocket: Optional[websockets.client.WebSocketClientProtocol] = None
 
-    async def _do(self, request: str, post_data: Dict[str,str], timeout: Optional[float], files: Optional[Dict]):
+    async def _do(self, request: str, post_data: Dict[str,str], timeout: float):
         """
         Perform a POST request to the Slack Web API
 
@@ -82,24 +82,24 @@ class SlackClient:
         if self._cookie:
             headers['cookie'] = self._cookie
 
-        #FIXME Use some async library here
-        # Submit the request
-        return requests.post(
-            url,
-            headers=headers,
-            data=post_data,
-            timeout=timeout,
-            files=files,
-        )
+        data = aiohttp.FormData(post_data)
+        async with aiohttp.ClientSession() as session:
+            r = await session.post(
+                url,
+                headers=headers,
+                data=post_data,
+                timeout=aiohttp.ClientTimeout(total=timeout),
+            )
+            return r
 
-    async def login(self, timeout: Optional[int] = None) -> LoginInfo:
+    async def login(self, timeout: float = 0.0) -> LoginInfo:
         """
         Performs a login to slack.
         """
-        reply = await self._do('rtm.connect', timeout=timeout, post_data={}, files=None)
-        if reply.status_code != 200:
+        reply = await self._do('rtm.connect', {}, timeout=timeout)
+        if reply.status != 200:
             raise SlackConnectionError("RTM connection attempt failed")
-        login_data = reply.json()
+        login_data = await reply.json()
         if not login_data["ok"]:
             raise SlackLoginError(reply=login_data)
         return load(login_data, LoginInfo)
@@ -115,7 +115,7 @@ class SlackClient:
         return r
 
 
-    async def api_call(self, method: str, timeout: Optional[float] = None, **kwargs) -> Dict[str, Any]:
+    async def api_call(self, method: str, timeout: float = 0.0, **kwargs) -> Dict[str, Any]:
         """
         Call the Slack Web API as documented here: https://api.slack.com/web
 
@@ -145,12 +145,8 @@ class SlackClient:
 
             See here for more information on responses: https://api.slack.com/web
         """
-        if 'files' in kwargs:
-            files = kwargs.pop('files')
-        else:
-            files = None
-        response = await self._do(method, kwargs, timeout, files)
-        response_json = json.loads(response.text)
+        response = await self._do(method, kwargs, timeout)
+        response_json = await response.json()
         response_json["headers"] = dict(response.headers)
         return response_json
 
