@@ -277,7 +277,7 @@ class Client:
             channel_name = params[1].decode('utf8')
             filename = params[2].decode('utf8')
         except IndexError:
-            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Syntax: /sendreply #channel filename')
+            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Syntax: /sendfile #channel filename')
             return
 
         try:
