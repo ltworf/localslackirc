@@ -773,8 +773,6 @@ def main() -> None:
             asyncio.run(irc_listener())
         except IrcDisconnectError:
             pass
-        except Exception as e:
-            time.sleep(10)
 
 
 async def from_irc(reader, ircclient: Client):
