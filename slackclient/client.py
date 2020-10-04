@@ -62,7 +62,7 @@ class SlackClient:
         # RTM configs
         self._websocket: Optional[websockets.client.WebSocketClientProtocol] = None
 
-    async def _do(self, request: str, post_data: Dict[str,str], timeout: Optional[float], files: Optional[Dict]):
+    async def _do(self, request: str, post_data: Dict[str,str], timeout: float, files: Optional[Dict]):
         """
         Perform a POST request to the Slack Web API
 
@@ -82,17 +82,18 @@ class SlackClient:
         if self._cookie:
             headers['cookie'] = self._cookie
 
+
         async with aiohttp.ClientSession() as session:
             r = await session.post(
                 url,
                 headers=headers,
                 data=post_data,
-                #timeout
+                timeout=aiohttp.ClientTimeout(total=timeout),
                 #files
             )
             return r
 
-    async def login(self, timeout: Optional[int] = None) -> LoginInfo:
+    async def login(self, timeout: float = 0.0) -> LoginInfo:
         """
         Performs a login to slack.
         """
@@ -115,7 +116,7 @@ class SlackClient:
         return r
 
 
-    async def api_call(self, method: str, timeout: Optional[float] = None, **kwargs) -> Dict[str, Any]:
+    async def api_call(self, method: str, timeout: float = 0.0, **kwargs) -> Dict[str, Any]:
         """
         Call the Slack Web API as documented here: https://api.slack.com/web
 
