@@ -62,7 +62,7 @@ class SlackClient:
         # RTM configs
         self._websocket: Optional[websockets.client.WebSocketClientProtocol] = None
 
-    async def _do(self, request: str, post_data: Dict[str,str], timeout: float, files: Optional[Dict]):
+    async def _do(self, request: str, post_data: Dict[str,str], timeout: float):
         """
         Perform a POST request to the Slack Web API
 
@@ -82,14 +82,13 @@ class SlackClient:
         if self._cookie:
             headers['cookie'] = self._cookie
 
-
+        data = aiohttp.FormData(post_data)
         async with aiohttp.ClientSession() as session:
             r = await session.post(
                 url,
                 headers=headers,
                 data=post_data,
                 timeout=aiohttp.ClientTimeout(total=timeout),
-                #files
             )
             return r
 
@@ -97,7 +96,7 @@ class SlackClient:
         """
         Performs a login to slack.
         """
-        reply = await self._do('rtm.connect', timeout=timeout, post_data={}, files=None)
+        reply = await self._do('rtm.connect', {}, timeout=timeout)
         if reply.status != 200:
             raise SlackConnectionError("RTM connection attempt failed")
         login_data = await reply.json()
@@ -146,11 +145,7 @@ class SlackClient:
 
             See here for more information on responses: https://api.slack.com/web
         """
-        if 'files' in kwargs:
-            files = kwargs.pop('files')
-        else:
-            files = None
-        response = await self._do(method, kwargs, timeout, files)
+        response = await self._do(method, kwargs, timeout)
         response_json = await response.json()
         response_json["headers"] = dict(response.headers)
         return response_json

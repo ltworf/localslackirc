@@ -671,12 +671,10 @@ class Slack:
         Send a file to a channel or group or whatever
         """
         with open(filename, 'rb') as f:
-            files = {'file': f}
-
             r = await self.client.api_call(
                 'files.upload',
                 channels=channel_id,
-                files=files,
+                file=f,
             )
         response = load(r, Response)
         if response.ok:
