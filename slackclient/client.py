@@ -82,23 +82,24 @@ class SlackClient:
         if self._cookie:
             headers['cookie'] = self._cookie
 
-        # Submit the request
-        return requests.post(
-            url,
-            headers=headers,
-            data=post_data,
-            timeout=timeout,
-            files=files,
-        )
+        async with aiohttp.ClientSession() as session:
+            r = await session.post(
+                url,
+                headers=headers,
+                data=post_data,
+                #timeout
+                #files
+            )
+            return r
 
     async def login(self, timeout: Optional[int] = None) -> LoginInfo:
         """
         Performs a login to slack.
         """
         reply = await self._do('rtm.connect', timeout=timeout, post_data={}, files=None)
-        if reply.status_code != 200:
+        if reply.status != 200:
             raise SlackConnectionError("RTM connection attempt failed")
-        login_data = reply.json()
+        login_data = await reply.json()
         if not login_data["ok"]:
             raise SlackLoginError(reply=login_data)
         return load(login_data, LoginInfo)
@@ -149,7 +150,7 @@ class SlackClient:
         else:
             files = None
         response = await self._do(method, kwargs, timeout, files)
-        response_json = json.loads(response.text)
+        response_json = await response.json()
         response_json["headers"] = dict(response.headers)
         return response_json
 
