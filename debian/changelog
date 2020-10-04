@@ -4,6 +4,7 @@ localslackirc (1.11-1) UNRELEASED; urgency=medium
   * Depend on python3-websockets instead of python3-websocket
   * No longer supports Rocket.Chat
   * New style compat
+  * Depend on python3-aiohttp instead of python3-requests
 
  -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Mon, 22 Jun 2020 07:26:52 +0200
 
