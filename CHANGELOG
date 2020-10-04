@@ -3,6 +3,7 @@
 * Remove support for RocketChat.
   I have no way of testing it and it requires severe changes.
 * Only tag users that are in the same channel
+* Handle more exceptions with non existing users/channels or malformed commands
 
 1.10
 * Do not insert mentions inside URLs
