@@ -26,7 +26,7 @@ from .exceptions import *
 import json
 from typing import Any, Dict, List, NamedTuple, Optional
 
-import requests
+import aiohttp
 from ssl import SSLWantReadError
 from typedload import load
 import websockets
@@ -82,7 +82,6 @@ class SlackClient:
         if self._cookie:
             headers['cookie'] = self._cookie
 
-        #FIXME Use some async library here
         # Submit the request
         return requests.post(
             url,
