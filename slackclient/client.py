@@ -22,11 +22,11 @@
 # to the changes made since it was copied.
 
 from .exceptions import *
+from .http import Request
 
 import json
 from typing import Any, Dict, List, NamedTuple, Optional
 
-import aiohttp
 from ssl import SSLWantReadError
 from typedload import load
 import websockets
@@ -61,8 +61,9 @@ class SlackClient:
 
         # RTM configs
         self._websocket: Optional[websockets.client.WebSocketClientProtocol] = None
+        self._request = Request('https://slack.com/api/')
 
-    async def _do(self, request: str, post_data: Dict[str,str], timeout: float):
+    async def _do(self, request: str, post_data: Dict[str, Any], timeout: float):
         """
         Perform a POST request to the Slack Web API
 
@@ -72,8 +73,6 @@ class SlackClient:
             post_data (dict): key/value arguments to pass for the request. For example:
                 {'channel': 'CABC12345'}
         """
-        url = f'https://slack.com/api/{request}'
-
         # Set user-agent and auth headers
         headers = {
             'user-agent': 'localslackirc',
@@ -82,15 +81,7 @@ class SlackClient:
         if self._cookie:
             headers['cookie'] = self._cookie
 
-        data = aiohttp.FormData(post_data)
-        async with aiohttp.ClientSession() as session:
-            r = await session.post(
-                url,
-                headers=headers,
-                data=post_data,
-                timeout=aiohttp.ClientTimeout(total=timeout),
-            )
-            return r
+        return await self._request.post(request, headers, post_data, timeout)
 
     async def login(self, timeout: float = 0.0) -> LoginInfo:
         """
@@ -99,7 +90,7 @@ class SlackClient:
         reply = await self._do('rtm.connect', {}, timeout=timeout)
         if reply.status != 200:
             raise SlackConnectionError("RTM connection attempt failed")
-        login_data = await reply.json()
+        login_data = reply.json()
         if not login_data["ok"]:
             raise SlackLoginError(reply=login_data)
         return load(login_data, LoginInfo)
@@ -146,7 +137,7 @@ class SlackClient:
             See here for more information on responses: https://api.slack.com/web
         """
         response = await self._do(method, kwargs, timeout)
-        response_json = await response.json()
+        response_json = response.json()
         response_json["headers"] = dict(response.headers)
         return response_json
 
