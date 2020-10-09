@@ -17,9 +17,10 @@
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
 import asyncio
+import gzip
+import json
 from typing import Dict, Optional, NamedTuple
 from urllib import parse
-import json
 
 
 class Response(NamedTuple):
@@ -53,7 +54,8 @@ class Request:
     async def post(self, path: str, headers: Dict[str, str], data: Dict[str, str], timeout: float=0) -> Response:
         req = f'POST {self.path + path} HTTP/1.1\r\n'
         req += f'Host: {self.hostname}\r\n'
-        req += f'Connection: close\r\n'  #FIXME reuse connection
+        req += 'Connection: close\r\n'  #FIXME reuse connection
+        req += 'Accept-Encoding: gzip\r\n'
         for k, v in headers.items():
             req += f'{k}: {v}\r\n'
 
@@ -92,6 +94,13 @@ class Request:
                 read_data += (await reader.readexactly(size + 2))[:-2]
                 if size == 0:
                     break
+        elif 'content-length' in headers:
+            size = int(headers['content-length'])
+            read_data = await reader.readexactly(size)
         else:
             raise NotImplementedError('Can only handle chunked data' + repr(headers))
+
+        # decompress if needed
+        if headers.get('content-encoding') == 'gzip':
+            read_data = gzip.decompress(read_data)
         return Response(status, headers, read_data)
