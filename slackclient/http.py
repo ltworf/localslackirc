@@ -84,11 +84,22 @@ class Request:
             self.port = self.base_url.port
         self.hostname = self.base_url.hostname
         self.path = self.base_url.path
+        self._reader: Optional[asyncio.streams.StreamReader] = None
+        self._writer: Optional[asyncio.streams.StreamWriter] = None
+
+    async def _connect(self) -> None:
+        """
+        Connect and possibly close the previous connection
+        """
+        if self._writer:
+            self._writer.close()
+        self._reader, self._writer = await asyncio.open_connection(self.hostname, self.port, ssl=self.ssl)
 
     async def post(self, path: str, headers: Dict[str, str], data: Dict[str,  Any], timeout: float=0) -> Response:
+        # Prepare request
         req = f'POST {self.path + path} HTTP/1.1\r\n'
         req += f'Host: {self.hostname}\r\n'
-        req += 'Connection: close\r\n'  #FIXME reuse connection
+        req += 'Connection: keep-alive\r\n'
         req += 'Accept-Encoding: gzip\r\n'
         for k, v in headers.items():
             req += f'{k}: {v}\r\n'
@@ -98,20 +109,31 @@ class Request:
         req += f'Content-Length: {len(post_data)}\r\n'
         req += '\r\n'
 
-        reader, writer = await asyncio.open_connection(self.hostname, self.port, ssl=self.ssl)
+        # Send request
 
-        writer.write(req.encode('ascii'))
-        writer.write(post_data)
-        await writer.drain()
+        if self._writer is None or self._reader is None:
+            await self._connect()
+        assert self._reader is not None
+        assert self._writer is not None
+
+        try:
+            self._writer.write(req.encode('ascii'))
+            self._writer.write(post_data)
+            await self._writer.drain()
+        except BrokenPipeError:
+            await self._connect()
+            self._writer.write(req.encode('ascii'))
+            self._writer.write(post_data)
+            await self._writer.drain()
 
         # Read response
-        line = await reader.readline()
+        line = await self._reader.readline()
         status = int(line.split(b' ')[1])
 
         # Read headers
         headers = {}
         while True:
-            line = await reader.readline()
+            line = await self._reader.readline()
             if line == b'\r\n':
                 break
             k, v = line.decode('ascii').split(':', 1)
@@ -121,16 +143,16 @@ class Request:
         read_data = b''
         if headers.get('transfer-encoding') == 'chunked':
             while True:
-                line = await reader.readline()
+                line = await self._reader.readline()
                 if not line.endswith(b'\r\n'):
                     raise Exception('Unexpected end of chunked data')
                 size = int(line, 16)
-                read_data += (await reader.readexactly(size + 2))[:-2]
+                read_data += (await self._reader.readexactly(size + 2))[:-2]
                 if size == 0:
                     break
         elif 'content-length' in headers:
             size = int(headers['content-length'])
-            read_data = await reader.readexactly(size)
+            read_data = await self._reader.readexactly(size)
         else:
             raise NotImplementedError('Can only handle chunked data' + repr(headers))
 
