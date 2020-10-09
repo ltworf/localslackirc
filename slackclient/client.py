@@ -63,7 +63,7 @@ class SlackClient:
         self._websocket: Optional[websockets.client.WebSocketClientProtocol] = None
         self._request = Request('https://slack.com/api/')
 
-    async def _do(self, request: str, post_data: Dict[str,str], timeout: float):
+    async def _do(self, request: str, post_data: Dict[str, Any], timeout: float):
         """
         Perform a POST request to the Slack Web API
 

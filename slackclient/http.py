@@ -19,8 +19,42 @@
 import asyncio
 import gzip
 import json
-from typing import Dict, Optional, NamedTuple
+from typing import Dict, Optional, NamedTuple, Tuple, Any
+from uuid import uuid1
 from urllib import parse
+
+
+def multipart_form(data: Dict[str, Any]) -> Tuple[str, bytes]:
+    """
+    Convert a dictionary to post data and returns relevant headers.
+
+    The dictionary can contain values as open files, or anything else.
+    Anything that is not an open file is cast to str
+    """
+
+    if all((isinstance(i, str) for i in data.values())):
+        return (
+            'Content-Type: application/x-www-form-urlencoded\r\n',
+            parse.urlencode(data).encode('ascii')
+        )
+
+    boundary = str(uuid1()).encode('ascii')
+
+    form_data = b''
+    for k, v in data.items():
+        form_data += b'--' + boundary + b'\r\n'
+        if hasattr(v, 'read') and hasattr(v, 'name'):
+            form_data += f'Content-Disposition: form-data; name="{k}"; filename="{v.name}"\r\n'.encode('ascii')
+            form_data += b'\r\n' + v.read() + b'\r\n'
+        else:
+            strv = str(v)
+            form_data += f'Content-Disposition: form-data; name="{k}"\r\n'.encode('ascii')
+            form_data += b'\r\n' + strv.encode('ascii') + b'\r\n'
+
+    form_data += b'--' + boundary + b'\r\n'
+
+    header = f'Content-Type: multipart/form-data; boundary={boundary.decode("ascii")}\r\n'
+    return header, form_data
 
 
 class Response(NamedTuple):
@@ -51,7 +85,7 @@ class Request:
         self.hostname = self.base_url.hostname
         self.path = self.base_url.path
 
-    async def post(self, path: str, headers: Dict[str, str], data: Dict[str, str], timeout: float=0) -> Response:
+    async def post(self, path: str, headers: Dict[str, str], data: Dict[str,  Any], timeout: float=0) -> Response:
         req = f'POST {self.path + path} HTTP/1.1\r\n'
         req += f'Host: {self.hostname}\r\n'
         req += 'Connection: close\r\n'  #FIXME reuse connection
@@ -59,15 +93,15 @@ class Request:
         for k, v in headers.items():
             req += f'{k}: {v}\r\n'
 
-        req += f'Content-Type: application/x-www-form-urlencoded\r\n'
-        post_data = parse.urlencode(data)
+        header, post_data = multipart_form(data)
+        req += header
         req += f'Content-Length: {len(post_data)}\r\n'
         req += '\r\n'
 
         reader, writer = await asyncio.open_connection(self.hostname, self.port, ssl=self.ssl)
 
         writer.write(req.encode('ascii'))
-        writer.write(post_data.encode('ascii'))
+        writer.write(post_data)
         await writer.drain()
 
         # Read response
@@ -81,7 +115,7 @@ class Request:
             if line == b'\r\n':
                 break
             k, v = line.decode('ascii').split(':', 1)
-            headers[k] = v.strip()
+            headers[k.lower()] = v.strip()
 
         # Read data
         read_data = b''
