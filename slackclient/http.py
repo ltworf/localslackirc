@@ -32,7 +32,7 @@ def multipart_form(data: Dict[str, Any]) -> Tuple[str, bytes]:
     Anything that is not an open file is cast to str
     """
 
-    if all((isinstance(i, str) for i in data.values())):
+    if all((not (hasattr(i, 'read') or hasattr(i, 'name')) for i in data.values())):
         return (
             'Content-Type: application/x-www-form-urlencoded\r\n',
             parse.urlencode(data).encode('ascii')
