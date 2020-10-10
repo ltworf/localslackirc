@@ -57,6 +57,7 @@ class Response(NamedTuple):
     ok: bool
     headers: Dict[str, str]
     ts: Optional[float] = None
+    error: Optional[str] = None
 
 
 class Topic(NamedTuple):
@@ -468,25 +469,25 @@ class Slack:
         r = await self.client.api_call('users.setPresence', presence=status)
         response = load(r, Response)
         if not response.ok:
-            raise ResponseException(response)
+            raise ResponseException(response.error)
 
     async def topic(self, channel: Channel, topic: str) -> None:
         r = await self.client.api_call('conversations.setTopic', channel=channel.id, topic=topic)
         response = load(r, Response)
         if not response.ok:
-            raise ResponseException(response)
+            raise ResponseException(response.error)
 
     async def kick(self, channel: Channel, user: User) -> None:
         r = await self.client.api_call('conversations.kick', channel=channel.id, user=user.id)
         response = load(r, Response)
         if not response.ok:
-            raise ResponseException(response)
+            raise ResponseException(response.error)
 
     async def join(self, channel: Channel) -> None:
         r = await self.client.api_call('conversations.join', channel=channel.id)
         response = load(r, Response)
         if not response.ok:
-            raise ResponseException(response)
+            raise ResponseException(response.error)
 
     async def invite(self, channel: Channel, user: Union[User, List[User]]) -> None:
         if isinstance(user, User):
@@ -499,7 +500,7 @@ class Slack:
         r = await self.client.api_call('conversations.invite', channel=channel.id, users=ids)
         response = load(r, Response)
         if not response.ok:
-            raise ResponseException(response)
+            raise ResponseException(response.error)
 
     async def get_members(self, channel: Union[str, Channel]) -> Set[str]:
         """
@@ -527,7 +528,7 @@ class Slack:
         r = await self.client.api_call('conversations.members', channel=id_, limit=5000, **kwargs)  # type: ignore
         response = load(r, Response)
         if not response.ok:
-            raise ResponseException(response)
+            raise ResponseException(response.error)
 
         newusers = load(r['members'], Set[str])
 
@@ -552,7 +553,7 @@ class Slack:
             self._channelscache = load(r['channels'], List[Channel])
             return self._channelscache
         else:
-            raise ResponseException(response)
+            raise ResponseException(response.error)
 
     async def channels(self, refresh: bool = False) -> List[Channel]:
         """
@@ -617,7 +618,7 @@ class Slack:
         response = load(r, Response)
         if response.ok:
             return load(r['channels'], List[IM])
-        raise ResponseException(response)
+        raise ResponseException(response.error)
 
     async def get_user_by_name(self, name: str) -> User:
         return self._usermapcache[name]
@@ -680,7 +681,7 @@ class Slack:
         response = load(r, Response)
         if response.ok:
             return
-        raise ResponseException(response)
+        raise ResponseException(response.error)
 
     def _triage_sent_by_self(self) -> None:
         """
@@ -715,7 +716,7 @@ class Slack:
             if response.ok and response.ts:
                 self._sent_by_self.add(response.ts)
                 return
-            raise ResponseException(response)
+            raise ResponseException(response.error)
         finally:
             self._wsblock -= 1
 
@@ -749,7 +750,7 @@ class Slack:
                 )
                 response = load(r, Response)
                 if not response.ok:
-                    raise ResponseException(response)
+                    raise ResponseException(response.error)
                 channel_id = r['channel']['id']
 
             self._imcache[user_id] = channel_id
