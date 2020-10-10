@@ -331,12 +331,14 @@ class Client:
 
         if len(users) > 1:
             await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Server parameter is not supported')
+            return
 
         # Seems that oftc only responds to the last one
         username = users.pop()
 
         if b'*' in username:
             await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Wildcards are not supported')
+            return
         uusername = username.decode()
         try:
             user = await self.sl_client.get_user_by_name(uusername)
