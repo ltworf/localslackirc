@@ -142,7 +142,7 @@ class Request:
                 writer.write(post_data)
                 await writer.drain()
                 break
-            except BrokenPipeError:
+            except (BrokenPipeError, ConnectionResetError):
                 if i != 0:
                     raise
 
