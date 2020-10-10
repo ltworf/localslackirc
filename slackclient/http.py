@@ -32,7 +32,7 @@ def multipart_form(data: Dict[str, Any]) -> Tuple[str, bytes]:
     Anything that is not an open file is cast to str
     """
 
-    if all((isinstance(i, str) for i in data.values())):
+    if all((not (hasattr(i, 'read') or hasattr(i, 'name')) for i in data.values())):
         return (
             'Content-Type: application/x-www-form-urlencoded\r\n',
             parse.urlencode(data).encode('ascii')
@@ -84,11 +84,46 @@ class Request:
             self.port = self.base_url.port
         self.hostname = self.base_url.hostname
         self.path = self.base_url.path
+        self._connections: Dict[str, Tuple[asyncio.streams.StreamReader, asyncio.streams.StreamWriter]] = {}
+
+    def __del__(self):
+        for i in self._connections.values():
+            i[1].close()
+
+    async def _connect(self, clear_cache: bool) -> Tuple[asyncio.streams.StreamReader, asyncio.streams.StreamWriter]:
+        """
+        Get a connection.
+
+        It can be an already cached one or a new one.
+
+        clear_cache to True closes possibly cached ones
+        and makes new ones.
+        """
+        task = asyncio.tasks.current_task()
+        assert task is not None # Mypy doesn't notice this is in an async
+        key = task.get_name()
+
+        r = self._connections.get(key)
+
+        if r is None or clear_cache:
+            if r:
+                r[1].close()
+            r = await asyncio.open_connection(self.hostname, self.port, ssl=self.ssl)
+            self._connections[key] = r
+        return r
 
     async def post(self, path: str, headers: Dict[str, str], data: Dict[str,  Any], timeout: float=0) -> Response:
+        """
+        post a request.
+
+        data will be sent as a form. Fields are converted to str, except for
+        open files, which are read and sent. Open files must be opened in
+        binary mode.
+        """
+        # Prepare request
         req = f'POST {self.path + path} HTTP/1.1\r\n'
         req += f'Host: {self.hostname}\r\n'
-        req += 'Connection: close\r\n'  #FIXME reuse connection
+        req += 'Connection: keep-alive\r\n'
         req += 'Accept-Encoding: gzip\r\n'
         for k, v in headers.items():
             req += f'{k}: {v}\r\n'
@@ -98,11 +133,18 @@ class Request:
         req += f'Content-Length: {len(post_data)}\r\n'
         req += '\r\n'
 
-        reader, writer = await asyncio.open_connection(self.hostname, self.port, ssl=self.ssl)
-
-        writer.write(req.encode('ascii'))
-        writer.write(post_data)
-        await writer.drain()
+        # Send request
+        # 1 retry in case the keep alive connection was closed
+        for i in range(2):
+            reader, writer = await self._connect(clear_cache=bool(i))
+            try:
+                writer.write(req.encode('ascii'))
+                writer.write(post_data)
+                await writer.drain()
+                break
+            except (BrokenPipeError, ConnectionResetError):
+                if i != 0:
+                    raise
 
         # Read response
         line = await reader.readline()
@@ -132,7 +174,7 @@ class Request:
             size = int(headers['content-length'])
             read_data = await reader.readexactly(size)
         else:
-            raise NotImplementedError('Can only handle chunked data' + repr(headers))
+            raise NotImplementedError('Can only handle chunked or content length' + repr(headers))
 
         # decompress if needed
         if headers.get('content-encoding') == 'gzip':
