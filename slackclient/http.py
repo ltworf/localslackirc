@@ -141,6 +141,7 @@ class Request:
                 writer.write(req.encode('ascii'))
                 writer.write(post_data)
                 await writer.drain()
+                break
             except BrokenPipeError:
                 if i != 0:
                     raise
