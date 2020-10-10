@@ -84,18 +84,42 @@ class Request:
             self.port = self.base_url.port
         self.hostname = self.base_url.hostname
         self.path = self.base_url.path
-        self._reader: Optional[asyncio.streams.StreamReader] = None
-        self._writer: Optional[asyncio.streams.StreamWriter] = None
+        self._connections: Dict[str, Tuple[asyncio.streams.StreamReader, asyncio.streams.StreamWriter]] = {}
 
-    async def _connect(self) -> None:
+    def __del__(self):
+        for i in self._connections.values():
+            i[1].close()
+
+    async def _connect(self, clear_cache: bool) -> Tuple[asyncio.streams.StreamReader, asyncio.streams.StreamWriter]:
         """
-        Connect and possibly close the previous connection
+        Get a connection.
+
+        It can be an already cached one or a new one.
+
+        clear_cache to True closes possibly cached ones
+        and makes new ones.
         """
-        if self._writer:
-            self._writer.close()
-        self._reader, self._writer = await asyncio.open_connection(self.hostname, self.port, ssl=self.ssl)
+        task = asyncio.tasks.current_task()
+        assert task is not None # Mypy doesn't notice this is in an async
+        key = task.get_name()
+
+        r = self._connections.get(key)
+
+        if r is None or clear_cache:
+            if r:
+                r[1].close()
+            r = await asyncio.open_connection(self.hostname, self.port, ssl=self.ssl)
+            self._connections[key] = r
+        return r
 
     async def post(self, path: str, headers: Dict[str, str], data: Dict[str,  Any], timeout: float=0) -> Response:
+        """
+        post a request.
+
+        data will be sent as a form. Fields are converted to str, except for
+        open files, which are read and sent. Open files must be opened in
+        binary mode.
+        """
         # Prepare request
         req = f'POST {self.path + path} HTTP/1.1\r\n'
         req += f'Host: {self.hostname}\r\n'
@@ -110,30 +134,25 @@ class Request:
         req += '\r\n'
 
         # Send request
-
-        if self._writer is None or self._reader is None:
-            await self._connect()
-        assert self._reader is not None
-        assert self._writer is not None
-
-        try:
-            self._writer.write(req.encode('ascii'))
-            self._writer.write(post_data)
-            await self._writer.drain()
-        except BrokenPipeError:
-            await self._connect()
-            self._writer.write(req.encode('ascii'))
-            self._writer.write(post_data)
-            await self._writer.drain()
+        # 1 retry in case the keep alive connection was closed
+        for i in range(2):
+            reader, writer = await self._connect(clear_cache=bool(i))
+            try:
+                writer.write(req.encode('ascii'))
+                writer.write(post_data)
+                await writer.drain()
+            except BrokenPipeError:
+                if i != 0:
+                    raise
 
         # Read response
-        line = await self._reader.readline()
+        line = await reader.readline()
         status = int(line.split(b' ')[1])
 
         # Read headers
         headers = {}
         while True:
-            line = await self._reader.readline()
+            line = await reader.readline()
             if line == b'\r\n':
                 break
             k, v = line.decode('ascii').split(':', 1)
@@ -143,18 +162,18 @@ class Request:
         read_data = b''
         if headers.get('transfer-encoding') == 'chunked':
             while True:
-                line = await self._reader.readline()
+                line = await reader.readline()
                 if not line.endswith(b'\r\n'):
                     raise Exception('Unexpected end of chunked data')
                 size = int(line, 16)
-                read_data += (await self._reader.readexactly(size + 2))[:-2]
+                read_data += (await reader.readexactly(size + 2))[:-2]
                 if size == 0:
                     break
         elif 'content-length' in headers:
             size = int(headers['content-length'])
-            read_data = await self._reader.readexactly(size)
+            read_data = await reader.readexactly(size)
         else:
-            raise NotImplementedError('Can only handle chunked data' + repr(headers))
+            raise NotImplementedError('Can only handle chunked or content length' + repr(headers))
 
         # decompress if needed
         if headers.get('content-encoding') == 'gzip':
