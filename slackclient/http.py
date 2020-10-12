@@ -24,15 +24,23 @@ from uuid import uuid1
 from urllib import parse
 
 
-def multipart_form(data: Dict[str, Any]) -> Tuple[str, bytes]:
+def multipart_form(form_fields: Dict[str, Any]) -> Tuple[str, bytes]:
     """
     Convert a dictionary to post data and returns relevant headers.
 
     The dictionary can contain values as open files, or anything else.
+    None values are skipped.
     Anything that is not an open file is cast to str
     """
+    data = {}
+    has_files = False
+    for k, v in form_fields.items():
+        if v is not None:
+            data[k] = v
+        if hasattr(v, 'read') and hasattr(v, 'name'):
+            has_files = True
 
-    if all((not (hasattr(i, 'read') or hasattr(i, 'name')) for i in data.values())):
+    if not has_files:
         return (
             'Content-Type: application/x-www-form-urlencoded\r\n',
             parse.urlencode(data).encode('ascii')
