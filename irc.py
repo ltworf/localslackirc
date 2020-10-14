@@ -726,6 +726,8 @@ def main() -> None:
                                 help='Path to the file to keep the internal status.')
     parser.add_argument('--log-suffix', type=str, action='store', dest='log_suffix', default='',
                                 help='Set a suffix for the syslog identifier')
+    parser.add_argument('--ignored-channels', type=str, action='store', dest='ignored_channels', default='',
+                                help='Comma separated list of channels to not join when autojoin is enabled')
 
     args = parser.parse_args()
 

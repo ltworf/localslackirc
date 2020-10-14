@@ -1,4 +1,4 @@
-.TH localslackirc 1 "Jul 5, 2020" "IRC gateway for slack"
+.TH localslackirc 1 "Oct 14, 2020" "IRC gateway for slack"
 .SH NAME
 localslackirc
 \- Creates an IRC server running locally, which acts as a gateway to slack for one user.
@@ -51,6 +51,19 @@ Instead of using localslackirc as ident for syslog, this appends a custom string
 This is useful when running several instances, to be able to distinguish the logs.
 .br
 The default .service file uses this. Of course journald keeps track of the services but this makes it easier to have the information on text dumps or other logging daemons such as rsyslog.
+.TP
+.B --ignored-channels
+Comma separated list of channels to ignore and not automatically join on IRC.
+.br
+It is ignored unless autojoin is set.
+.br
+If a channel is in this list, the IRC client will not automatically join it, but on slack you will still be inside the channel
+.br
+This is useful to avoid off topic channels in which coworkers who can't take a hint keep re-inviting.
+.br
+The ignored channels can be joined again if needed, with a /join #channel command. However the conversation history will not be fetched.
+.br
+For channel names containing non ascii characters, their ascii representation needs to be used. Use /list to see which that is.
 .SH TOKEN
 The access token is (unless specified otherwise) located in ~/.localslackirc, for information on how to obtain your token, check the README file.
 .SH ENVIRONMENT
@@ -90,6 +103,9 @@ Alternative to --nouserlist
 .TP
 .B LOG_SUFFIX
 Alternative to --log-suffix
+.TP
+.B IGNORED_CHANNELS
+Alternative to --ignored-channels
 .SH WEB
 .BR https://github.com/ltworf/localslackirc
 
