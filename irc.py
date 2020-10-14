@@ -90,11 +90,19 @@ MPIM_HIDE_DELAY = datetime.timedelta(days=50)
 
 
 class Client:
-    def __init__(self, s: asyncio.streams.StreamWriter, sl_client: Union[slack.Slack], nouserlist: bool, autojoin: bool, provider: Provider):
+    def __init__(
+                    self,
+                    s: asyncio.streams.StreamWriter,
+                    sl_client: Union[slack.Slack],
+                    nouserlist: bool,
+                    autojoin: bool,
+                    provider: Provider,
+                    ignored_channels: Set[bytes],
+    ):
         self.nick = b''
         self.username = b''
         self.realname = b''
-        self.parted_channels: Set[bytes] = set()
+        self.parted_channels: Set[bytes] = ignored_channels
         self.hostname = gethostname().encode('utf8')
 
         self.provider = provider
@@ -161,7 +169,11 @@ class Client:
                     continue
 
                 channel_name = '#%s' % sl_chan.name_normalized
-                await self._send_chan_info(channel_name.encode('utf-8'), sl_chan)
+                channel_name_b = channel_name.encode('ascii')
+                if channel_name_b in self.parted_channels:
+                    log(f'Not joining {channel_name} on IRC, marked as parted')
+                    continue
+                await self._send_chan_info(channel_name_b, sl_chan)
         else:
             for sl_chan in await self.sl_client.channels():
                 channel_name = '#%s' % sl_chan.name_normalized
@@ -726,6 +738,8 @@ def main() -> None:
                                 help='Path to the file to keep the internal status.')
     parser.add_argument('--log-suffix', type=str, action='store', dest='log_suffix', default='',
                                 help='Set a suffix for the syslog identifier')
+    parser.add_argument('--ignored-channels', type=str, action='store', dest='ignored_channels', default='',
+                                help='Comma separated list of channels to not join when autojoin is enabled')
 
     args = parser.parse_args()
 
@@ -750,6 +764,17 @@ def main() -> None:
 
     autojoin: bool = environ['AUTOJOIN'].lower() == 'true' if 'AUTOJOIN' in environ else args.autojoin
     nouserlist: bool = environ['NOUSERLIST'].lower() == 'true' if 'NOUSERLIST' in environ else args.nouserlist
+
+    # Splitting ignored channels
+    ignored_channels_str = environ.get('IGNORED_CHANNELS', args.ignored_channels)
+    if autojoin and len(ignored_channels_str):
+        ignored_channels: Set[bytes] = {
+            (b'' if i.startswith('#') else b'#') + i.encode('ascii')
+            for i in ignored_channels_str.split(',')
+        }
+    else:
+        ignored_channels = set()
+
 
     if 'TOKEN' in environ:
         token = environ['TOKEN']
@@ -807,7 +832,7 @@ def main() -> None:
 
         await sl_client.login()
 
-        ircclient = Client(writer, sl_client, nouserlist, autojoin, provider)
+        ircclient = Client(writer, sl_client, nouserlist, autojoin, provider, ignored_channels)
 
         from_irc_task = asyncio.create_task(from_irc(reader, ircclient))
         to_irc_task = asyncio.create_task(to_irc(sl_client, ircclient))

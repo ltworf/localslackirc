@@ -53,7 +53,7 @@ class TestMagic(unittest.TestCase):
                 return User('0', 'LtWorf', None)
 
         self.mock_client = MockClient()
-        self.client = Client(None, self.mock_client, False, True, Provider.SLACK)
+        self.client = Client(None, self.mock_client, False, True, Provider.SLACK, set())
 
     def test_no_replace(self):
         '''

@@ -5,6 +5,7 @@
 * Only tag users that are in the same channel
 * Handle more exceptions with non existing users/channels or malformed commands
 * Handle cursor over conversations list
+* New setting to not join channels when autojoin is set
 
 1.10
 * Do not insert mentions inside URLs

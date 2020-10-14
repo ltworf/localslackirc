@@ -39,3 +39,9 @@ AUTOJOIN=true
 
 # Do not fetch the user list (for huge instances)
 #NOUSERLIST=true
+
+# Comma separated list of channels to ignore and not automatically
+# join on IRC.
+# Ignored unless autojoin is set
+# They can be joined again later on with a /join #channel command
+#IGNORED_CHANNELS=#general,#chat
