@@ -293,6 +293,11 @@ class History(NamedTuple):
     response_metadata: Optional[NextCursor] = None
 
 
+class Conversations(NamedTuple):
+    channels: List[Channel]
+    response_metadata: Optional[NextCursor] = None
+
+
 SlackEvent = Union[
     TopicChange,
     MessageDelete,
@@ -541,20 +546,6 @@ class Slack:
         self._get_members_cache_cursor[id_] = r.get('response_metadata', {}).get('next_cursor')
         return self._get_members_cache[id_]
 
-    async def _channels(self) -> List[Channel]:
-        if self._channelscache:
-            return self._channelscache
-
-        result: List[Channel] = []
-        r = await self.client.api_call("conversations.list", exclude_archived=True,
-                types='public_channel,private_channel,mpim', limit=1000)
-        response = load(r, Response)
-        if response.ok:
-            self._channelscache = load(r['channels'], List[Channel])
-            return self._channelscache
-        else:
-            raise ResponseException(response.error)
-
     async def channels(self, refresh: bool = False) -> List[Channel]:
         """
         Returns the list of slack channels
@@ -563,7 +554,31 @@ class Slack:
         """
         if refresh:
             self._channelscache.clear()
-        return await self._channels()
+
+        if self._channelscache:
+            return self._channelscache
+
+        cursor = None
+        while True:
+            r = await self.client.api_call(
+                'conversations.list',
+                cursor=cursor,
+                exclude_archived=True,
+                types='public_channel,private_channel,mpim',
+                limit=1000, # In vain hope that slack would not ignore this
+            )
+            response = load(r, Response)
+
+            if response.ok:
+                conv = load(r, Conversations)
+                self._channelscache += conv.channels
+                # For this API, slack sends an empty string as next cursor, just to show off their programming "skillz"
+                if not conv.response_metadata or not conv.response_metadata.next_cursor:
+                    break
+                cursor = conv.response_metadata.next_cursor
+            else:
+                raise ResponseException(response.error)
+        return self._channelscache
 
     async def get_channel(self, id_: str) -> Channel:
         """
