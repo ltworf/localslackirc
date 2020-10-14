@@ -90,11 +90,19 @@ MPIM_HIDE_DELAY = datetime.timedelta(days=50)
 
 
 class Client:
-    def __init__(self, s: asyncio.streams.StreamWriter, sl_client: Union[slack.Slack], nouserlist: bool, autojoin: bool, provider: Provider):
+    def __init__(
+                    self,
+                    s: asyncio.streams.StreamWriter,
+                    sl_client: Union[slack.Slack],
+                    nouserlist: bool,
+                    autojoin: bool,
+                    provider: Provider,
+                    ignored_channels: Set[bytes],
+    ):
         self.nick = b''
         self.username = b''
         self.realname = b''
-        self.parted_channels: Set[bytes] = set()
+        self.parted_channels: Set[bytes] = ignored_channels
         self.hostname = gethostname().encode('utf8')
 
         self.provider = provider
@@ -161,7 +169,11 @@ class Client:
                     continue
 
                 channel_name = '#%s' % sl_chan.name_normalized
-                await self._send_chan_info(channel_name.encode('utf-8'), sl_chan)
+                channel_name_b = channel_name.encode('ascii')
+                if channel_name_b in self.parted_channels:
+                    log(f'Not joining {channel_name} on IRC, marked as parted')
+                    continue
+                await self._send_chan_info(channel_name_b, sl_chan)
         else:
             for sl_chan in await self.sl_client.channels():
                 channel_name = '#%s' % sl_chan.name_normalized
@@ -820,7 +832,7 @@ def main() -> None:
 
         await sl_client.login()
 
-        ircclient = Client(writer, sl_client, nouserlist, autojoin, provider)
+        ircclient = Client(writer, sl_client, nouserlist, autojoin, provider, ignored_channels)
 
         from_irc_task = asyncio.create_task(from_irc(reader, ircclient))
         to_irc_task = asyncio.create_task(to_irc(sl_client, ircclient))
