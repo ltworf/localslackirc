@@ -753,6 +753,17 @@ def main() -> None:
     autojoin: bool = environ['AUTOJOIN'].lower() == 'true' if 'AUTOJOIN' in environ else args.autojoin
     nouserlist: bool = environ['NOUSERLIST'].lower() == 'true' if 'NOUSERLIST' in environ else args.nouserlist
 
+    # Splitting ignored channels
+    ignored_channels_str = environ.get('IGNORED_CHANNELS', args.ignored_channels)
+    if autojoin and len(ignored_channels_str):
+        ignored_channels: Set[bytes] = {
+            (b'' if i.startswith('#') else b'#') + i.encode('ascii')
+            for i in ignored_channels_str.split(',')
+        }
+    else:
+        ignored_channels = set()
+
+
     if 'TOKEN' in environ:
         token = environ['TOKEN']
     else:
