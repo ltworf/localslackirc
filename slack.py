@@ -348,6 +348,9 @@ class Slack:
         else:
             self._status = load(json.loads(previous_status), SlackStatus)
 
+    def close(self):
+        del self.client
+
     async def login(self) -> None:
         """
         Set the login_info field
