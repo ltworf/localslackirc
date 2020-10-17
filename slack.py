@@ -323,6 +323,14 @@ class SlackStatus:
 
 class Slack:
     def __init__(self, token: str, cookie: Optional[str], previous_status: Optional[bytes]) -> None:
+        """
+        A slack client object.
+
+        token: The slack token
+        cookie: If the slack instance also uses a cookie, it must be passed here
+        previous_status: Opaque bytestring to restore internal status
+                from a different object. Obtained from get_status()
+        """
         self.client = SlackClient(token, cookie)
         self._usercache: Dict[str, User] = {}
         self._usermapcache: Dict[str, User] = {}
