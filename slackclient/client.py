@@ -24,6 +24,7 @@
 from .exceptions import *
 from .http import Request
 
+import asyncio
 import json
 from typing import Any, Dict, List, NamedTuple, Optional
 
@@ -62,6 +63,11 @@ class SlackClient:
         # RTM configs
         self._websocket: Optional[websockets.client.WebSocketClientProtocol] = None
         self._request = Request('https://slack.com/api/')
+
+    def __del__(self):
+        if self._websocket:
+            asyncio.create_task(self._websocket.close())
+        del self._request
 
     async def _do(self, request: str, post_data: Dict[str, Any], timeout: float):
         """
