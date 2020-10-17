@@ -18,7 +18,6 @@
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
 import asyncio
-import atexit
 import datetime
 from enum import Enum
 from pathlib import Path
@@ -680,13 +679,6 @@ class Client:
             log('Unknown command: ', cmd)
 
 
-def exit_hook(status_file, sl_client) -> None:
-    if status_file:
-        log(f'Writing status to {status_file}')
-        status_file.write_bytes(sl_client.get_status())
-    log('Exiting...')
-
-
 def su() -> None:
     """
     switch user. Useful when starting localslackirc
@@ -804,23 +796,11 @@ def main() -> None:
     if token.startswith('xoxc-') and not cookie:
         exit('The cookie is needed for this kind of slack token')
 
-    previous_status = None
-    if status_file is not None and status_file.exists():
-        previous_status = status_file.read_bytes()
-
-    sl_client = slack.Slack(token, cookie, previous_status)
     provider = Provider.SLACK
 
     # Parameters are dealt with
 
-    atexit.register(exit_hook, status_file, sl_client)
-    term_f = lambda: sys.exit(0)
-
     async def irc_listener() -> None:
-        asyncio.get_running_loop().add_signal_handler(signal.SIGHUP, term_f)
-        asyncio.get_running_loop().add_signal_handler(signal.SIGTERM, term_f)
-        asyncio.get_running_loop().add_signal_handler(signal.SIGINT, term_f)
-
         serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         serversocket.bind((ip, port))
@@ -828,24 +808,46 @@ def main() -> None:
 
         s, _ = serversocket.accept()
         serversocket.close()
+        asyncio.get_running_loop().add_signal_handler(signal.SIGHUP, term_f)
+        asyncio.get_running_loop().add_signal_handler(signal.SIGTERM, term_f)
+        asyncio.get_running_loop().add_signal_handler(signal.SIGINT, term_f)
         reader, writer = await asyncio.open_connection(sock=s)
 
+        previous_status = None
+        if status_file is not None and status_file.exists():
+            previous_status = status_file.read_bytes()
+        sl_client = slack.Slack(token, cookie, previous_status)
         await sl_client.login()
 
         ircclient = Client(writer, sl_client, nouserlist, autojoin, provider, ignored_channels)
 
-        from_irc_task = asyncio.create_task(from_irc(reader, ircclient))
-        to_irc_task = asyncio.create_task(to_irc(sl_client, ircclient))
+        try:
+            from_irc_task = asyncio.create_task(from_irc(reader, ircclient))
+            to_irc_task = asyncio.create_task(to_irc(sl_client, ircclient))
 
-        await from_irc_task
-        await to_irc_task
-
+            await asyncio.gather(
+                from_irc_task,
+                to_irc_task,
+            )
+        finally:
+            log('Closing connections')
+            sl_client.close()
+            if status_file:
+                log(f'Writing status to {status_file}')
+                status_file.write_bytes(sl_client.get_status())
+            writer.close()
+            log('Cancelling running tasks')
+            from_irc_task.cancel()
+            to_irc_task.cancel()
 
     while True:
+        signal.signal(signal.SIGHUP, term_f)
+        signal.signal(signal.SIGTERM, term_f)
+        signal.signal(signal.SIGINT, term_f)
         try:
             asyncio.run(irc_listener())
         except IrcDisconnectError:
-            pass
+            log('IRC disconnected')
 
 
 async def from_irc(reader, ircclient: Client):
@@ -863,6 +865,8 @@ async def to_irc(sl_client: Union[slack.Slack], ircclient: Client):
             log(ev)
             await ircclient.slack_event(ev)
 
+def term_f(*args):
+    sys.exit(0)
 
 if __name__ == '__main__':
     try:
