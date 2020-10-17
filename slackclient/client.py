@@ -21,16 +21,15 @@
 # But has been copied and relicensed under GPL. The copyright applies only
 # to the changes made since it was copied.
 
-from .exceptions import *
-from .http import Request
-
 import asyncio
 import json
 from typing import Any, Dict, List, NamedTuple, Optional
 
-from ssl import SSLWantReadError
 from typedload import load
 import websockets
+
+from .exceptions import *
+from .http import Request
 
 
 class Team(NamedTuple):
