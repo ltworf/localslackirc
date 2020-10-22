@@ -98,14 +98,11 @@ class Request:
         for i in self._connections.values():
             i[1].close()
 
-    async def _connect(self, clear_cache: bool) -> Tuple[asyncio.streams.StreamReader, asyncio.streams.StreamWriter]:
+    async def _connect(self) -> Tuple[asyncio.streams.StreamReader, asyncio.streams.StreamWriter]:
         """
         Get a connection.
 
         It can be an already cached one or a new one.
-
-        clear_cache to True closes possibly cached ones
-        and makes new ones.
         """
         task = asyncio.tasks.current_task()
         assert task is not None # Mypy doesn't notice this is in an async
@@ -113,9 +110,7 @@ class Request:
 
         r = self._connections.get(key)
 
-        if r is None or clear_cache:
-            if r:
-                r[1].close()
+        if r is None:
             r = await asyncio.open_connection(self.hostname, self.port, ssl=self.ssl)
             self._connections[key] = r
         return r
@@ -127,7 +122,22 @@ class Request:
         data will be sent as a form. Fields are converted to str, except for
         open files, which are read and sent. Open files must be opened in
         binary mode.
+
+        Due to the possibility that the cached connection got closed, it will do
+        one retry before raising the exception
         """
+        try:
+            return await self._post(path, headers, data, timeout)
+        except (BrokenPipeError, ConnectionResetError):
+            # Clear connection from pool
+            task = asyncio.tasks.current_task()
+            assert task is not None # Mypy doesn't notice this is in an async
+            key = task.get_name()
+            r, w = self._connections.pop(key)
+            w.close()
+            return await self._post(path, headers, data, timeout)
+
+    async def _post(self, path: str, headers: Dict[str, str], data: Dict[str,  Any], timeout: float=0) -> Response:
         # Prepare request
         req = f'POST {self.path + path} HTTP/1.1\r\n'
         req += f'Host: {self.hostname}\r\n'
@@ -143,16 +153,10 @@ class Request:
 
         # Send request
         # 1 retry in case the keep alive connection was closed
-        for i in range(2):
-            reader, writer = await self._connect(clear_cache=bool(i))
-            try:
-                writer.write(req.encode('ascii'))
-                writer.write(post_data)
-                await writer.drain()
-                break
-            except (BrokenPipeError, ConnectionResetError):
-                if i != 0:
-                    raise
+        reader, writer = await self._connect()
+        writer.write(req.encode('ascii'))
+        writer.write(post_data)
+        await writer.drain()
 
         # Read response
         line = await reader.readline()
