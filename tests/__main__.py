@@ -19,6 +19,7 @@
 import unittest
 
 from .test_re import *
+from .test_diff import *
 
 if __name__ == '__main__':
     unittest.main()
