@@ -20,6 +20,9 @@
 from itertools import count
 
 
+_SEPARATORS = set(' .,:;\t\n()[]{}')
+
+
 def seddiff(a: str, b: str) -> str:
     """
     Original string, changed string
@@ -28,6 +31,9 @@ def seddiff(a: str, b: str) -> str:
     or similar. Returns the IRC style correction
     format.
     """
+    if a == b:
+        return ''
+
     for prefix in count():
         try:
             if a[prefix] != b[prefix]:
@@ -40,13 +46,20 @@ def seddiff(a: str, b: str) -> str:
                 break
         except Exception:
             break
-
-    if prefix < 0:
-        prefix = 0
-
     postfix -= 1
+
+    longest = a if len(a) > len(b) else b
+
+    # Move to word boundaries
+    while prefix > 0 and longest[prefix] not in _SEPARATORS:
+        prefix -= 1
+    if longest[prefix] in _SEPARATORS:
+        prefix += 1
+    while postfix > 0 and longest[-postfix] not in _SEPARATORS:
+        postfix -= 1
+
     if postfix == 0:
         px = None
     else:
-        px = postfix * -1
+        px = -postfix
     return 's/%s/%s/' % (a[prefix:px], b[prefix:px])
