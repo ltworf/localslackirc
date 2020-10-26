@@ -40,7 +40,7 @@ from log import *
 
 # How slack expresses mentioning users
 _MENTIONS_REGEXP = re.compile(r'<@([0-9A-Za-z]+)>')
-_CHANNEL_MENTIONS_REGEXP = re.compile(r'<#[A-Z0-9]+\|(\w+)>')
+_CHANNEL_MENTIONS_REGEXP = re.compile(r'<#([A-Z0-9]+)\|\w+>')
 _URL_REGEXP = re.compile(r'<([a-z0-9\-\.]+)://([^\s\|]+)[\|]{0,1}([^<>]*)>')
 
 
@@ -533,7 +533,7 @@ class Client:
                 i = (
                     i[0:mention.span()[0]] +
                     '#' +
-                    mention.groups()[0] +
+                    (await self.sl_client.get_channel(mention.groups()[0])).name_normalized +
                     i[mention.span()[1]:]
                 )
 
