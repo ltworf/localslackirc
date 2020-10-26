@@ -23,7 +23,27 @@ from irc import _MENTIONS_REGEXP, _CHANNEL_MENTIONS_REGEXP, _URL_REGEXP, Client,
 from slack import Channel, User
 
 
-class TestTesto(unittest.TestCase):
+class TestRegexp(unittest.TestCase):
+
+    def test_channel_re(self):
+        cases = [
+            ('lalala', None),
+            ('#lalala', None),
+            ('#lalala-lala', None),
+            ('la #lalala la', None),
+            ('la <#AAA|la lala> la', None),
+            ('la <#AAA|lalala> la', ('AAA',)),
+            ('la <#AAA|la-lala> la', ('AAA',)),
+            ('la <#AAA|la_lala> la', ('AAA',)),
+            ('la <#AAA|lå114-lala> la', ('AAA',)),
+            ('la <#ABC91|lå114-lala> la', ('ABC91',)),
+            ('la <#abC91|lå114-lala> la', None),
+            ('la <#abC91|#alala> la', None),
+        ]
+        for url, expected in cases:
+            m = _CHANNEL_MENTIONS_REGEXP.search(url)
+            assert m is None if expected is None else m.groups() == expected
+
     def test_url_re(self):
         cases = [
             # String, matched groups
