@@ -160,7 +160,12 @@ class Request:
 
         # Read response
         line = await reader.readline()
-        status = int(line.split(b' ')[1])
+        if len(line) == 0:
+            raise BrokenPipeError()
+        try:
+            status = int(line.split(b' ')[1])
+        except Exception as e:
+            raise Exception(f'Invalid data {line!r} {e}')
 
         # Read headers
         headers = {}
