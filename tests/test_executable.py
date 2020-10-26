@@ -17,10 +17,11 @@
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
 import unittest
+import subprocess
 
-from .test_re import *
-from .test_diff import *
-from .test_executable import *
 
-if __name__ == '__main__':
-    unittest.main()
+
+class TestStart(unittest.TestCase):
+
+    def test_print_help(self):
+        subprocess.check_call(['./irc.py', '--help'], stdout=subprocess.DEVNULL)
