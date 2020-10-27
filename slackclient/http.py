@@ -128,7 +128,7 @@ class Request:
         """
         try:
             return await self._post(path, headers, data, timeout)
-        except (BrokenPipeError, ConnectionResetError):
+        except (BrokenPipeError, ConnectionResetError, asyncio.IncompleteReadError):
             # Clear connection from pool
             task = asyncio.tasks.current_task()
             assert task is not None # Mypy doesn't notice this is in an async
@@ -173,6 +173,8 @@ class Request:
             line = await reader.readline()
             if line == b'\r\n':
                 break
+            elif len(line) == 0:
+                raise BrokenPipeError()
             k, v = line.decode('ascii').split(':', 1)
             headers[k.lower()] = v.strip()
 
@@ -181,6 +183,8 @@ class Request:
         if headers.get('transfer-encoding') == 'chunked':
             while True:
                 line = await reader.readline()
+                if len(line) == 0:
+                    raise BrokenPipeError()
                 if not line.endswith(b'\r\n'):
                     raise Exception('Unexpected end of chunked data')
                 size = int(line, 16)
