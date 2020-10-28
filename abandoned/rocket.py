@@ -210,19 +210,19 @@ class Rocket:
 
 
     def topic(self, channel: Channel, topic: str) -> None:
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def kick(self, channel: Channel, user: User) -> None:
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def away(self, is_away: bool) -> None:
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def join(self, channel: Channel) -> None:
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def invite(self, channel: Channel, user: Union[User, List[User]]) -> None:
-        raise NotImplemented()
+        raise NotImplementedError()
 
     @lru_cache()
     def get_members(self, id_: str) -> Set[str]:
@@ -254,7 +254,7 @@ class Rocket:
         raise KeyError()
 
     def get_ims(self) -> List[IM]:
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def get_user_by_name(self, name: str) -> User:
         for i in self._users.values():
@@ -275,10 +275,10 @@ class Rocket:
         return self._users[id_]
 
     def get_file(self, f: Union[FileShared, str]) -> File:
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def send_file(self, channel_id: str, filename: str) -> None:
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def send_message(self, channel_id: str, msg: str, action: bool) -> None:
         self._call_id += 1
