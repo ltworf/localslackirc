@@ -3,7 +3,7 @@ all:
 
 .PHONY: lint
 lint:
-	mypy --config-file mypy.conf irc.py
+	mypy --config-file mypy.conf *.py slackclient
 
 .PHONY: test
 test: lint
