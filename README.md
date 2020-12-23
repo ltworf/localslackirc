@@ -108,6 +108,7 @@ Alternatively if this method fails you can get one from Slack's web client
 * In your browser, login to slack and then open the web console.
 * Run this javascript code: `q=JSON.parse(localStorage.localConfig_v2)["teams"]; q[Object.keys(q)[0]]["token"]`
 * Copy the result, without quotes.
+* **Note**: If you are signed in to multiple teams this will not work, run in a private window for the team you want to set up. 
 
 Obtain a Slack cookie
 ---------------------
