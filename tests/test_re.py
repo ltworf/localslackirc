@@ -18,6 +18,7 @@
 
 import asyncio
 import unittest
+from pathlib import Path
 
 from irc import _MENTIONS_REGEXP, _CHANNEL_MENTIONS_REGEXP, _URL_REGEXP, Client, Provider, ClientSettings
 from slack import Channel, User
@@ -78,6 +79,7 @@ class TestMagic(unittest.TestCase):
             True,
             Provider.SLACK,
             set(),
+            Path('/tmp'),
         )
         self.client = Client(None, self.mock_client, settings)
 
