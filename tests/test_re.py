@@ -19,7 +19,7 @@
 import asyncio
 import unittest
 
-from irc import _MENTIONS_REGEXP, _CHANNEL_MENTIONS_REGEXP, _URL_REGEXP, Client, Provider
+from irc import _MENTIONS_REGEXP, _CHANNEL_MENTIONS_REGEXP, _URL_REGEXP, Client, Provider, ClientSettings
 from slack import Channel, User
 
 
@@ -73,7 +73,13 @@ class TestMagic(unittest.TestCase):
                 return User('0', 'LtWorf', None)
 
         self.mock_client = MockClient()
-        self.client = Client(None, self.mock_client, False, True, Provider.SLACK, set())
+        settings = ClientSettings(
+            False,
+            True,
+            Provider.SLACK,
+            set(),
+        )
+        self.client = Client(None, self.mock_client, settings)
 
     def test_no_replace(self):
         '''
