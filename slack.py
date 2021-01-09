@@ -817,10 +817,11 @@ class Slack:
             if t in USELESS_EVENTS:
                 continue
 
+            loadable_events = Union[TopicChange, FileShared, MessageBot, MessageEdit, MessageDelete, GroupJoined, Join, Leave]
             try:
-                ev: Optional[Union[TopicChange, FileShared, MessageBot, MessageEdit, MessageDelete, GroupJoined, Join, Leave]] = load(
+                ev: Optional[loadable_events] = load(
                     event,
-                    Union[TopicChange, FileShared, MessageBot, MessageEdit, MessageDelete, GroupJoined, Join, Leave]  # type: ignore
+                    loadable_events  # type: ignore
                 )
             except Exception:
                 ev = None

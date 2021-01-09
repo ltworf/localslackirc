@@ -88,32 +88,35 @@ class Provider(Enum):
 MPIM_HIDE_DELAY = datetime.timedelta(days=50)
 
 
+class ClientSettings(NamedTuple):
+    nouserlist: bool
+    autojoin: bool
+    provider: Provider
+    ignored_channels: Set[bytes]
+
+
 class Client:
     def __init__(
                     self,
                     s: asyncio.streams.StreamWriter,
                     sl_client: Union[slack.Slack],
-                    nouserlist: bool,
-                    autojoin: bool,
-                    provider: Provider,
-                    ignored_channels: Set[bytes],
+                    settings: ClientSettings,
+
     ):
         self.nick = b''
         self.username = b''
         self.realname = b''
-        self.parted_channels: Set[bytes] = ignored_channels
+        self.parted_channels: Set[bytes] = settings.ignored_channels
         self.hostname = gethostname().encode('utf8')
 
-        self.provider = provider
+        self.settings = settings
         self.s = s
         self.sl_client = sl_client
-        self.nouserlist = nouserlist
-        self.autojoin = autojoin
         self._usersent = False # Used to hold all events until the IRC client sends the initial USER message
         self._held_events: List[slack.SlackEvent] = []
         self._mentions_regex_cache: Dict[str, Optional[re.Pattern]] = {}  # Cache for the regexp to perform mentions. Key is channel id
 
-        if self.provider == Provider.SLACK:
+        if self.settings.provider == Provider.SLACK:
             self.substitutions = _SLACK_SUBSTITUTIONS
         else:
             self.substitutions = []
@@ -151,13 +154,12 @@ class Client:
         await self._sendreply(2, 'Your nickname must be: %s' % self.sl_client.login_info.self.name)
         await self._sendreply(Replies.RPL_LUSERCLIENT, 'There are 1 users and 0 services on 1 server')
 
-        if self.autojoin and not self.nouserlist:
+        if self.settings.autojoin and not self.settings.nouserlist:
             # We're about to load many users for each chan; instead of requesting each
             # profile on its own, batch load the full directory.
             await self.sl_client.prefetch_users()
 
-        if self.autojoin:
-
+        if self.settings.autojoin:
             mpim_cutoff = datetime.datetime.utcnow() - MPIM_HIDE_DELAY
 
             for sl_chan in await self.sl_client.channels():
@@ -214,7 +216,7 @@ class Client:
             await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to join channel: {channel_name}')
 
     async def _send_chan_info(self, channel_name: bytes, slchan: slack.Channel):
-        if not self.nouserlist:
+        if not self.settings.nouserlist:
             userlist: List[bytes] = []
             for i in await self.sl_client.get_members(slchan.id):
                 try:
@@ -233,7 +235,7 @@ class Client:
         self.s.write(b':%s!salvo@127.0.0.1 JOIN %s\n' % (self.nick, channel_name))
         await self.s.drain()
         await self._sendreply(Replies.RPL_TOPIC, slchan.real_topic, [channel_name])
-        await self._sendreply(Replies.RPL_NAMREPLY, b'' if self.nouserlist else users, ['=', channel_name])
+        await self._sendreply(Replies.RPL_NAMREPLY, b'' if self.settings.nouserlist else users, ['=', channel_name])
         await self._sendreply(Replies.RPL_ENDOFNAMES, 'End of NAMES list', [channel_name])
 
     async def _privmsghandler(self, cmd: bytes) -> None:
@@ -493,7 +495,7 @@ class Client:
         """
         for i in self.substitutions:
             msg = msg.replace(i[1], i[0])
-        if self.provider == Provider.SLACK:
+        if self.settings.provider == Provider.SLACK:
             msg = msg.replace('@here', '<!here>')
             msg = msg.replace('@channel', '<!channel>')
             msg = msg.replace('@everyone', '<!everyone>')
@@ -508,7 +510,7 @@ class Client:
             username = m.string[m.start():m.end()]
             if username.startswith('://'):
                 continue # Match inside a url
-            elif self.provider == Provider.SLACK:
+            elif self.settings.provider == Provider.SLACK:
                 msg = msg[0:m.start()] + '<@%s>' % (await self.sl_client.get_user_by_name(username)).id + msg[m.end():]
         return msg
 
@@ -525,7 +527,7 @@ class Client:
             )
 
         # Replace all channel mentions
-        if self.provider == Provider.SLACK:
+        if self.settings.provider == Provider.SLACK:
             while True:
                 mention = _CHANNEL_MENTIONS_REGEXP.search(i)
                 if not mention:
@@ -554,7 +556,7 @@ class Client:
 
         encoded = i.encode('utf8')
 
-        if self.provider == Provider.SLACK:
+        if self.settings.provider == Provider.SLACK:
             encoded = encoded.replace(b'<!here>', b'yelling [%s]' % self.nick)
             encoded = encoded.replace(b'<!channel>', b'YELLING LOUDER [%s]' % self.nick)
             encoded = encoded.replace(b'<!everyone>', b'DEAFENING YELL [%s]' % self.nick)
@@ -819,7 +821,13 @@ def main() -> None:
         sl_client = slack.Slack(token, cookie, previous_status)
         await sl_client.login()
 
-        ircclient = Client(writer, sl_client, nouserlist, autojoin, provider, ignored_channels)
+        clientsettings = ClientSettings(
+            nouserlist=nouserlist,
+            autojoin=autojoin,
+            provider=provider,
+            ignored_channels=ignored_channels,
+        )
+        ircclient = Client(writer, sl_client, clientsettings)
 
         try:
             from_irc_task = asyncio.create_task(from_irc(reader, ircclient))
