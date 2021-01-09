@@ -1,4 +1,4 @@
-.TH localslackirc 1 "Oct 27, 2020" "IRC gateway for slack"
+.TH localslackirc 1 "Jan 9, 2021" "IRC gateway for slack"
 .SH NAME
 localslackirc
 \- Creates an IRC server running locally, which acts as a gateway to slack for one user.
@@ -42,6 +42,13 @@ Allow listening on addresses that do not start with 127.*
 .br
 This is potentially dangerous.
 .TP
+.B --downloads-directory
+Where to create files for automatic downloads. It defaults to /tmp.
+.br
+The directory must exist and be writeable. Files will automatically be downloaded in it.
+.br
+No cleaning is automatically performed on it by localslackirc.
+.TP
 .B -f --status-file
 Path to the file keeping the status. When this is set, it allows for the history to be loaded on start.
 .TP
@@ -71,6 +78,9 @@ The following environment variables are used. They override command line setting
 .TP
 .B COOKIE
 Alternative to --cookiefile
+.TP
+.B DOWNLOADS_DIRECTORY
+Alternative to --downloads-directory
 .TP
 .B PORT
 Alternative to --port
