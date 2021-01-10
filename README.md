@@ -113,7 +113,7 @@ Alternatively if this method fails you can get one from Slack's web client
 Obtain a Slack cookie
 ---------------------
 
-This step is only needed if your token starts with `xoxc-`.
+This step is only needed if your token starts with `xoxc-`. This option is available since release 1.7.
 
 * Run this javascript code:
 
@@ -143,6 +143,7 @@ formData.append('token', authToken);
 * From that request, copy the "Cookie" header.
 * The values in the field look like `key1=value1; key2=value2; key3=value3;`
 * Get the string `d=XXXXXX;` (where XXX is the secret) and that is your cookie value. It is important to copy the `d=` part and the final `;`.
+* Save the string in its own file (different than the token file).
 
 
 Using localslackirc
