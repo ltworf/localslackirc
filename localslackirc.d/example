@@ -48,3 +48,10 @@ AUTOJOIN=true
 
 # Where to create files for automatic downloads
 #DOWNLOADS_DIRECTORY=/tmp/
+
+# Maximum amount of lines for formatted messages
+# (the ones with ```) to be allowed within IRC.
+# Messages exceeding the limit will be stored as
+# text files in DOWNLOADS_DIRECTORY.
+# 0 means no limit
+#FORMATTED_MAX_LINES = 0
