@@ -45,3 +45,6 @@ AUTOJOIN=true
 # Ignored unless autojoin is set
 # They can be joined again later on with a /join #channel command
 #IGNORED_CHANNELS=#general,#chat
+
+# Where to create files for automatic downloads
+#DOWNLOADS_DIRECTORY=/tmp/

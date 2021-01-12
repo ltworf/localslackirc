@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # localslackirc
-# Copyright (C) 2018-2020 Salvo "LtWorf" Tomaselli
+# Copyright (C) 2018-2021 Salvo "LtWorf" Tomaselli
 #
 # localslackirc is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -93,6 +93,17 @@ class ClientSettings(NamedTuple):
     autojoin: bool
     provider: Provider
     ignored_channels: Set[bytes]
+    downloads_directory: Path
+
+    def verify(self) -> Optional[str]:
+        '''
+        Make sure that the configuration is correct.
+
+        In that case return None. Otherwise an error string.
+        '''
+        if not self.downloads_directory.is_dir():
+            return f'{self.downloads_directory} is not a directory'
+        return None
 
 
 class Client:
@@ -734,6 +745,8 @@ def main() -> None:
                                 help='Set a suffix for the syslog identifier')
     parser.add_argument('--ignored-channels', type=str, action='store', dest='ignored_channels', default='',
                                 help='Comma separated list of channels to not join when autojoin is enabled')
+    parser.add_argument('--downloads-directory', type=str, action='store', dest='downloads_directory', default='/tmp',
+                                help='Where to create files for automatic downloads')
 
     args = parser.parse_args()
 
@@ -769,6 +782,10 @@ def main() -> None:
     else:
         ignored_channels = set()
 
+    if 'DOWNLOADS_DIRECTORY' in environ:
+        downloads_directory = Path(environ['DOWNLOADS_DIRECTORY'])
+    else:
+        downloads_directory = Path(args.downloads_directory)
 
     if 'TOKEN' in environ:
         token = environ['TOKEN']
@@ -826,7 +843,11 @@ def main() -> None:
             autojoin=autojoin,
             provider=provider,
             ignored_channels=ignored_channels,
+            downloads_directory=downloads_directory,
         )
+        verify = clientsettings.verify()
+        if verify is not None:
+            exit(verify)
         ircclient = Client(writer, sl_client, clientsettings)
 
         try:
