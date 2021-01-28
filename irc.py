@@ -607,7 +607,12 @@ class Client:
 
                 if formatted.count('\n') > self.settings.formatted_max_lines:
                     import tempfile
-                    with tempfile.NamedTemporaryFile(mode='wt', suffix='.txt', prefix='localslackirc-attachment-', delete=False) as tmpfile:
+                    with tempfile.NamedTemporaryFile(
+                                mode='wt',
+                                dir=self.settings.downloads_directory,
+                                suffix='.txt',
+                                prefix='localslackirc-attachment-',
+                                delete=False) as tmpfile:
                         tmpfile.write(formatted)
                         text = prefix + f'\n === PREFORMATTED TEXT AT file://{tmpfile.name}\n' + suffix
                 else:
