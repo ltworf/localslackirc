@@ -594,7 +594,28 @@ class Client:
             # Ignoring messages, channel was left on IRC
             return
 
-        for msg in (prefix + sl_ev.text).split('\n'):
+        text = sl_ev.text
+        # Store long formatted text into txt files
+        if self.settings.formatted_max_lines:
+            try:
+                fmtstart = text.index('```')
+                fmtend = text.index('```', fmtstart + 1)
+
+                formatted = text[fmtstart + 3:fmtend]
+                prefix = text[0:fmtstart]
+                suffix = text[fmtend + 3:]
+
+                if formatted.count('\n') > self.settings.formatted_max_lines:
+                    import tempfile
+                    with tempfile.NamedTemporaryFile(mode='wt', suffix='.txt', prefix='localslackirc-attachment-', delete=False) as tmpfile:
+                        tmpfile.write(formatted)
+                        text = prefix + f'\n === PREFORMATTED TEXT AT file://{tmpfile.name}\n' + suffix
+                else:
+                    text = '```'.join((prefix, formatted, suffix))
+            except ValueError:
+                pass
+
+        for msg in (prefix + text).split('\n'):
             if not msg:
                 continue
             i = await self.parse_message(msg)
