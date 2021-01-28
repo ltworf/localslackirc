@@ -46,12 +46,13 @@ AUTOJOIN=true
 # They can be joined again later on with a /join #channel command
 #IGNORED_CHANNELS=#general,#chat
 
-# Where to create files for automatic downloads
+# Where to create files for automatic downloads.
+# Make sure it is writable and has space
 #DOWNLOADS_DIRECTORY=/tmp/
 
-# Maximum amount of lines for formatted messages
-# (the ones with ```) to be allowed within IRC.
-# Messages exceeding the limit will be stored as
-# text files in DOWNLOADS_DIRECTORY.
+# Maximum amount of lines for formatted messages # (the ones with ```) to be
+# allowed within IRC.
+# Messages exceeding the limit will be stored as # text files in
+# DOWNLOADS_DIRECTORY.
 # 0 means no limit
-#FORMATTED_MAX_LINES = 0
+#FORMATTED_MAX_LINES=0
