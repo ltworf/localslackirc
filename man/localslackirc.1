@@ -1,4 +1,4 @@
-.TH localslackirc 1 "Jan 9, 2021" "IRC gateway for slack"
+.TH localslackirc 1 "Jan 26, 2021" "IRC gateway for slack"
 .SH NAME
 localslackirc
 \- Creates an IRC server running locally, which acts as a gateway to slack for one user.
@@ -48,6 +48,21 @@ Where to create files for automatic downloads. It defaults to /tmp.
 The directory must exist and be writeable. Files will automatically be downloaded in it.
 .br
 No cleaning is automatically performed on it by localslackirc.
+.TP
+.B --formatted-max-lines
+Maximum amount of lines in a formatted text to send to the client rather than store in a file.
+.br
+When people send logs or otherwise long text content as formatted text, the end result is usually hardly readable in IRC, having the username of the sender and the time in each line.
+.br
+This option sets a limit for formatted content to be sent as text.
+.br
+When the limit is exceeded, the formatted text will be stored as a .txt file instead and its URL will be shown in the IRC client.
+.br
+The files will be saved in the path specified by "downloads directory".
+.br
+The files are not automatically removed.
+.br
+Setting to 0 (the default) will send everything to the client and create no text files.
 .TP
 .B -f --status-file
 Path to the file keeping the status. When this is set, it allows for the history to be loaded on start.

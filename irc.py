@@ -94,6 +94,7 @@ class ClientSettings(NamedTuple):
     provider: Provider
     ignored_channels: Set[bytes]
     downloads_directory: Path
+    formatted_max_lines: int = 0
 
     def verify(self) -> Optional[str]:
         '''
@@ -593,7 +594,33 @@ class Client:
             # Ignoring messages, channel was left on IRC
             return
 
-        for msg in (prefix + sl_ev.text).split('\n'):
+        text = sl_ev.text
+        # Store long formatted text into txt files
+        if self.settings.formatted_max_lines:
+            try:
+                fmtstart = text.index('```')
+                fmtend = text.index('```', fmtstart + 1)
+
+                formatted = text[fmtstart + 3:fmtend]
+                prefix = text[0:fmtstart]
+                suffix = text[fmtend + 3:]
+
+                if formatted.count('\n') > self.settings.formatted_max_lines:
+                    import tempfile
+                    with tempfile.NamedTemporaryFile(
+                                mode='wt',
+                                dir=self.settings.downloads_directory,
+                                suffix='.txt',
+                                prefix='localslackirc-attachment-',
+                                delete=False) as tmpfile:
+                        tmpfile.write(formatted)
+                        text = prefix + f'\n === PREFORMATTED TEXT AT file://{tmpfile.name}\n' + suffix
+                else:
+                    text = '```'.join((prefix, formatted, suffix))
+            except ValueError:
+                pass
+
+        for msg in (prefix + text).split('\n'):
             if not msg:
                 continue
             i = await self.parse_message(msg)
@@ -634,6 +661,7 @@ class Client:
         if not self._usersent:
             self._held_events.append(sl_ev)
             return
+
         if isinstance(sl_ev, slack.MessageDelete):
             await self._message(sl_ev, '[deleted]')
         elif isinstance(sl_ev, slack.Message):
@@ -747,6 +775,9 @@ def main() -> None:
                                 help='Comma separated list of channels to not join when autojoin is enabled')
     parser.add_argument('--downloads-directory', type=str, action='store', dest='downloads_directory', default='/tmp',
                                 help='Where to create files for automatic downloads')
+    parser.add_argument('--formatted-max-lines', type=int, action='store', dest='formatted_max_lines', default=0,
+                                help='Maximum amount of lines in a formatted text to send to the client rather than store in a file.\n'
+                                'Setting to 0 (the default) will send everything to the client')
 
     args = parser.parse_args()
 
@@ -786,6 +817,14 @@ def main() -> None:
         downloads_directory = Path(environ['DOWNLOADS_DIRECTORY'])
     else:
         downloads_directory = Path(args.downloads_directory)
+
+    if 'FORMATTED_MAX_LINES' in environ:
+        try:
+            formatted_max_lines = int(environ['FORMATTED_MAX_LINES'])
+        except:
+            exit(f'{environ["FORMATTED_MAX_LINES"]} is not an int')
+    else:
+        formatted_max_lines = args.formatted_max_lines
 
     if 'TOKEN' in environ:
         token = environ['TOKEN']
@@ -844,6 +883,7 @@ def main() -> None:
             provider=provider,
             ignored_channels=ignored_channels,
             downloads_directory=downloads_directory,
+            formatted_max_lines=formatted_max_lines,
         )
         verify = clientsettings.verify()
         if verify is not None:
