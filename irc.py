@@ -94,6 +94,7 @@ class ClientSettings(NamedTuple):
     provider: Provider
     ignored_channels: Set[bytes]
     downloads_directory: Path
+    formatted_max_lines: int = 0
 
     def verify(self) -> Optional[str]:
         '''
@@ -747,6 +748,9 @@ def main() -> None:
                                 help='Comma separated list of channels to not join when autojoin is enabled')
     parser.add_argument('--downloads-directory', type=str, action='store', dest='downloads_directory', default='/tmp',
                                 help='Where to create files for automatic downloads')
+    parser.add_argument('--formatted-max-lines', type=int, action='store', dest='formatted_max_lines', default=0,
+                                help='Maximum amount of lines in a formatted text to send to the client rather than store in a file.\n'
+                                'Setting to 0 (the default) will send everything to the client')
 
     args = parser.parse_args()
 
@@ -786,6 +790,14 @@ def main() -> None:
         downloads_directory = Path(environ['DOWNLOADS_DIRECTORY'])
     else:
         downloads_directory = Path(args.downloads_directory)
+
+    if 'FORMATTED_MAX_LINES' in environ:
+        try:
+            formatted_max_lines = int(environ['FORMATTED_MAX_LINES'])
+        except:
+            exit(f'{environ["FORMATTED_MAX_LINES"]} is not an int')
+    else:
+        formatted_max_lines = args.formatted_max_lines
 
     if 'TOKEN' in environ:
         token = environ['TOKEN']
@@ -844,6 +856,7 @@ def main() -> None:
             provider=provider,
             ignored_channels=ignored_channels,
             downloads_directory=downloads_directory,
+            formatted_max_lines=formatted_max_lines,
         )
         verify = clientsettings.verify()
         if verify is not None:
