@@ -656,6 +656,7 @@ class Client:
         if not self._usersent:
             self._held_events.append(sl_ev)
             return
+
         if isinstance(sl_ev, slack.MessageDelete):
             await self._message(sl_ev, '[deleted]')
         elif isinstance(sl_ev, slack.Message):
