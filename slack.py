@@ -1,5 +1,5 @@
 # localslackirc
-# Copyright (C) 2018-2020 Salvo "LtWorf" Tomaselli
+# Copyright (C) 2018-2021 Salvo "LtWorf" Tomaselli
 #
 # localslackirc is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -405,10 +405,16 @@ class Slack:
         dt = datetime.datetime.fromtimestamp(last_timestamp)
         log(f'Last known timestamp {dt}')
 
-        for channel in await self.channels():
-            if not channel.is_member:
-                continue
-            log(f'Downloading logs from channel {channel.name_normalized}')
+        chats: Sequence[Union[IM, Channel]] = []
+        chats += await self.channels() + await self.get_ims()  # type: ignore
+        for channel in chats:
+            if isinstance(channel, Channel):
+                if not channel.is_member:
+                    continue
+
+                log(f'Downloading logs from channel {channel.name_normalized}')
+            else:
+                log(f'Downloading logs from IM {channel.user}')
 
             cursor = None
             while True: # Loop to iterate the cursor
