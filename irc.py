@@ -148,7 +148,7 @@ class Client:
 
         extratokens.insert(0, self.nick)
 
-        self.s.write(b':%s %03d %s :%s\n' % (
+        self.s.write(b':%s %03d %s :%s\r\n' % (
             self.hostname,
             codeint,
             b' '.join(i if isinstance(i, bytes) else i.encode('utf8') for i in extratokens),
