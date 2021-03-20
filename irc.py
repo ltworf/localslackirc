@@ -148,7 +148,7 @@ class Client:
 
         extratokens.insert(0, self.nick)
 
-        self.s.write(b':%s %03d %s :%s\n' % (
+        self.s.write(b':%s %03d %s :%s\r\n' % (
             self.hostname,
             codeint,
             b' '.join(i if isinstance(i, bytes) else i.encode('utf8') for i in extratokens),
@@ -200,7 +200,7 @@ class Client:
 
     async def _pinghandler(self, cmd: bytes) -> None:
         _, lbl = cmd.split(b' ', 1)
-        self.s.write(b':%s PONG %s %s\n' % (self.hostname, self.hostname, lbl))
+        self.s.write(b':%s PONG %s %s\r\n' % (self.hostname, self.hostname, lbl))
         await self.s.drain()
 
     async def _joinhandler(self, cmd: bytes) -> None:
@@ -244,7 +244,7 @@ class Client:
 
             users = b' '.join(userlist)
 
-        self.s.write(b':%s!salvo@127.0.0.1 JOIN %s\n' % (self.nick, channel_name))
+        self.s.write(b':%s!salvo@127.0.0.1 JOIN %s\r\n' % (self.nick, channel_name))
         await self.s.drain()
         await self._sendreply(Replies.RPL_TOPIC, slchan.real_topic, [channel_name])
         await self._sendreply(Replies.RPL_NAMREPLY, b'' if self.settings.nouserlist else users, ['=', channel_name])
@@ -466,7 +466,7 @@ class Client:
         await self._sendreply(Replies.RPL_ENDOFWHO, 'End of WHO list', [name])
 
     async def sendmsg(self, from_: bytes, to: bytes, message: bytes) -> None:
-        self.s.write(b':%s!salvo@127.0.0.1 PRIVMSG %s :%s\n' % (
+        self.s.write(b':%s!salvo@127.0.0.1 PRIVMSG %s :%s\r\n' % (
             from_,
             to, #private message, or a channel
             message,
@@ -652,9 +652,9 @@ class Client:
         name = user.name.encode('utf8')
         rname = user.real_name.replace(' ', '_').encode('utf8')
         if joined:
-            self.s.write(b':%s!%s@127.0.0.1 JOIN :%s\n' % (name, rname, dest))
+            self.s.write(b':%s!%s@127.0.0.1 JOIN :%s\r\n' % (name, rname, dest))
         else:
-            self.s.write(b':%s!%s@127.0.0.1 PART %s\n' % (name, rname, dest))
+            self.s.write(b':%s!%s@127.0.0.1 PART %s\r\n' % (name, rname, dest))
         await self.s.drain()
 
     async def slack_event(self, sl_ev: slack.SlackEvent) -> None:
