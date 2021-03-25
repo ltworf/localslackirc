@@ -62,4 +62,4 @@ def seddiff(a: str, b: str) -> str:
         px = None
     else:
         px = -postfix
-    return 's/%s/%s/' % (a[prefix:px], b[prefix:px])
+    return 's/%s/%s/' % (a[prefix:px] or '$', b[prefix:px])

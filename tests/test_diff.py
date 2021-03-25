@@ -44,3 +44,6 @@ class TestDiff(unittest.TestCase):
         assert seddiff('vado a dormire al mare', 'vado a nuotare al mare') == 's/dormire/nuotare/'
         assert seddiff('ciae a tutti', 'ciao a tutti') == 's/ciae/ciao/'
         assert seddiff('ciae å tutti', 'ciao a tutti') == 's/ciae å/ciao a/'
+
+    def test_append(self):
+        assert seddiff('XYZ', 'XYZ (meaning "bla bla bla")') == 's/$/(meaning "bla bla bla")/'
