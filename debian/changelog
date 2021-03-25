@@ -1,6 +1,7 @@
 localslackirc (1.12-1) UNRELEASED; urgency=medium
 
   * New upstream release
+  * Depend on python3-emoji
 
  -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Tue, 27 Oct 2020 19:17:11 +0100
 
