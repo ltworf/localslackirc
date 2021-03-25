@@ -34,6 +34,8 @@ from socket import gethostname
 import sys
 import time
 
+import emoji
+
 import slack
 from log import *
 
@@ -565,6 +567,9 @@ class Client:
 
         for s in self.substitutions:
             i = i.replace(s[0], s[1])
+
+        # Replace emoji codes (e.g. :thumbsup:)
+        i = emoji.emojize(i, use_aliases=True)
 
         encoded = i.encode('utf8')
 
