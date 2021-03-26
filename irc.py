@@ -246,7 +246,7 @@ class Client:
 
             users = b' '.join(userlist)
 
-        self.s.write(b':%s!salvo@127.0.0.1 JOIN %s\r\n' % (self.nick, channel_name))
+        self.s.write(b':%s!%s@127.0.0.1 JOIN %s\r\n' % (self.nick, self.nick, channel_name))
         await self.s.drain()
         await self._sendreply(Replies.RPL_TOPIC, slchan.real_topic, [channel_name])
         await self._sendreply(Replies.RPL_NAMREPLY, b'' if self.settings.nouserlist else users, ['=', channel_name])
@@ -468,7 +468,8 @@ class Client:
         await self._sendreply(Replies.RPL_ENDOFWHO, 'End of WHO list', [name])
 
     async def sendmsg(self, from_: bytes, to: bytes, message: bytes) -> None:
-        self.s.write(b':%s!salvo@127.0.0.1 PRIVMSG %s :%s\r\n' % (
+        self.s.write(b':%s!%s@127.0.0.1 PRIVMSG %s :%s\r\n' % (
+            from_,
             from_,
             to, #private message, or a channel
             message,
