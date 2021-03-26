@@ -254,7 +254,8 @@ class Client:
 
     async def _privmsghandler(self, cmd: bytes) -> None:
         _, dest, msg = cmd.split(b' ', 2)
-        msg = msg.lstrip(b':')
+        if msg.startswith(b':'):
+            msg = msg[1:]
 
         # Handle sending "/me does something"
         # b'PRIVMSG #much_private :\x01ACTION saluta tutti\x01'
