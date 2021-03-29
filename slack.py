@@ -216,10 +216,19 @@ class FileShared:
 class MessageBot:
     type: Literal['message']
     subtype: Literal['bot_message']
-    text: str
+    _text: str = field(metadata={'name': 'text'})
     username: str
     channel: str
     bot_id: Optional[str] = None
+    attachments: List[Dict[str, Any]] = field(default_factory=list)
+    
+    @property
+    def text(self):
+        r = [self._text]
+        for i in self.attachments:
+            if 'text' in i:
+                r.append(i['text'])
+        return '\n'.join(r)
 
 
 class User(NamedTuple):
