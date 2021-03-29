@@ -474,7 +474,7 @@ class Slack:
                     elif isinstance(msg, HistoryBotMessage):
                         self._internalevents.append(MessageBot(
                             type='message', subtype='bot_message',
-                            text=msg.text,
+                            _text=msg.text,
                             username=msg.username,
                             channel=channel.id,
                             bot_id=msg.bot_id,
