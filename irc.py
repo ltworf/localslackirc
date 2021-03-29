@@ -670,7 +670,7 @@ class Client:
             return
 
         if isinstance(sl_ev, slack.MessageDelete):
-            await self._message(sl_ev, '[deleted]')
+            await self._message(sl_ev, '[deleted] ')
         elif isinstance(sl_ev, slack.Message):
             await self._message(sl_ev)
         elif isinstance(sl_ev, slack.ActionMessage):
@@ -679,7 +679,7 @@ class Client:
             if sl_ev.is_changed:
                 await self._message(sl_ev.diffmsg)
         elif isinstance(sl_ev, slack.MessageBot):
-            await self._message(sl_ev, '[%s]' % sl_ev.username)
+            await self._message(sl_ev, '[%s] ' % sl_ev.username)
         elif isinstance(sl_ev, slack.FileShared):
             f = await self.sl_client.get_file(sl_ev)
             await self._message(f.announce())
