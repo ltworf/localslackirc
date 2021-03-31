@@ -228,6 +228,8 @@ class MessageBot:
         for i in self.attachments:
             if 'text' in i:
                 r.append(i['text'])
+            elif 'fallback' in i:
+                r.append(i['fallback'])
         return '\n'.join(r)
 
 

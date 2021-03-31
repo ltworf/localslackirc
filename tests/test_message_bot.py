@@ -34,9 +34,30 @@ with_attachments = {
 }
 
 
+with_attachments_fallback_instead_of_text = {
+    "type": "message",
+    "subtype": "bot_message",
+    "text": "This is a message with attachments",
+    "username": "BotExample",
+    "channel": "XYZ123456",
+    "bot_id": "ABC123456",
+    "attachments": [
+        {"fallback": "First attachment"},
+        {"fallback": "Second attachment"},
+    ],
+}
+
+
 class TestMessageBot(unittest.TestCase):
     def test_message_with_attachments(self):
         msg = load(with_attachments, MessageBot)
+        assert (
+            msg.text
+            == "This is a message with attachments\nFirst attachment\nSecond attachment"
+        )
+
+    def test_attachment_with_fallback(self):
+        msg = load(with_attachments_fallback_instead_of_text, MessageBot)
         assert (
             msg.text
             == "This is a message with attachments\nFirst attachment\nSecond attachment"
