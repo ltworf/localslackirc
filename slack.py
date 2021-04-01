@@ -226,10 +226,13 @@ class MessageBot:
     def text(self):
         r = [self._text]
         for i in self.attachments:
+            t = ""
             if 'text' in i:
-                r.append(i['text'])
+                t = i['text']
             elif 'fallback' in i:
-                r.append(i['fallback'])
+                t = i['fallback']
+            for line in t.split("\n"):
+                r.append("| " + line)
         return '\n'.join(r)
 
 

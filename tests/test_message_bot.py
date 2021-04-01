@@ -30,6 +30,12 @@ template = {
 
 
 class TestMessageBot(unittest.TestCase):
+    def test_without_attachments(self):
+        event = template.copy()
+        event.update({"text": "Message without attachments"})
+        msg = load(event, MessageBot)
+        self.assertEqual(msg.text, "Message without attachments")
+
     def test_message_with_attachments(self):
         event = template.copy()
         event.update({
@@ -41,7 +47,7 @@ class TestMessageBot(unittest.TestCase):
         msg = load(event, MessageBot)
         assert (
             msg.text
-            == "This is a message with attachments\nFirst attachment\nSecond attachment"
+            == "This is a message with attachments\n| First attachment\n| Second attachment"
         )
 
     def test_attachment_with_fallback(self):
@@ -55,5 +61,21 @@ class TestMessageBot(unittest.TestCase):
         msg = load(event, MessageBot)
         assert (
             msg.text
-            == "This is a message with attachments\nFirst attachment\nSecond attachment"
+            == "This is a message with attachments\n| First attachment\n| Second attachment"
         )
+
+    def test_multiline_attachment_text(self):
+        event = template.copy()
+        event.update({
+            "attachments": [
+                {"text": "code example:\n```\nprint('Hello world')\n```"},
+            ]
+        })
+        msg = load(event, MessageBot)
+        self.assertEqual(msg.text.split("\n"), [
+            "This is a message with attachments",
+            "| code example:",
+            "| ```",
+            "| print('Hello world')",
+            "| ```"
+        ])
