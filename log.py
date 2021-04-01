@@ -17,16 +17,20 @@
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
 from os import isatty
-from syslog import LOG_INFO, syslog
+from syslog import LOG_INFO, LOG_DEBUG, syslog
 from syslog import openlog as _openlog
+from typing import Union
 
 __all__ = [
     'log',
-    'openlog'
+    'openlog',
+    'set_debug',
+    'debug',
 ]
 
 
 tty = isatty(1) and isatty(2)
+debug_enabled = False
 
 
 def openlog(suffix: str) -> None:
@@ -50,3 +54,16 @@ def log(*args) -> None:
         print(*args)
         return
     syslog(LOG_INFO, ' '.join(str(i) for i in args))
+
+
+def set_debug(state: Union[str, bool]) -> None:
+    global debug_enabled
+    debug_enabled = bool(state)
+
+
+def debug(*args) -> None:
+    if not debug_enabled:
+        return
+    if tty:
+        print(*args)
+    syslog(LOG_DEBUG, ' '.join(str(i) for i in args))

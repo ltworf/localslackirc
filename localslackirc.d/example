@@ -56,3 +56,6 @@ AUTOJOIN=true
 # DOWNLOADS_DIRECTORY.
 # 0 means no limit
 #FORMATTED_MAX_LINES=0
+
+# Debugging (disabled by default)
+# DEBUG=1
