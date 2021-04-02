@@ -13,7 +13,7 @@ Rules-Requires-Root: no
 
 Package: localslackirc
 Architecture: all
-Depends: ${misc:Depends}, ${python3:Depends}, python3-typedload (>= 2),
+Depends: ${misc:Depends}, ${python3:Depends}, python3-typedload (>= 2.6),
  python3-websockets
 Recommends:
  python3-emoji
