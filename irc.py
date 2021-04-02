@@ -34,7 +34,13 @@ from socket import gethostname
 import sys
 import time
 
-import emoji
+
+try:
+    from emoji import emojize
+except ModuleNotFoundError:
+    def emojize(string:str, use_aliases:bool=False, delimiters: Tuple[str,str]=(':', ':')) -> str:
+        return string
+
 
 import slack
 from log import *
@@ -571,7 +577,7 @@ class Client:
             i = i.replace(s[0], s[1])
 
         # Replace emoji codes (e.g. :thumbsup:)
-        i = emoji.emojize(i, use_aliases=True)
+        i = emojize(i, use_aliases=True)
 
         encoded = i.encode('utf8')
 
