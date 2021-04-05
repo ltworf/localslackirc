@@ -564,17 +564,30 @@ class Client:
                     i[mention.span()[1]:]
                 )
 
+            bottom = ""
+            refs = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
+            refn = 1
             while True:
                 url = _URL_REGEXP.search(i)
                 if not url:
                     break
                 schema, path, label = url.groups()
-                i = (
-                    i[0:url.span()[0]] +
-                    f'{schema}://{path}' +
-                    (f' ({label})' if label else '') +
-                    i[url.span()[1]:]
-                )
+                if label:
+                    ref = str(refn).translate(refs)
+                    refn += 1
+                    i = (
+                        i[0:url.span()[0]] +
+                        (f'{label}{ref}' if label else '') +
+                        i[url.span()[1]:]
+                    )
+                    bottom += f'\n  {ref} {schema}://{path}'
+                else:
+                    i = (
+                        i[0:url.span()[0]] +
+                        f'{schema}://{path}' +
+                        i[url.span()[1]:]
+                    )
+            i += bottom
 
         for s in self.substitutions:
             i = i.replace(s[0], s[1])
@@ -636,10 +649,10 @@ class Client:
             except ValueError:
                 pass
 
-        for msg in (prefix + text).split('\n'):
-            if not msg:
+        lines = await self.parse_message(prefix + text)
+        for i in lines.split(b'\n'):
+            if not i:
                 continue
-            i = await self.parse_message(msg)
             if isinstance(sl_ev, slack.ActionMessage):
                 i = b'\x01ACTION ' + i + b'\x01'
             await self.sendmsg(
