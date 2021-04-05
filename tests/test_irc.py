@@ -1,5 +1,5 @@
 # localslackirc
-# Copyright (C) 2020 Salvo "LtWorf" Tomaselli
+# Copyright (C) 2021 Antonio Terceiro
 #
 # localslackirc is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,16 +13,20 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-# author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
-import unittest
+from unittest import IsolatedAsyncioTestCase, mock
+from irc import Client, Provider
 
-from .test_re import *
-from .test_diff import *
-from .test_executable import *
-from .test_message_bot import *
-from .test_irc import *
+class TestIRC(IsolatedAsyncioTestCase):
+    def setUp(self):
+        stream_writer = mock.AsyncMock()
+        slack_client = mock.AsyncMock()
+        settings = mock.MagicMock()
+        settings.provider = Provider.SLACK
+        self.client = Client(stream_writer, slack_client, settings)
 
-if __name__ == '__main__':
-    unittest.main()
+
+class TestParseMessage(TestIRC):
+    async def test_simple_message(self):
+        msg = await self.client.parse_message("hello world")
+        self.assertEqual(msg, b"hello world")
