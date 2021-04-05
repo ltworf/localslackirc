@@ -19,45 +19,40 @@ import unittest
 from typedload import load
 from slack import MessageBot
 
-
-with_attachments = {
+template = {
     "type": "message",
     "subtype": "bot_message",
     "text": "This is a message with attachments",
     "username": "BotExample",
     "channel": "XYZ123456",
     "bot_id": "ABC123456",
-    "attachments": [
-        {"text": "First attachment"},
-        {"text": "Second attachment"},
-    ],
-}
-
-
-with_attachments_fallback_instead_of_text = {
-    "type": "message",
-    "subtype": "bot_message",
-    "text": "This is a message with attachments",
-    "username": "BotExample",
-    "channel": "XYZ123456",
-    "bot_id": "ABC123456",
-    "attachments": [
-        {"fallback": "First attachment"},
-        {"fallback": "Second attachment"},
-    ],
 }
 
 
 class TestMessageBot(unittest.TestCase):
     def test_message_with_attachments(self):
-        msg = load(with_attachments, MessageBot)
+        event = template.copy()
+        event.update({
+            "attachments": [
+                {"text": "First attachment"},
+                {"text": "Second attachment"},
+            ]
+        })
+        msg = load(event, MessageBot)
         assert (
             msg.text
             == "This is a message with attachments\nFirst attachment\nSecond attachment"
         )
 
     def test_attachment_with_fallback(self):
-        msg = load(with_attachments_fallback_instead_of_text, MessageBot)
+        event = template.copy()
+        event.update({
+            "attachments": [
+                {"fallback": "First attachment"},
+                {"fallback": "Second attachment"},
+            ],
+        })
+        msg = load(event, MessageBot)
         assert (
             msg.text
             == "This is a message with attachments\nFirst attachment\nSecond attachment"
