@@ -782,6 +782,8 @@ def main() -> None:
                                 help='allow non 127. addresses, this is potentially dangerous')
     parser.add_argument('-f', '--status-file', type=str, action='store', dest='status_file', required=False, default=None,
                                 help='Path to the file to keep the internal status.')
+    parser.add_argument('-d', '--debug', action='store_true', dest='debug', required=False, default=False,
+                                help='Enables debugging logs.')
     parser.add_argument('--log-suffix', type=str, action='store', dest='log_suffix', default='',
                                 help='Set a suffix for the syslog identifier')
     parser.add_argument('--ignored-channels', type=str, action='store', dest='ignored_channels', default='',
@@ -795,6 +797,7 @@ def main() -> None:
     args = parser.parse_args()
 
     openlog(environ.get('LOG_SUFFIX', args.log_suffix))
+    set_debug(environ.get('DEBUG', args.debug))
 
     status_file_str: Optional[str] = environ.get('STATUS_FILE', args.status_file)
     status_file = None
