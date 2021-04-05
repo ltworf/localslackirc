@@ -834,6 +834,7 @@ class Slack:
             if t in USELESS_EVENTS:
                 continue
 
+            debug(event)
             loadable_events = Union[TopicChange, FileShared, MessageBot, MessageEdit, MessageDelete, GroupJoined, Join, Leave]
             try:
                 ev: Optional[loadable_events] = load(
