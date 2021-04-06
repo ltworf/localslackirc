@@ -50,6 +50,7 @@ class TestDiff(unittest.TestCase):
         assert seddiff('mangio del formaggio e pere', 'mangio del formaggio con le pere') == 's/formaggio e pere/formaggio con le pere/'
         assert seddiff('mangio del formaggio e pere per cena', 'mangio del formaggio con le pere per cena') == 's/formaggio e pere/formaggio con le pere/'
         assert seddiff('mare blu', 'il mare blu') == 's/mare/il mare/'
+        assert seddiff('mare, blu', 'il mare, blu') == 's/mare/il mare/'
 
     def test_append(self):
         assert seddiff('XYZ', 'XYZ (meaning "bla bla bla")') == 's/$/(meaning "bla bla bla")/'
