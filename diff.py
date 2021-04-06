@@ -17,10 +17,25 @@
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
 
+from typing import Iterable
 from itertools import count
 
+__all__ = [
+    'seddiff',
+]
 
 _SEPARATORS = set(' .,:;\t\n()[]{}')
+
+
+def wordsplit(word: str) -> Iterable[str]:
+    bucket = ''
+    for i in word:
+        if i in _SEPARATORS:
+            yield bucket
+            bucket = ''
+        bucket += i
+    if bucket:
+        yield bucket
 
 
 def seddiff(a: str, b: str) -> str:
@@ -34,8 +49,8 @@ def seddiff(a: str, b: str) -> str:
     if a == b:
         return ''
 
-    l1 = a.split(' ')
-    l2 = b.split(' ')
+    l1 = list(wordsplit(a))
+    l2 = list(wordsplit(b))
 
     for prefix in count():
         try:
@@ -58,7 +73,4 @@ def seddiff(a: str, b: str) -> str:
         postfix -= 1
     px = None if postfix == 0 else -postfix
 
-    print (l1, l2, prefix, postfix)
-    print ('s/%s/%s/' % (' '.join(l1[prefix:px]) or '$', ' '.join(l2[prefix:px])))
-
-    return 's/%s/%s/' % (' '.join(l1[prefix:px]) or '$', ' '.join(l2[prefix:px]))
+    return 's/%s/%s/' % (''.join(l1[prefix:px]).strip() or '$', ''.join(l2[prefix:px]).strip())
