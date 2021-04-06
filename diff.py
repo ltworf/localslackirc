@@ -66,8 +66,6 @@ def seddiff(a: str, b: str) -> str:
             break
     postfix -= 1
 
-
-
     if prefix and postfix and len(l1) != len(l2):
         prefix -= 1
         postfix -= 1
