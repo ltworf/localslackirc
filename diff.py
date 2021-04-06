@@ -1,5 +1,5 @@
 # localslackirc
-# Copyright (C) 2018 Salvo "LtWorf" Tomaselli
+# Copyright (C) 2018-2021 Salvo "LtWorf" Tomaselli
 #
 # localslackirc is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,10 +17,25 @@
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
 
+from typing import Iterable
 from itertools import count
 
+__all__ = [
+    'seddiff',
+]
 
 _SEPARATORS = set(' .,:;\t\n()[]{}')
+
+
+def wordsplit(word: str) -> Iterable[str]:
+    bucket = ''
+    for i in word:
+        if i in _SEPARATORS:
+            yield bucket
+            bucket = ''
+        bucket += i
+    if bucket:
+        yield bucket
 
 
 def seddiff(a: str, b: str) -> str:
@@ -34,32 +49,26 @@ def seddiff(a: str, b: str) -> str:
     if a == b:
         return ''
 
+    l1 = list(wordsplit(a))
+    l2 = list(wordsplit(b))
+
     for prefix in count():
         try:
-            if a[prefix] != b[prefix]:
+            if l1[prefix] != l2[prefix]:
                 break
-        except Exception:
+        except:
             break
     for postfix in count(1):
         try:
-            if a[-postfix] != b[-postfix]:
+            if l1[-postfix] != l2[-postfix]:
                 break
         except Exception:
             break
     postfix -= 1
 
-    longest = a if len(a) > len(b) else b
-
-    # Move to word boundaries
-    while prefix > 0 and longest[prefix] not in _SEPARATORS:
+    if prefix and postfix and len(l1) != len(l2):
         prefix -= 1
-    if longest[prefix] in _SEPARATORS:
-        prefix += 1
-    while postfix > 0 and longest[-postfix] not in _SEPARATORS:
         postfix -= 1
+    px = None if postfix == 0 else -postfix
 
-    if postfix == 0:
-        px = None
-    else:
-        px = -postfix
-    return 's/%s/%s/' % (a[prefix:px] or '$', b[prefix:px])
+    return 's/%s/%s/' % (''.join(l1[prefix:px]).strip() or '$', ''.join(l2[prefix:px]).strip())
