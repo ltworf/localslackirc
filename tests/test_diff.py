@@ -1,5 +1,5 @@
 # localslackirc
-# Copyright (C) 2020 Salvo "LtWorf" Tomaselli
+# Copyright (C) 2020-2021 Salvo "LtWorf" Tomaselli
 #
 # localslackirc is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -44,6 +44,12 @@ class TestDiff(unittest.TestCase):
         assert seddiff('vado a dormire al mare', 'vado a nuotare al mare') == 's/dormire/nuotare/'
         assert seddiff('ciae a tutti', 'ciao a tutti') == 's/ciae/ciao/'
         assert seddiff('ciae å tutti', 'ciao a tutti') == 's/ciae å/ciao a/'
+
+    def test_insertion(self):
+        assert seddiff('il numero dei fili', 'il numero massimo dei fili') == 's/numero dei/numero massimo dei/'
+        assert seddiff('mangio del formaggio e pere', 'mangio del formaggio con le pere') == 's/formaggio e pere/formaggio con le pere/'
+        assert seddiff('mangio del formaggio e pere per cena', 'mangio del formaggio con le pere per cena') == 's/formaggio e pere/formaggio con le pere/'
+        assert seddiff('mare blu', 'il mare blu') == 's/mare/il mare/'
 
     def test_append(self):
         assert seddiff('XYZ', 'XYZ (meaning "bla bla bla")') == 's/$/(meaning "bla bla bla")/'
