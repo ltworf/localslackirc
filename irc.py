@@ -142,8 +142,11 @@ class Client:
             self.substitutions = []
 
     async def _nickhandler(self, cmd: bytes) -> None:
-        _, nick = cmd.split(b' ', 1)
-        self.nick = nick.strip()
+        if b' ' not in cmd:
+            self.nick = b'localslackirc'
+        else:
+            _, nick = cmd.split(b' ', 1)
+            self.nick = nick.strip()
         assert self.sl_client.login_info
         if self.nick != self.sl_client.login_info.self.name.encode('ascii'):
             await self._sendreply(Replies.ERR_ERRONEUSNICKNAME, 'Incorrect nickname, use %s' % self.sl_client.login_info.self.name)
