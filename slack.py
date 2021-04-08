@@ -284,6 +284,7 @@ class HistoryBotMessage:
     ts: float = 0
     files: List[File] = field(default_factory=list)
     thread_ts: Optional[str] = None
+    attachments: List[Dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass
@@ -480,6 +481,7 @@ class Slack:
                         self._internalevents.append(MessageBot(
                             type='message', subtype='bot_message',
                             _text=msg.text,
+                            attachments=msg.attachments,
                             username=msg.username,
                             channel=channel.id,
                             bot_id=msg.bot_id,
