@@ -366,8 +366,8 @@ class Client:
         users = cmd.split(b' ')
         del users[0]
 
-        if len(users) > 1:
-            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Server parameter is not supported')
+        if len(users) != 1:
+            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Syntax: /whois nickname')
             return
 
         # Seems that oftc only responds to the last one
