@@ -22,6 +22,7 @@ from .test_re import *
 from .test_diff import *
 from .test_executable import *
 from .test_message_bot import *
+from .test_irc import *
 
 if __name__ == '__main__':
     unittest.main()
