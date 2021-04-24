@@ -101,6 +101,7 @@ class ClientSettings(NamedTuple):
     autojoin: bool
     provider: Provider
     ignored_channels: Set[bytes]
+    silenced_yellers: Set[bytes]
     downloads_directory: Path
     formatted_max_lines: int = 0
 
@@ -539,7 +540,7 @@ class Client:
                 msg = msg[0:m.start()] + '<@%s>' % (await self.sl_client.get_user_by_name(username)).id + msg[m.end():]
         return msg
 
-    async def parse_message(self, i: str) -> bytes:
+    async def parse_message(self, i: str, source: bytes) -> bytes:
         # Replace all mentions with @user
         while True:
             mention = _MENTIONS_REGEXP.search(i)
@@ -551,8 +552,8 @@ class Client:
                 i[mention.span()[1]:]
             )
 
-        # Replace all channel mentions
         if self.settings.provider == Provider.SLACK:
+            # Replace all channel mentions
             while True:
                 mention = _CHANNEL_MENTIONS_REGEXP.search(i)
                 if not mention:
@@ -564,6 +565,7 @@ class Client:
                     i[mention.span()[1]:]
                 )
 
+            #Replace URL with bottom links
             bottom = ""
             refs = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
             refn = 1
@@ -598,9 +600,10 @@ class Client:
         encoded = i.encode('utf8')
 
         if self.settings.provider == Provider.SLACK:
-            encoded = encoded.replace(b'<!here>', b'yelling [%s]' % self.nick)
-            encoded = encoded.replace(b'<!channel>', b'YELLING LOUDER [%s]' % self.nick)
-            encoded = encoded.replace(b'<!everyone>', b'DEAFENING YELL [%s]' % self.nick)
+            yell = b' [%s]:' % self.nick if source not in self.settings.silenced_yellers else b':'
+            encoded = encoded.replace(b'<!here>', b'yelling%s' % yell)
+            encoded = encoded.replace(b'<!channel>', b'YELLING LOUDER%s' % yell)
+            encoded = encoded.replace(b'<!everyone>', b'DEAFENING YELL%s' % yell)
 
         return encoded
 
@@ -649,7 +652,7 @@ class Client:
             except ValueError:
                 pass
 
-        lines = await self.parse_message(prefix + text)
+        lines = await self.parse_message(prefix + text, source)
         for i in lines.split(b'\n'):
             if not i:
                 continue
@@ -809,6 +812,8 @@ def main() -> None:
     parser.add_argument('--formatted-max-lines', type=int, action='store', dest='formatted_max_lines', default=0,
                                 help='Maximum amount of lines in a formatted text to send to the client rather than store in a file.\n'
                                 'Setting to 0 (the default) will send everything to the client')
+    parser.add_argument('--silenced-yellers', type=str, action='store', dest='silenced_yellers', default='',
+                                help='Comma separated list of nicknames that won\'t generate notifications when using @channel and @here')
 
     args = parser.parse_args()
 
@@ -854,6 +859,13 @@ def main() -> None:
         formatted_max_lines = int(environ.get('FORMATTED_MAX_LINES', args.formatted_max_lines))
     except:
         exit('FORMATTED_MAX_LINES is not a valid int')
+
+    yellers_str = environ.get('SILENCED_YELLERS', args.silenced_yellers)
+    if yellers_str:
+        silenced_yellers = {i.strip().encode('uft8') for i in yellers_str.split(',')}
+    else:
+        silenced_yellers = set()
+
 
     if 'TOKEN' in environ:
         token = environ['TOKEN']
@@ -913,6 +925,7 @@ def main() -> None:
             ignored_channels=ignored_channels,
             downloads_directory=downloads_directory,
             formatted_max_lines=formatted_max_lines,
+            silenced_yellers=silenced_yellers,
         )
         verify = clientsettings.verify()
         if verify is not None:

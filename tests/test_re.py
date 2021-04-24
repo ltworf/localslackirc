@@ -79,6 +79,7 @@ class TestMagic(unittest.TestCase):
             True,
             Provider.SLACK,
             set(),
+            set(),
             Path('/tmp'),
         )
         self.client = Client(None, self.mock_client, settings)

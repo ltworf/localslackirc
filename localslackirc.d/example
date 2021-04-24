@@ -57,5 +57,8 @@ AUTOJOIN=true
 # 0 means no limit
 #FORMATTED_MAX_LINES=0
 
+# Comma separated list of nicknames not allowed to use general mentions
+#SILENCED_YELLERS=rose.adams,alfio.cuttigghiu
+
 # Debugging (disabled by default)
 # DEBUG=1
