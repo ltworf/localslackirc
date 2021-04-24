@@ -101,6 +101,7 @@ class ClientSettings(NamedTuple):
     autojoin: bool
     provider: Provider
     ignored_channels: Set[bytes]
+    silenced_yellers: Set[bytes]
     downloads_directory: Path
     formatted_max_lines: int = 0
 
@@ -810,6 +811,8 @@ def main() -> None:
     parser.add_argument('--formatted-max-lines', type=int, action='store', dest='formatted_max_lines', default=0,
                                 help='Maximum amount of lines in a formatted text to send to the client rather than store in a file.\n'
                                 'Setting to 0 (the default) will send everything to the client')
+    parser.add_argument('--silenced-yellers', type=str, action='store', dest='silenced_yellers', default='',
+                                help='Comma separated list of nicknames that won\'t generate notifications when using @channel and @here')
 
     args = parser.parse_args()
 
@@ -858,6 +861,13 @@ def main() -> None:
             exit(f'{environ["FORMATTED_MAX_LINES"]} is not an int')
     else:
         formatted_max_lines = args.formatted_max_lines
+
+    yellers_str = environ.get('SILENCED_YELLERS', args.silenced_yellers)
+    if yellers_str:
+        silenced_yellers = {i.strip().encode('uft8') for i in yellers_str.split(',')}
+    else:
+        silenced_yellers = set()
+
 
     if 'TOKEN' in environ:
         token = environ['TOKEN']
@@ -917,6 +927,7 @@ def main() -> None:
             ignored_channels=ignored_channels,
             downloads_directory=downloads_directory,
             formatted_max_lines=formatted_max_lines,
+            silenced_yellers=silenced_yellers,
         )
         verify = clientsettings.verify()
         if verify is not None:
