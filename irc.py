@@ -540,7 +540,7 @@ class Client:
                 msg = msg[0:m.start()] + '<@%s>' % (await self.sl_client.get_user_by_name(username)).id + msg[m.end():]
         return msg
 
-    async def parse_message(self, i: str) -> bytes:
+    async def parse_message(self, i: str, source: bytes) -> bytes:
         # Replace all mentions with @user
         while True:
             mention = _MENTIONS_REGEXP.search(i)
@@ -600,9 +600,10 @@ class Client:
         encoded = i.encode('utf8')
 
         if self.settings.provider == Provider.SLACK:
-            encoded = encoded.replace(b'<!here>', b'yelling [%s]' % self.nick)
-            encoded = encoded.replace(b'<!channel>', b'YELLING LOUDER [%s]' % self.nick)
-            encoded = encoded.replace(b'<!everyone>', b'DEAFENING YELL [%s]' % self.nick)
+            yell = b' [%s]:' % self.nick if source not in self.settings.silenced_yellers else b':'
+            encoded = encoded.replace(b'<!here>', b'yelling%s' % yell)
+            encoded = encoded.replace(b'<!channel>', b'YELLING LOUDER%s' % yell)
+            encoded = encoded.replace(b'<!everyone>', b'DEAFENING YELL%s' % yell)
 
         return encoded
 
@@ -651,7 +652,7 @@ class Client:
             except ValueError:
                 pass
 
-        lines = await self.parse_message(prefix + text)
+        lines = await self.parse_message(prefix + text, source)
         for i in lines.split(b'\n'):
             if not i:
                 continue
