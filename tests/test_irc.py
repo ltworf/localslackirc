@@ -22,12 +22,32 @@ class TestIRC(IsolatedAsyncioTestCase):
         stream_writer = mock.AsyncMock()
         slack_client = mock.AsyncMock()
         settings = mock.MagicMock()
+        settings.silenced_yellers = set()
         settings.provider = Provider.SLACK
         self.client = Client(stream_writer, slack_client, settings)
 
 
 def b(s: str) -> bytes:
     return bytes(s, encoding="utf-8")
+
+class TestAnnoyanceAvoidance(TestIRC):
+    async def test_yelling_prevention(self):
+        self.client.nick = b'aldo'
+
+        # Mention generated
+        msg = await self.client.parse_message("<!here> watch this!", b'rose.adams')
+        assert msg == b'yelling [aldo]: watch this!'
+
+        # Add rose.adams to silenced yellers
+        self.client.settings.silenced_yellers.add(b'rose.adams')
+
+        # Mention no longer generated
+        msg = await self.client.parse_message("<!here> watch this!", b'rose.adams')
+        assert msg == b'yelling: watch this!'
+
+        # No effect on regular messages
+        msg = await self.client.parse_message("hello world", b'rose.adams')
+        assert msg == b'hello world'
 
 
 class TestParseMessage(TestIRC):
