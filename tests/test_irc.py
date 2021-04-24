@@ -32,15 +32,15 @@ def b(s: str) -> bytes:
 
 class TestParseMessage(TestIRC):
     async def test_simple_message(self):
-        msg = await self.client.parse_message("hello world")
+        msg = await self.client.parse_message("hello world", b'ciccio')
         self.assertEqual(msg, b"hello world")
 
     async def test_url(self):
-        msg = await self.client.parse_message("See <https://example.com/docs/|the documentation>")
+        msg = await self.client.parse_message("See <https://example.com/docs/|the documentation>", b'ciccio')
         self.assertEqual(msg, b("See the documentation¹\n  ¹ https://example.com/docs/"))
 
     async def test_multiple_urls(self):
-        msg = await self.client.parse_message("See <https://example.com/docs/|the documentation>. Try also the <https://example.com/faq/|FAQ>")
+        msg = await self.client.parse_message("See <https://example.com/docs/|the documentation>. Try also the <https://example.com/faq/|FAQ>", b'ciccio')
         self.assertEqual(msg, b("See the documentation¹. Try also the FAQ²\n  ¹ https://example.com/docs/\n  ² https://example.com/faq/"))
 
     async def test_a_lot_of_urls(self):
@@ -58,9 +58,9 @@ class TestParseMessage(TestIRC):
             "  ⁹ https://example.com/",
             "  ¹⁰ https://example.com/",
         ])
-        msg = await self.client.parse_message(input_msg)
+        msg = await self.client.parse_message(input_msg, b'ciccio')
         self.assertEqual(msg, b(output))
 
     async def test_url_with_no_label_just_goes_inline(self):
-        msg = await self.client.parse_message("Please look at <https://example.com/>")
+        msg = await self.client.parse_message("Please look at <https://example.com/>", b'ciccio')
         self.assertEqual(msg, b("Please look at https://example.com/"))
