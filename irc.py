@@ -850,13 +850,10 @@ def main() -> None:
     else:
         downloads_directory = Path(args.downloads_directory)
 
-    if 'FORMATTED_MAX_LINES' in environ:
-        try:
-            formatted_max_lines = int(environ['FORMATTED_MAX_LINES'])
-        except:
-            exit(f'{environ["FORMATTED_MAX_LINES"]} is not an int')
-    else:
-        formatted_max_lines = args.formatted_max_lines
+    try:
+        formatted_max_lines = int(environ.get('FORMATTED_MAX_LINES', args.formatted_max_lines))
+    except:
+        exit('FORMATTED_MAX_LINES is not a valid int')
 
     if 'TOKEN' in environ:
         token = environ['TOKEN']
