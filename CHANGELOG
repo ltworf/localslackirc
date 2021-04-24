@@ -4,6 +4,7 @@
 * Unicode emoji!
 * Improved diff
 * Improved compatibility with IRC
+* Able to prevent selected users from abusing general mentions
 
 1.11
 * Greatly reduced CPU usage
