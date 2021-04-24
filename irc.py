@@ -862,7 +862,7 @@ def main() -> None:
 
     yellers_str = environ.get('SILENCED_YELLERS', args.silenced_yellers)
     if yellers_str:
-        silenced_yellers = {i.strip().encode('uft8') for i in yellers_str.split(',')}
+        silenced_yellers = {i.strip().encode('utf8') for i in yellers_str.split(',')}
     else:
         silenced_yellers = set()
 
