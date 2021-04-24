@@ -551,8 +551,8 @@ class Client:
                 i[mention.span()[1]:]
             )
 
-        # Replace all channel mentions
         if self.settings.provider == Provider.SLACK:
+            # Replace all channel mentions
             while True:
                 mention = _CHANNEL_MENTIONS_REGEXP.search(i)
                 if not mention:
@@ -564,6 +564,7 @@ class Client:
                     i[mention.span()[1]:]
                 )
 
+            #Replace URL with bottom links
             bottom = ""
             refs = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
             refn = 1
