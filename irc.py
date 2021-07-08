@@ -38,7 +38,7 @@ import time
 try:
     from emoji import emojize
 except ModuleNotFoundError:
-    def emojize(string:str, use_aliases:bool=False, delimiters: Tuple[str,str]=(':', ':')) -> str:
+    def emojize(string:str, use_aliases:bool=False, delimiters: Tuple[str,str]=(':', ':')) -> str:  # type: ignore
         return string
 
 
