@@ -1,5 +1,5 @@
 # localslackirc
-# Copyright (C) 2018-2020 Salvo "LtWorf" Tomaselli
+# Copyright (C) 2018-2021 Salvo "LtWorf" Tomaselli
 #
 # localslackirc is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@ from typing import Any, Dict, List, NamedTuple, Optional
 
 from typedload import load
 import websockets
+from websockets.client import connect as wsconnect
 
 from .exceptions import *
 from .http import Request
@@ -107,7 +108,7 @@ class SlackClient:
             timeout: in seconds
         """
         r = await self.login()
-        self._websocket = await websockets.connect(r.url)
+        self._websocket = await wsconnect(r.url)
         return r
 
 
