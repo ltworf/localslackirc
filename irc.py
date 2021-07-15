@@ -542,10 +542,7 @@ class Client:
 
     async def parse_message(self, i: str, source: bytes) -> bytes:
         # Replace all mentions with @user
-        while True:
-            mention = _MENTIONS_REGEXP.search(i)
-            if not mention:
-                break
+        while mention := _MENTIONS_REGEXP.search(i):
             i = (
                 i[0:mention.span()[0]] +
                 (await self.sl_client.get_user(mention.groups()[0])).name +
@@ -554,10 +551,7 @@ class Client:
 
         if self.settings.provider == Provider.SLACK:
             # Replace all channel mentions
-            while True:
-                mention = _CHANNEL_MENTIONS_REGEXP.search(i)
-                if not mention:
-                    break
+            while mention := _CHANNEL_MENTIONS_REGEXP.search(i):
                 i = (
                     i[0:mention.span()[0]] +
                     '#' +
@@ -569,8 +563,7 @@ class Client:
             bottom = ""
             refs = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
             refn = 1
-            while True:
-                url = _URL_REGEXP.search(i)
+            while url := _URL_REGEXP.search(i):
                 if not url:
                     break
                 schema, path, label = url.groups()
