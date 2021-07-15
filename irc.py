@@ -587,6 +587,32 @@ class Client:
         # Replace emoji codes (e.g. :thumbsup:)
         i = emojize(i, use_aliases=True)
 
+
+                # Store long formatted text into txt files
+        if self.settings.formatted_max_lines:
+            try:
+                fmtstart = i.index('```')
+                fmtend = i.index('```', fmtstart + 1)
+
+                formatted = i[fmtstart + 3:fmtend]
+                prefix = i[0:fmtstart]
+                suffix = i[fmtend + 3:]
+
+                if formatted.count('\n') > self.settings.formatted_max_lines:
+                    import tempfile
+                    with tempfile.NamedTemporaryFile(
+                                mode='wt',
+                                dir=self.settings.downloads_directory,
+                                suffix='.txt',
+                                prefix='localslackirc-attachment-',
+                                delete=False) as tmpfile:
+                        tmpfile.write(formatted)
+                        i = prefix + f'\n === PREFORMATTED TEXT AT file://{tmpfile.name}\n' + suffix
+                else:
+                    i = '```'.join((prefix, formatted, suffix))
+            except ValueError:
+                pass
+
         encoded = i.encode('utf8')
 
         if self.settings.provider == Provider.SLACK:
@@ -617,30 +643,6 @@ class Client:
             return
 
         text = sl_ev.text
-        # Store long formatted text into txt files
-        if self.settings.formatted_max_lines:
-            try:
-                fmtstart = text.index('```')
-                fmtend = text.index('```', fmtstart + 1)
-
-                formatted = text[fmtstart + 3:fmtend]
-                prefix = text[0:fmtstart]
-                suffix = text[fmtend + 3:]
-
-                if formatted.count('\n') > self.settings.formatted_max_lines:
-                    import tempfile
-                    with tempfile.NamedTemporaryFile(
-                                mode='wt',
-                                dir=self.settings.downloads_directory,
-                                suffix='.txt',
-                                prefix='localslackirc-attachment-',
-                                delete=False) as tmpfile:
-                        tmpfile.write(formatted)
-                        text = prefix + f'\n === PREFORMATTED TEXT AT file://{tmpfile.name}\n' + suffix
-                else:
-                    text = '```'.join((prefix, formatted, suffix))
-            except ValueError:
-                pass
 
         lines = await self.parse_message(prefix + text, source)
         for i in lines.split(b'\n'):
