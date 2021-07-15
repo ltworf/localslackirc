@@ -32,6 +32,7 @@ from log import *
 
 
 USELESS_EVENTS = {
+    'accounts_changed',
     'channel_marked',
     'group_marked',
     'mpim_marked',
@@ -221,7 +222,7 @@ class MessageBot:
     channel: str
     bot_id: Optional[str] = None
     attachments: List[Dict[str, Any]] = field(default_factory=list)
-    
+
     @property
     def text(self):
         r = [self._text]
