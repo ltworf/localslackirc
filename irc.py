@@ -542,60 +542,75 @@ class Client:
 
     async def parse_message(self, i: str, source: bytes) -> bytes:
         # Replace all mentions with @user
-        while True:
-            mention = _MENTIONS_REGEXP.search(i)
-            if not mention:
-                break
+        while mention := _MENTIONS_REGEXP.search(i):
             i = (
                 i[0:mention.span()[0]] +
                 (await self.sl_client.get_user(mention.groups()[0])).name +
                 i[mention.span()[1]:]
             )
 
-        if self.settings.provider == Provider.SLACK:
-            # Replace all channel mentions
-            while True:
-                mention = _CHANNEL_MENTIONS_REGEXP.search(i)
-                if not mention:
-                    break
-                i = (
-                    i[0:mention.span()[0]] +
-                    '#' +
-                    (await self.sl_client.get_channel(mention.groups()[0])).name_normalized +
-                    i[mention.span()[1]:]
-                )
+        # Replace all channel mentions
+        while mention := _CHANNEL_MENTIONS_REGEXP.search(i):
+            i = (
+                i[0:mention.span()[0]] +
+                '#' +
+                (await self.sl_client.get_channel(mention.groups()[0])).name_normalized +
+                i[mention.span()[1]:]
+            )
 
-            #Replace URL with bottom links
-            bottom = ""
-            refs = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
-            refn = 1
-            while True:
-                url = _URL_REGEXP.search(i)
-                if not url:
-                    break
-                schema, path, label = url.groups()
-                if label and (label != f"{schema}://{path}"):
-                    ref = str(refn).translate(refs)
-                    refn += 1
-                    i = (
-                        i[0:url.span()[0]] +
-                        (f'{label}{ref}' if label else '') +
-                        i[url.span()[1]:]
-                    )
-                    bottom += f'\n  {ref} {schema}://{path}'
-                else:
-                    i = (
-                        i[0:url.span()[0]] +
-                        f'{schema}://{path}' +
-                        i[url.span()[1]:]
-                    )
-            i += bottom
+        #Replace URL with bottom links
+        bottom = ""
+        refs = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
+        refn = 1
+        while url := _URL_REGEXP.search(i):
+            schema, path, label = url.groups()
+            if label and (label != f"{schema}://{path}"):
+                ref = str(refn).translate(refs)
+                refn += 1
+                i = (
+                    i[0:url.span()[0]] +
+                    f'{label}{ref}' +
+                    i[url.span()[1]:]
+                )
+                bottom += f'\n  {ref} {schema}://{path}'
+            else:
+                i = (
+                    i[0:url.span()[0]] +
+                    f'{schema}://{path}' +
+                    i[url.span()[1]:]
+                )
+        i += bottom
 
         for s in self.substitutions:
             i = i.replace(s[0], s[1])
 
         # Replace emoji codes (e.g. :thumbsup:)
         i = emojize(i, use_aliases=True)
+
+        # Store long formatted text into txt files
+        if self.settings.formatted_max_lines:
+            try:
+                fmtstart = i.index('```')
+                fmtend = i.index('```', fmtstart + 1)
+
+                formatted = i[fmtstart + 3:fmtend]
+                prefix = i[0:fmtstart]
+                suffix = i[fmtend + 3:]
+
+                if formatted.count('\n') > self.settings.formatted_max_lines:
+                    import tempfile
+                    with tempfile.NamedTemporaryFile(
+                                mode='wt',
+                                dir=self.settings.downloads_directory,
+                                suffix='.txt',
+                                prefix='localslackirc-attachment-',
+                                delete=False) as tmpfile:
+                        tmpfile.write(formatted)
+                        i = prefix + f'\n === PREFORMATTED TEXT AT file://{tmpfile.name}\n' + suffix
+                else:
+                    i = '```'.join((prefix, formatted, suffix))
+            except ValueError:
+                pass
 
         encoded = i.encode('utf8')
 
@@ -627,30 +642,6 @@ class Client:
             return
 
         text = sl_ev.text
-        # Store long formatted text into txt files
-        if self.settings.formatted_max_lines:
-            try:
-                fmtstart = text.index('```')
-                fmtend = text.index('```', fmtstart + 1)
-
-                formatted = text[fmtstart + 3:fmtend]
-                prefix = text[0:fmtstart]
-                suffix = text[fmtend + 3:]
-
-                if formatted.count('\n') > self.settings.formatted_max_lines:
-                    import tempfile
-                    with tempfile.NamedTemporaryFile(
-                                mode='wt',
-                                dir=self.settings.downloads_directory,
-                                suffix='.txt',
-                                prefix='localslackirc-attachment-',
-                                delete=False) as tmpfile:
-                        tmpfile.write(formatted)
-                        text = prefix + f'\n === PREFORMATTED TEXT AT file://{tmpfile.name}\n' + suffix
-                else:
-                    text = '```'.join((prefix, formatted, suffix))
-            except ValueError:
-                pass
 
         lines = await self.parse_message(prefix + text, source)
         for i in lines.split(b'\n'):
