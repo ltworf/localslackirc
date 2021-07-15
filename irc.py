@@ -563,8 +563,6 @@ class Client:
         refs = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
         refn = 1
         while url := _URL_REGEXP.search(i):
-            if not url:
-                break
             schema, path, label = url.groups()
             if label and (label != f"{schema}://{path}"):
                 ref = str(refn).translate(refs)
