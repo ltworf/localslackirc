@@ -574,7 +574,7 @@ class Client:
                 if not url:
                     break
                 schema, path, label = url.groups()
-                if label:
+                if label and (label != f"{schema}://{path}"):
                     ref = str(refn).translate(refs)
                     refn += 1
                     i = (
