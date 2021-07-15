@@ -587,8 +587,7 @@ class Client:
         # Replace emoji codes (e.g. :thumbsup:)
         i = emojize(i, use_aliases=True)
 
-
-                # Store long formatted text into txt files
+        # Store long formatted text into txt files
         if self.settings.formatted_max_lines:
             try:
                 fmtstart = i.index('```')
