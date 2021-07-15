@@ -589,28 +589,31 @@ class Client:
 
         # Store long formatted text into txt files
         if self.settings.formatted_max_lines:
-            try:
-                fmtstart = i.index('```')
-                fmtend = i.index('```', fmtstart + 1)
+            begin = 0
+            while True:
+                try:
+                    fmtstart = i.index('```', begin)
+                    fmtend = i.index('```', fmtstart + 1)
 
-                formatted = i[fmtstart + 3:fmtend]
-                prefix = i[0:fmtstart]
-                suffix = i[fmtend + 3:]
+                    formatted = i[fmtstart + 3:fmtend]
+                    prefix = i[0:fmtstart]
+                    suffix = i[fmtend + 3:]
 
-                if formatted.count('\n') > self.settings.formatted_max_lines:
-                    import tempfile
-                    with tempfile.NamedTemporaryFile(
-                                mode='wt',
-                                dir=self.settings.downloads_directory,
-                                suffix='.txt',
-                                prefix='localslackirc-attachment-',
-                                delete=False) as tmpfile:
-                        tmpfile.write(formatted)
-                        i = prefix + f'\n === PREFORMATTED TEXT AT file://{tmpfile.name}\n' + suffix
-                else:
-                    i = '```'.join((prefix, formatted, suffix))
-            except ValueError:
-                pass
+                    if formatted.count('\n') > self.settings.formatted_max_lines:
+                        import tempfile
+                        with tempfile.NamedTemporaryFile(
+                                    mode='wt',
+                                    dir=self.settings.downloads_directory,
+                                    suffix='.txt',
+                                    prefix='localslackirc-attachment-',
+                                    delete=False) as tmpfile:
+                            tmpfile.write(formatted)
+                            i = prefix + f'\n === PREFORMATTED TEXT AT file://{tmpfile.name}\n' + suffix
+                    else:
+                        i = '```'.join((prefix, formatted, suffix))
+                        begin = fmtend + 1
+                except ValueError:
+                    break
 
         encoded = i.encode('utf8')
 
