@@ -569,7 +569,7 @@ class Client:
                 refn += 1
                 i = (
                     i[0:url.span()[0]] +
-                    (f'{label}{ref}' if label else '') +
+                    f'{label}{ref}' +
                     i[url.span()[1]:]
                 )
                 bottom += f'\n  {ref} {schema}://{path}'
