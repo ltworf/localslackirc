@@ -850,10 +850,11 @@ class Slack:
             except Exception:
                 ev = None
 
-            if isinstance(ev, Join):
-                self._get_members_cache[ev.channel].add(ev.user)
-            elif isinstance(ev, Leave):
-                self._get_members_cache[ev.channel].remove(ev.user)
+            if isinstance(ev, (Join, Leave)) and ev.channel in self._get_members_cache:
+                if isinstance(ev, Join):
+                    self._get_members_cache[ev.channel].add(ev.user)
+                else:
+                    self._get_members_cache[ev.channel].remove(ev.user)
 
             if ev:
                 return ev
