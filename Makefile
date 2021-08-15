@@ -73,3 +73,4 @@ deb-pkg: dist
 clean:
 	$(RM) -r deb-pkg
 	$(RM) -r tests/__pycache__
+	$(RM) -r __pycache__
