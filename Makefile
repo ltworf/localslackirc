@@ -3,7 +3,7 @@ all:
 
 .PHONY: lint
 lint:
-	mypy --config-file mypy.conf *.py slackclient
+	mypy --config-file mypy.conf *.py slackclient localslackirc
 
 .PHONY: test
 test: lint
@@ -21,10 +21,11 @@ install:
 	install -m644 diff.py $${DESTDIR:-/}/usr/share/localslackirc/
 	install -m644 log.py $${DESTDIR:-/}/usr/share/localslackirc/
 	install -m644 slack.py $${DESTDIR:-/}/usr/share/localslackirc/
-	install irc.py $${DESTDIR:-/}/usr/share/localslackirc/
+	install -m644 irc.py $${DESTDIR:-/}/usr/share/localslackirc/
+	install localslackirc $${DESTDIR:-/}/usr/share/localslackirc/
 	# Install command
 	install -d $${DESTDIR:-/}/usr/bin/
-	ln -s ../share/localslackirc/irc.py $${DESTDIR:-/}/usr/bin/localslackirc
+	ln -s ../share/localslackirc/localslackirc $${DESTDIR:-/}/usr/bin/localslackirc
 	# install extras
 	install -m644 -D CHANGELOG $${DESTDIR:-/}/usr/share/doc/localslackirc/CHANGELOG
 	install -m644 -D README.md $${DESTDIR:-/}/usr/share/doc/localslackirc/README.md
@@ -37,6 +38,7 @@ install:
 .PHONY: dist
 dist:
 	cd ..; tar -czvvf localslackirc.tar.gz \
+		localslackirc/localslackirc \
 		localslackirc/irc.py \
 		localslackirc/diff.py \
 		localslackirc/log.py \
