@@ -86,7 +86,7 @@ Sources
 Check the manpage for the parameters.
 
 ```bash
-./irc.py
+./localslackirc
 ```
 
 Obtain a token
@@ -108,7 +108,7 @@ Alternatively if this method fails you can get one from Slack's web client
 * In your browser, login to slack and then open the web console.
 * Run this javascript code: `q=JSON.parse(localStorage.localConfig_v2)["teams"]; q[Object.keys(q)[0]]["token"]`
 * Copy the result, without quotes.
-* **Note**: If you are signed in to multiple teams this will not work, run in a private window for the team you want to set up. 
+* **Note**: If you are signed in to multiple teams this will not work, run in a private window for the team you want to set up.
 
 Obtain a Slack cookie
 ---------------------
@@ -171,7 +171,7 @@ Here's a list of irssi commands to set up a network and a localhost server:
 /save
 ```
 
-Then, start localslackirc in your terminal if you haven't already. (Just type `python3 irc.py`).
+Then, start localslackirc in your terminal if you haven't already. (Just type `./localslackirc`).
 
 After localslackirc is running, and you have seen the connection
 message seen above, you can just connect to the localhost IRC network
