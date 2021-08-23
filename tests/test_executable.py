@@ -24,4 +24,4 @@ import subprocess
 class TestStart(unittest.TestCase):
 
     def test_print_help(self):
-        subprocess.check_call(['./irc.py', '--help'], stdout=subprocess.DEVNULL)
+        subprocess.check_call(['./localslackirc', '--help'], stdout=subprocess.DEVNULL)
