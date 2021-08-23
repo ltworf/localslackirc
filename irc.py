@@ -51,6 +51,8 @@ _MENTIONS_REGEXP = re.compile(r'<@([0-9A-Za-z]+)>')
 _CHANNEL_MENTIONS_REGEXP = re.compile(r'<#([A-Z0-9]+)\|[_\w-]+>')
 _URL_REGEXP = re.compile(r'<([a-z0-9\-\.]+)://([^\s\|]+)[\|]{0,1}([^<>]*)>')
 
+VERSION = '0.13'
+
 
 _SLACK_SUBSTITUTIONS = [
     ('&amp;', '&'),
@@ -770,6 +772,7 @@ def main() -> None:
     su()
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('-v', '--version', action='version', version=f'''localslackirc {VERSION}''')
     parser.add_argument('-p', '--port', type=int, action='store', dest='port',
                                 default=9007, required=False,
                                 help='set port number. Defaults to 9007')
