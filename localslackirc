@@ -1,5 +1,6 @@
+#!/usr/bin/env python3
 # localslackirc
-# Copyright (C) 2020 Salvo "LtWorf" Tomaselli
+# Copyright (C) 2021 Salvo "LtWorf" Tomaselli
 #
 # localslackirc is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,12 +17,10 @@
 #
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
-import unittest
-import subprocess
+from irc import main
 
-
-
-class TestStart(unittest.TestCase):
-
-    def test_print_help(self):
-        subprocess.check_call(['./localslackirc', '--help'], stdout=subprocess.DEVNULL)
+if __name__ == '__main__':
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass

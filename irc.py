@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # localslackirc
 # Copyright (C) 2018-2021 Salvo "LtWorf" Tomaselli
 #
