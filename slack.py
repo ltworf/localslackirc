@@ -32,6 +32,8 @@ from log import *
 
 
 USELESS_EVENTS = {
+    'draft_create',
+    'draft_delete',
     'accounts_changed',
     'channel_marked',
     'group_marked',
