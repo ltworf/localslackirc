@@ -41,7 +41,6 @@ USELESS_EVENTS = {
     'hello',
     'dnd_updated_user',
     'reaction_added',
-    'user_typing',
     'file_deleted',
     'file_public',
     'file_created',
@@ -168,6 +167,12 @@ class MessageDelete:
     @property
     def text(self) -> str:
         return self.previous_message.text
+
+
+class UserTyping(NamedTuple):
+    type: Literal['user_typing']
+    user: str
+    channel: str
 
 
 class Profile(NamedTuple):
@@ -327,6 +332,7 @@ SlackEvent = Union[
     Join,
     Leave,
     GroupJoined,
+    UserTyping,
 ]
 
 
