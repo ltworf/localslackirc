@@ -1,0 +1,6 @@
+Test-Command: make test
+Depends: mypy
+Restrictions: allow-stderr
+
+Test-Command: ./localslackirc --help
+Restrictions: superficial
