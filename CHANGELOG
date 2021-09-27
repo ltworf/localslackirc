@@ -1,4 +1,5 @@
 1.13
+* Make mypy happy
 
 1.12
 * Option to save long formatted text as .txt files
