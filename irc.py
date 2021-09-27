@@ -735,6 +735,14 @@ class Client:
         elif isinstance(sl_ev, slack.GroupJoined):
             channel_name = '#%s' % sl_ev.channel.name_normalized
             await self._send_chan_info(channel_name.encode('utf-8'), sl_ev.channel)
+        elif isinstance(sl_ev, slack.UserTyping):
+            if sl_ev.user not in self._annoy_users:
+                return
+            if time.time() > self._annoy_users[sl_ev.user]:
+                del self._annoy_users[sl_ev.user]
+                return
+            await self.sl_client.typing(sl_ev.channel)
+
 
     async def command(self, cmd: bytes) -> None:
         if b' ' in cmd:
