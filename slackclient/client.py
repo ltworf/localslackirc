@@ -63,6 +63,17 @@ class SlackClient:
         # RTM configs
         self._websocket: Optional[websockets.client.WebSocketClientProtocol] = None
         self._request = Request('https://slack.com/api/')
+        self._wsid = 0
+
+    async def wspacket(self, **kwargs) -> None:
+        """
+        Send data over websocket
+        """
+        if self._websocket is None:
+            raise Exception('No websocket at this point')
+        kwargs['id'] = self._wsid
+        self._wsid += 1
+        await self._websocket.send(json.dumps(kwargs))
 
     def __del__(self):
         if self._websocket:
