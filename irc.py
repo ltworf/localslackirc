@@ -137,7 +137,7 @@ class Client:
         self._usersent = False # Used to hold all events until the IRC client sends the initial USER message
         self._held_events: List[slack.SlackEvent] = []
         self._mentions_regex_cache: Dict[str, Optional[re.Pattern]] = {}  # Cache for the regexp to perform mentions. Key is channel id
-        self._annoy_users: Dict[str, int]  # Users to annoy pretending to type when they type
+        self._annoy_users: Dict[str, float]  # Users to annoy pretending to type when they type
 
         if self.settings.provider == Provider.SLACK:
             self.substitutions = _SLACK_SUBSTITUTIONS
@@ -325,7 +325,7 @@ class Client:
             return
 
         try:
-            user_id = await self.sl_client.get_user_by_name(user)
+            user_id = (await self.sl_client.get_user_by_name(user)).id
         except KeyError:
             await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find user: {user}')
             return
