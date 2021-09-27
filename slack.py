@@ -518,6 +518,16 @@ class Slack:
         if not response.ok:
             raise ResponseException(response.error)
 
+    async def typing(self, channel: Union[Channel, str]) -> None:
+        """
+        Sends a typing event to slack
+        """
+        if isinstance(channel, Channel):
+            ch_id = channel.id
+        else:
+            ch_id = channel
+        await self.client.wspacket(type='typing', channel=ch_id)
+
     async def topic(self, channel: Channel, topic: str) -> None:
         r = await self.client.api_call('conversations.setTopic', channel=channel.id, topic=topic)
         response = load(r, Response)
