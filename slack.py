@@ -859,7 +859,7 @@ class Slack:
                 continue
 
             debug(event)
-            loadable_events = Union[TopicChange, FileShared, MessageBot, MessageEdit, MessageDelete, GroupJoined, Join, Leave]
+            loadable_events = Union[TopicChange, FileShared, MessageBot, MessageEdit, MessageDelete, GroupJoined, Join, Leave, UserTyping]
             try:
                 ev: Optional[loadable_events] = load(
                     event,
