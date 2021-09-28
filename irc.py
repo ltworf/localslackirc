@@ -331,6 +331,7 @@ class Client:
             return
 
         self._annoy_users[user_id] = int(time.time()) + (duration * 60)
+        await self._sendreply(0, f'Will annoy {user} for {duration} minutes')
 
     async def _sendfilehandler(self, cmd: bytes) -> None:
         #/sendfile #destination filename
@@ -740,6 +741,7 @@ class Client:
                 return
             if time.time() > self._annoy_users[sl_ev.user]:
                 del self._annoy_users[sl_ev.user]
+                await self._sendreply(0, f'No longer annoying {(await self.sl_client.get_user(sl_ev.user)).name}')
                 return
             await self.sl_client.typing(sl_ev.channel)
 
