@@ -1,4 +1,4 @@
-.TH localslackirc 1 "Aug 23, 2021" "IRC gateway for slack"
+.TH localslackirc 1 "Sep 23, 2021" "IRC gateway for slack"
 .SH NAME
 localslackirc
 \- Creates an IRC server running locally, which acts as a gateway to slack for one user.
@@ -11,7 +11,6 @@ This command starts an IRC server running on 127.0.0.1:9007 which acts as a gate
 .br
 To connect to multiple instances it is necessary to run multiple instances of this software.
 .TP
-.SH OPTIONS
 .SS
 .SS Options:
 .TP
@@ -150,6 +149,22 @@ Alternative to --ignored-channels
 .TP
 .B SILENCED_YELLERS
 Alternative to --silenced-yellers
+.SH Additional IRC commands
+Some commands are added, to use some additional features that are present in slack but not IRC.
+.SS
+.TP
+.B /sendfile destination /path/to/file
+Sends the specified file to destination.
+.br
+The destination can be a user or a channel, in which case it must begin with #.
+.TP
+.B /annoy user [duration]
+The indicated user will be annoyed.
+.br
+This means that whenever a typing event is received from that user, on any channel, a type event on the same channel will be sent back, making the user think you are about to write something too.
+.br
+duration is the duration of the annoyance in minutes. It defaults to 10.
+.SS
 .SH WEB
 .BR https://github.com/ltworf/localslackirc
 

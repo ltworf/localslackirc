@@ -32,6 +32,8 @@ from log import *
 
 
 USELESS_EVENTS = {
+    'draft_create',
+    'draft_delete',
     'accounts_changed',
     'channel_marked',
     'group_marked',
@@ -39,7 +41,6 @@ USELESS_EVENTS = {
     'hello',
     'dnd_updated_user',
     'reaction_added',
-    'user_typing',
     'file_deleted',
     'file_public',
     'file_created',
@@ -166,6 +167,12 @@ class MessageDelete:
     @property
     def text(self) -> str:
         return self.previous_message.text
+
+
+class UserTyping(NamedTuple):
+    type: Literal['user_typing']
+    user: str
+    channel: str
 
 
 class Profile(NamedTuple):
@@ -325,6 +332,7 @@ SlackEvent = Union[
     Join,
     Leave,
     GroupJoined,
+    UserTyping,
 ]
 
 
@@ -509,6 +517,16 @@ class Slack:
         response = load(r, Response)
         if not response.ok:
             raise ResponseException(response.error)
+
+    async def typing(self, channel: Union[Channel, str]) -> None:
+        """
+        Sends a typing event to slack
+        """
+        if isinstance(channel, Channel):
+            ch_id = channel.id
+        else:
+            ch_id = channel
+        await self.client.wspacket(type='typing', channel=ch_id)
 
     async def topic(self, channel: Channel, topic: str) -> None:
         r = await self.client.api_call('conversations.setTopic', channel=channel.id, topic=topic)
@@ -841,7 +859,7 @@ class Slack:
                 continue
 
             debug(event)
-            loadable_events = Union[TopicChange, FileShared, MessageBot, MessageEdit, MessageDelete, GroupJoined, Join, Leave]
+            loadable_events = Union[TopicChange, FileShared, MessageBot, MessageEdit, MessageDelete, GroupJoined, Join, Leave, UserTyping]
             try:
                 ev: Optional[loadable_events] = load(
                     event,

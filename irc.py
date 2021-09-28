@@ -137,6 +137,7 @@ class Client:
         self._usersent = False # Used to hold all events until the IRC client sends the initial USER message
         self._held_events: List[slack.SlackEvent] = []
         self._mentions_regex_cache: Dict[str, Optional[re.Pattern]] = {}  # Cache for the regexp to perform mentions. Key is channel id
+        self._annoy_users: Dict[str, int] = {} # Users to annoy pretending to type when they type
 
         if self.settings.provider == Provider.SLACK:
             self.substitutions = _SLACK_SUBSTITUTIONS
@@ -308,6 +309,29 @@ class Client:
     async def _modehandler(self, cmd: bytes) -> None:
         params = cmd.split(b' ', 2)
         await self._sendreply(Replies.RPL_CHANNELMODEIS, '', [params[1], '+'])
+
+    async def _annoyhandler(self, cmd: bytes) -> None:
+        params = cmd.split(b' ')
+        params.pop(0)
+
+        try:
+            user = params.pop(0).decode('utf8')
+            if params:
+                duration = abs(int(params.pop()))
+            else:
+                duration = 10 # 10 minutes default
+        except Exception:
+            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Syntax: /annoy user [duration]')
+            return
+
+        try:
+            user_id = (await self.sl_client.get_user_by_name(user)).id
+        except KeyError:
+            await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find user: {user}')
+            return
+
+        self._annoy_users[user_id] = int(time.time()) + (duration * 60)
+        await self._sendreply(0, f'Will annoy {user} for {duration} minutes')
 
     async def _sendfilehandler(self, cmd: bytes) -> None:
         #/sendfile #destination filename
@@ -712,6 +736,15 @@ class Client:
         elif isinstance(sl_ev, slack.GroupJoined):
             channel_name = '#%s' % sl_ev.channel.name_normalized
             await self._send_chan_info(channel_name.encode('utf-8'), sl_ev.channel)
+        elif isinstance(sl_ev, slack.UserTyping):
+            if sl_ev.user not in self._annoy_users:
+                return
+            if time.time() > self._annoy_users[sl_ev.user]:
+                del self._annoy_users[sl_ev.user]
+                await self._sendreply(0, f'No longer annoying {(await self.sl_client.get_user(sl_ev.user)).name}')
+                return
+            await self.sl_client.typing(sl_ev.channel)
+
 
     async def command(self, cmd: bytes) -> None:
         if b' ' in cmd:
@@ -734,6 +767,7 @@ class Client:
             b'KICK': self._kickhandler,
             b'INVITE': self._invitehandler,
             b'sendfile': self._sendfilehandler,
+            b'annoy': self._annoyhandler,
             b'QUIT': self._quithandler,
             #CAP LS
             b'USERHOST': self._userhosthandler,
