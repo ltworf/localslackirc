@@ -55,7 +55,7 @@ dist:
 		localslackirc/requirements.txt \
 		localslackirc/docker/Dockerfile \
 		localslackirc/man \
-		localslackirc/tests \
+		localslackirc/tests/*.py \
 		localslackirc/localslackirc.d \
 		localslackirc/systemd \
 		localslackirc/mypy.conf
