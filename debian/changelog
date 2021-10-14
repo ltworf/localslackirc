@@ -1,3 +1,10 @@
+localslackirc (1.14-1) UNRELEASED; urgency=medium
+
+  * New upstream version
+  * Bump Standards-Version to 4.6.0
+
+ -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Thu, 14 Oct 2021 10:25:26 +0200
+
 localslackirc (1.13-1) unstable; urgency=high
 
   * New upstream release
