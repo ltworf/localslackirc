@@ -1,7 +1,8 @@
-localslackirc (1.13-1) UNRELEASED; urgency=medium
+localslackirc (1.13-1) unstable; urgency=high
 
   * New upstream release
   * Add debian tests (run the testsuite and localslackirc --help)
+  * Work again with new mypy version
 
  -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Mon, 23 Aug 2021 09:17:52 +0200
 
