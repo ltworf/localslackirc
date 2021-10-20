@@ -736,6 +736,8 @@ class Client:
         elif isinstance(sl_ev, slack.GroupJoined):
             channel_name = '#%s' % sl_ev.channel.name_normalized
             await self._send_chan_info(channel_name.encode('utf-8'), sl_ev.channel)
+        elif isinstance(sl_ev, slack.HuddleInvite):
+            await self._sendreply(0, f'Huddle invite from {(await self.sl_client.get_user(sl_ev.sender_user_id)).name}')
         elif isinstance(sl_ev, slack.UserTyping):
             if sl_ev.user not in self._annoy_users:
                 return
