@@ -1,4 +1,5 @@
 1.14
+* Notification for huddle invites (so one can open a different client if desired)
 
 1.13
 * New /annoy command to annoy people, showing self as typing when they are.
