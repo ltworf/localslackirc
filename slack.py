@@ -321,6 +321,12 @@ class Conversations(NamedTuple):
     response_metadata: Optional[NextCursor] = None
 
 
+class HuddleInvite(NamedTuple):
+    type: Literal['huddle_invite']
+    channel_id: str
+    sender_user_id: str
+
+
 SlackEvent = Union[
     TopicChange,
     MessageDelete,
@@ -333,6 +339,7 @@ SlackEvent = Union[
     Leave,
     GroupJoined,
     UserTyping,
+    HuddleInvite,
 ]
 
 
@@ -859,7 +866,7 @@ class Slack:
                 continue
 
             debug(event)
-            loadable_events = Union[TopicChange, FileShared, MessageBot, MessageEdit, MessageDelete, GroupJoined, Join, Leave, UserTyping]
+            loadable_events = Union[TopicChange, FileShared, MessageBot, MessageEdit, MessageDelete, GroupJoined, Join, Leave, UserTyping, HuddleInvite]
             try:
                 ev: Optional[loadable_events] = load(
                     event,
