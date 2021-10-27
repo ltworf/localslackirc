@@ -1,5 +1,4 @@
-version=3
+version=4
 
-opts="pgpsigurlmangle=s/$/.asc/" \
-https://github.com/ltworf/localslackirc/releases \
-/download/(?:\d[\d.]*)/@PACKAGE@_(\d[\d.]*)(?:\.orig)?@ARCHIVE_EXT@
+opts=pgpmode=auto \
+https://github.com/ltworf/localslackirc/tags (?:.*?/)?v?@ANY_VERSION@@ARCHIVE_EXT@
