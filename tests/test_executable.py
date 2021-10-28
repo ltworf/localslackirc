@@ -16,12 +16,20 @@
 #
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
+import os
 import unittest
 import subprocess
 
+
+if os.path.exists("./localslackirc"):
+    # inside source directory
+    localslackirc = "./localslackirc"
+else:
+    # test installed program
+    localslackirc = "localslackirc"
 
 
 class TestStart(unittest.TestCase):
 
     def test_print_help(self):
-        subprocess.check_call(['./localslackirc', '--help'], stdout=subprocess.DEVNULL)
+        subprocess.check_call([localslackirc, '--help'], stdout=subprocess.DEVNULL)
