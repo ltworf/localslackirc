@@ -50,7 +50,7 @@ _MENTIONS_REGEXP = re.compile(r'<@([0-9A-Za-z]+)>')
 _CHANNEL_MENTIONS_REGEXP = re.compile(r'<#([A-Z0-9]+)\|[_\w-]+>')
 _URL_REGEXP = re.compile(r'<([a-z0-9\-\.]+)://([^\s\|]+)[\|]{0,1}([^<>]*)>')
 
-VERSION = '1.14'
+VERSION = '1.15'
 
 
 _SLACK_SUBSTITUTIONS = [
