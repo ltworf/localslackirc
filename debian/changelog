@@ -1,6 +1,7 @@
 localslackirc (1.15-1) UNRELEASED; urgency=medium
 
   * New upstream release
+  * Simpler test/control file (thanks to Antonio Terceiro)
 
  -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Thu, 28 Oct 2021 21:03:59 +0200
 
