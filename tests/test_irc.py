@@ -59,6 +59,10 @@ class TestParseMessage(TestIRC):
         msg = await self.client.parse_message("See <https://example.com/docs/|the documentation>", b'ciccio')
         self.assertEqual(msg, b("See the documentation¹\n  ¹ https://example.com/docs/"))
 
+    async def test_url_aggressive_shortening(self):
+        msg = await self.client.parse_message("See <https://example.com/docs/iqjweoijsodijijaoij?oiwje|https://example.com/docs/iqjweoijsodijijaoij>", b'ciccio')
+        self.assertEqual(msg, b("See LINK¹\n  ¹ https://example.com/docs/iqjweoijsodijijaoij?oiwje"))
+
     async def test_multiple_urls(self):
         msg = await self.client.parse_message("See <https://example.com/docs/|the documentation>. Try also the <https://example.com/faq/|FAQ>", b'ciccio')
         self.assertEqual(msg, b("See the documentation¹. Try also the FAQ²\n  ¹ https://example.com/docs/\n  ² https://example.com/faq/"))
