@@ -590,6 +590,8 @@ class Client:
         while url := _URL_REGEXP.search(i):
             schema, path, label = url.groups()
             if label and (label != f"{schema}://{path}"):
+                if '://' in label:
+                    label = 'LINK'
                 ref = str(refn).translate(refs)
                 refn += 1
                 i = (

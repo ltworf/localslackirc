@@ -1,4 +1,5 @@
 1.14
+* Write "LINK" instead of the URL when slack labels a URL with another URL
 
 1.13
 * New /annoy command to annoy people, showing self as typing when they are.
