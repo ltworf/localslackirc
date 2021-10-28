@@ -1,8 +1,9 @@
-localslackirc (1.14-1) UNRELEASED; urgency=medium
+localslackirc (1.14-1) unstable; urgency=high
 
   * New upstream version
   * Bump Standards-Version to 4.6.0
   * Fix debian/watch
+  * Fix test (Closes: #998013)
 
  -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Thu, 14 Oct 2021 10:25:26 +0200
 
