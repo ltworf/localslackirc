@@ -1,5 +1,5 @@
 # localslackirc
-# Copyright (C) 2018-2021 Salvo "LtWorf" Tomaselli
+# Copyright (C) 2018-2022 Salvo "LtWorf" Tomaselli
 #
 # localslackirc is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -115,6 +115,7 @@ class Message(NamedTuple):
     channel: str  # The channel id
     user: str  # The user id
     text: str
+    thread_ts: Optional[str] = None
 
 
 class NoChanMessage(NamedTuple):
@@ -159,6 +160,7 @@ class MessageDelete:
     subtype: Literal['message_deleted']
     channel: str
     previous_message: NoChanMessage
+    thread_ts: Optional[str] = None
 
     @property
     def user(self) -> str:
@@ -229,6 +231,7 @@ class MessageBot:
     channel: str
     bot_id: Optional[str] = None
     attachments: List[Dict[str, Any]] = field(default_factory=list)
+    thread_ts: Optional[str] = None
 
     @property
     def text(self):
@@ -888,7 +891,7 @@ class Slack:
                     # the other user, and prepend them with "I say: "
                     im = await self.get_im(msg.channel)
                     if im and im.user != msg.user:
-                        msg = Message(user=im.user, text='I say: ' + msg.text, channel=im.id)
+                        msg = Message(user=im.user, text='I say: ' + msg.text, channel=im.id, thread_ts=msg.thread_ts)
                     if subt == 'me_message':
                         return ActionMessage(*msg)
                     else:
