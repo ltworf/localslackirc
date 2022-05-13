@@ -365,7 +365,7 @@ class Client:
             await self._sendreply(Replies.ERR_FILEERROR, f'Unable to send file {e}')
 
     async def _parthandler(self, cmd: bytes) -> None:
-        _, name = cmd.split(b' ', 1)
+        name = cmd.split(b' ')[1]
         self.parted_channels.add(name)
 
     async def _awayhandler(self, cmd: bytes) -> None:
