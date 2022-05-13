@@ -690,9 +690,11 @@ class Client:
             if dest not in self.known_threads or dest in self.parted_channels:
                 if dest in self.parted_channels:
                     self.parted_channels.remove(dest)
-                await self._send_chan_info(dest, thread)
+                await self._send_chan_info(dest, self.known_threads[dest])
 
-            self.known_threads[dest] = thread
+            # Add object if needed
+            if dest not in self.known_threads:
+                self.known_threads[dest] = thread
 
         text = sl_ev.text
 
