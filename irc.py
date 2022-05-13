@@ -665,8 +665,18 @@ class Client:
             source = (await self.sl_client.get_user(sl_ev.user)).name.encode('utf8')
         else:
             source = b'bot'
+
         try:
-            dest = b'#' + (await self.sl_client.get_channel(sl_ev.channel)).name.encode('utf8')
+            if sl_ev.thread_ts:
+                # Threaded message
+                thread = await self.sl_client.get_thread(sl_ev.thread_ts, sl_ev.channel)
+                dest = b'#' + thread.name.encode('utf8')
+                # FIXME users
+
+                # Join thread channel
+                await self._send_chan_info(dest, thread)
+            else:
+                dest = b'#' + (await self.sl_client.get_channel(sl_ev.channel)).name.encode('utf8')
         except KeyError:
             dest = self.nick
         except Exception as e:
