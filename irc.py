@@ -1,5 +1,5 @@
 # localslackirc
-# Copyright (C) 2018-2021 Salvo "LtWorf" Tomaselli
+# Copyright (C) 2018-2022 Salvo "LtWorf" Tomaselli
 #
 # localslackirc is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -241,10 +241,15 @@ class Client:
         except Exception:
             await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to join channel: {channel_name}')
 
-    async def _send_chan_info(self, channel_name: bytes, slchan: slack.Channel):
+    async def _send_chan_info(self, channel_name: bytes, slchan: Union[slack.Channel, slack.MessageThread]):
         if not self.settings.nouserlist:
+            if isinstance(slchan, slack.MessageThread):
+                l = slchan.hardcoded_userlist
+            else:
+                l = await self.sl_client.get_members(slchan.id)
+
             userlist: List[bytes] = []
-            for i in await self.sl_client.get_members(slchan.id):
+            for i in l:
                 try:
                     u = await self.sl_client.get_user(i)
                 except Exception:
