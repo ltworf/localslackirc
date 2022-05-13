@@ -77,7 +77,8 @@ class LatestMessage(NamedTuple):
         return datetime.datetime.utcfromtimestamp(self.ts)
 
 
-class Channel(NamedTuple):
+@dataclass(frozen=True)
+class Channel:
     """
     A channel description.
 
@@ -110,6 +111,9 @@ class Channel(NamedTuple):
             t = self.purpose.value
         return t.replace('\n', ' | ')
 
+@dataclass(frozen=True)
+class MessageThread(Channel):
+    hardcoded_userlist: Set[str] = field(default_factory=set)
 
 class Message(NamedTuple):
     channel: str  # The channel id
@@ -658,6 +662,23 @@ class Slack:
                 if c.name == name:
                     return c
         raise KeyError()
+
+    async def get_thread(self, thread_ts: str, original_channel: str) -> MessageThread:
+        """
+        Creates a fake channel class for a chat thread
+        """
+        try:
+            channel = (await self.get_channel(original_channel)).name_normalized
+        except Exception:
+            channel = 'unknown'
+
+        t = Topic(f'Threaded discussion from {channel}')
+        return MessageThread(
+            id='',
+            name_normalized=f'threaded-{thread_ts}',
+            purpose=t,
+            topic=t,
+        )
 
     async def get_im(self, im_id: str) -> Optional[IM]:
         if not im_id.startswith('D'):
