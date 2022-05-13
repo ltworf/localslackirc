@@ -298,14 +298,16 @@ class Client:
         message = await self._addmagic(msg.decode('utf8'), dest_object)
 
         if to_channel:
+            assert isinstance(dest_object, (slack.Channel, slack.MessageThread))
             await self.sl_client.send_message(
-                dest_object.id,
+                dest_object,
                 message,
                 action,
             )
         else:
+            assert isinstance(dest_object, slack.User)
             await self.sl_client.send_message_to_user(
-                dest_object.id,
+                dest_object,
                 message,
                 action,
             )

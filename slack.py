@@ -791,7 +791,10 @@ class Slack:
         for i in r:
             self._sent_by_self.remove(i)
 
-    async def send_message(self, channel_id: str, msg: str, action: bool) -> None:
+    async def send_message(self, channel: Union[Channel, MessageThread], msg: str, action: bool) -> None:
+        return await self._send_message(channel.id, msg, action)
+
+    async def _send_message(self, channel_id: str, msg: str, action: bool) -> None:
         """
         Send a message to a channel or group or whatever
         """
@@ -816,7 +819,7 @@ class Slack:
         finally:
             self._wsblock -= 1
 
-    async def send_message_to_user(self, user_id: str, msg: str, action: bool):
+    async def send_message_to_user(self, user: User, msg: str, action: bool):
         """
         Send a message to a user, pass the user id
         """
@@ -825,15 +828,15 @@ class Slack:
         # so to deliver a message to them, a channel id is required.
         # Those are called IM.
 
-        if user_id in self._imcache:
+        if user.id in self._imcache:
             # channel id is cached
-            channel_id = self._imcache[user_id]
+            channel_id = self._imcache[user.id]
         else:
             # Find the channel id
             found = False
             # Iterate over all the existing conversations
             for i in await self.get_ims():
-                if i.user == user_id:
+                if i.user == user.id:
                     channel_id = i.id
                     found = True
                     break
@@ -842,16 +845,16 @@ class Slack:
                 r = await self.client.api_call(
                     "im.open",
                     return_im=True,
-                    user=user_id,
+                    user=user.id,
                 )
                 response = load(r, Response)
                 if not response.ok:
                     raise ResponseException(response.error)
                 channel_id = r['channel']['id']
 
-            self._imcache[user_id] = channel_id
+            self._imcache[user.id] = channel_id
 
-        await self.send_message(channel_id, msg, action)
+        await self._send_message(channel_id, msg, action)
 
     async def event(self) -> Optional[SlackEvent]:
         """
