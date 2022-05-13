@@ -129,6 +129,7 @@ class Client:
         self.username = b''
         self.realname = b''
         self.parted_channels: Set[bytes] = settings.ignored_channels
+        self.known_threads: Dict[bytes, slack.MessageThread] = {}
         self.hostname = gethostname().encode('utf8')
 
         self.settings = settings
@@ -681,11 +682,17 @@ class Client:
             # Threaded message
             thread = await self.sl_client.get_thread(sl_ev.thread_ts, sl_ev.channel)
             dest = b'#' + thread.name.encode('utf8')
+
             if not isinstance(sl_ev, slack.MessageBot):
                 thread.hardcoded_userlist.add(sl_ev.user)
 
-            # Join thread channel
-            await self._send_chan_info(dest, thread)
+            # Join thread channel if needed
+            if dest not in self.known_threads or dest in self.parted_channels:
+                if dest in self.parted_channels:
+                    self.parted_channels.remove(dest)
+                await self._send_chan_info(dest, thread)
+
+            self.known_threads[dest] = thread
 
         text = sl_ev.text
 
