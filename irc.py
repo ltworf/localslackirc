@@ -671,7 +671,8 @@ class Client:
                 # Threaded message
                 thread = await self.sl_client.get_thread(sl_ev.thread_ts, sl_ev.channel)
                 dest = b'#' + thread.name.encode('utf8')
-                thread.hardcoded_userlist.add(sl_ev.user)
+                if not isinstance(sl_ev, slack.MessageBot):
+                    thread.hardcoded_userlist.add(sl_ev.user)
 
                 # Join thread channel
                 await self._send_chan_info(dest, thread)
