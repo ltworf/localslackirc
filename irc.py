@@ -667,17 +667,7 @@ class Client:
             source = b'bot'
 
         try:
-            if sl_ev.thread_ts:
-                # Threaded message
-                thread = await self.sl_client.get_thread(sl_ev.thread_ts, sl_ev.channel)
-                dest = b'#' + thread.name.encode('utf8')
-                if not isinstance(sl_ev, slack.MessageBot):
-                    thread.hardcoded_userlist.add(sl_ev.user)
-
-                # Join thread channel
-                await self._send_chan_info(dest, thread)
-            else:
-                dest = b'#' + (await self.sl_client.get_channel(sl_ev.channel)).name.encode('utf8')
+            dest = b'#' + (await self.sl_client.get_channel(sl_ev.channel)).name.encode('utf8')
         except KeyError:
             dest = self.nick
         except Exception as e:
@@ -686,6 +676,16 @@ class Client:
         if dest in self.parted_channels:
             # Ignoring messages, channel was left on IRC
             return
+
+        if sl_ev.thread_ts:
+            # Threaded message
+            thread = await self.sl_client.get_thread(sl_ev.thread_ts, sl_ev.channel)
+            dest = b'#' + thread.name.encode('utf8')
+            if not isinstance(sl_ev, slack.MessageBot):
+                thread.hardcoded_userlist.add(sl_ev.user)
+
+            # Join thread channel
+            await self._send_chan_info(dest, thread)
 
         text = sl_ev.text
 
