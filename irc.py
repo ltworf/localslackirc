@@ -284,9 +284,12 @@ class Client:
         else:
             action = False
 
-        if dest.startswith(b'#'):
+        if dest in self.known_threads:
             to_channel = True
-            dest_object: Union[slack.User, slack.Channel] = await self.sl_client.get_channel_by_name(dest[1:].decode())
+            dest_object: Union[slack.User, slack.Channel, slack.MessageThread] = self.known_threads[dest]
+        elif dest.startswith(b'#'):
+            to_channel = True
+            dest_object = await self.sl_client.get_channel_by_name(dest[1:].decode())
         else:
             to_channel = False
             dest_object = await self.sl_client.get_user_by_name(dest.decode())
