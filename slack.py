@@ -790,9 +790,10 @@ class Slack:
             self._sent_by_self.remove(i)
 
     async def send_message(self, channel: Union[Channel, MessageThread], msg: str, action: bool) -> None:
-        return await self._send_message(channel.id, msg, action)
+        thread_ts = channel.thread_ts if isinstance(channel, MessageThread) else None
+        return await self._send_message(channel.id, msg, action, thread_ts)
 
-    async def _send_message(self, channel_id: str, msg: str, action: bool) -> None:
+    async def _send_message(self, channel_id: str, msg: str, action: bool, thread_ts: Optional[str]) -> None:
         """
         Send a message to a channel or group or whatever
         """
@@ -802,12 +803,19 @@ class Slack:
             api = 'chat.postMessage'
 
         try:
+            kwargs = {
+                'channel': channel_id,
+                'text': msg,
+                'as_user': True,
+            }
+
+            if thread_ts:
+                kwargs['thread_ts'] = thread_ts
+
             self._wsblock += 1
             r = await self.client.api_call(
                 api,
-                channel=channel_id,
-                text=msg,
-                as_user=True,
+                **kwargs
             )
             response = load(r, Response)
             if response.ok and response.ts:
@@ -852,7 +860,7 @@ class Slack:
 
             self._imcache[user.id] = channel_id
 
-        await self._send_message(channel_id, msg, action)
+        await self._send_message(channel_id, msg, action, None)
 
     async def event(self) -> Optional[SlackEvent]:
         """
