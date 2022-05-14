@@ -285,36 +285,30 @@ class Client:
             action = False
 
         if dest in self.known_threads:
-            to_channel = True
             dest_object: Union[slack.User, slack.Channel, slack.MessageThread] = self.known_threads[dest]
         elif dest.startswith(b'#'):
-            to_channel = True
             try:
                 dest_object = await self.sl_client.get_channel_by_name(dest[1:].decode())
             except KeyError:
                 await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unknown channel {dest.decode()}')
                 return
         else:
-            to_channel = False
             try:
                 dest_object = await self.sl_client.get_user_by_name(dest.decode())
             except KeyError:
                 await self._sendreply(Replies.ERR_NOSUCHNICK, f'Unknown user {dest.decode()}')
                 return
 
-
         message = await self._addmagic(msg.decode('utf8'), dest_object)
 
-        if to_channel:
-            assert isinstance(dest_object, (slack.Channel, slack.MessageThread))
-            await self.sl_client.send_message(
+        if isinstance(dest_object, slack.User):
+            await self.sl_client.send_message_to_user(
                 dest_object,
                 message,
                 action,
             )
         else:
-            assert isinstance(dest_object, slack.User)
-            await self.sl_client.send_message_to_user(
+            await self.sl_client.send_message(
                 dest_object,
                 message,
                 action,
