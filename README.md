@@ -162,6 +162,12 @@ You can use `/sendfile #destination filepath` to send files. Destination can be 
 ## Annoying people
 You can use `/annoy user` to send typing notifications whenever the specified user sends a typing notification.
 
+## Discussion threads
+There is some support for discussion threads.
+They are mapped as irc channels that get automatically joined when a message is received. The channel of origin is specified in the topic.
+Until a thread has some activity you can't write to it.
+They are only tested for channels, not private groups or chats.
+
 ## Instructions for irssi
 
 If you need to refresh your memory about connecting in general, this is a good guide: https://pthree.org/2010/02/02/irssis-channel-network-server-and-connect-what-it-means/
