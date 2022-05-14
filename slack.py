@@ -803,11 +803,7 @@ class Slack:
             api = 'chat.postMessage'
 
         try:
-            kwargs = {
-                'channel': channel_id,
-                'text': msg,
-                'as_user': True,
-            }
+            kwargs = {}
 
             if thread_ts:
                 kwargs['thread_ts'] = thread_ts
@@ -815,7 +811,10 @@ class Slack:
             self._wsblock += 1
             r = await self.client.api_call(
                 api,
-                **kwargs
+                channel=channel_id,
+                text=msg,
+                as_user=True,
+                **kwargs,  # type: ignore
             )
             response = load(r, Response)
             if response.ok and response.ts:
