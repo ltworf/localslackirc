@@ -1,5 +1,5 @@
 # localslackirc
-# Copyright (C) 2018-2021 Salvo "LtWorf" Tomaselli
+# Copyright (C) 2018-2022 Salvo "LtWorf" Tomaselli
 #
 # localslackirc is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -129,6 +129,7 @@ class Client:
         self.username = b''
         self.realname = b''
         self.parted_channels: Set[bytes] = settings.ignored_channels
+        self.known_threads: Dict[bytes, slack.MessageThread] = {}
         self.hostname = gethostname().encode('utf8')
 
         self.settings = settings
@@ -241,10 +242,15 @@ class Client:
         except Exception:
             await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to join channel: {channel_name}')
 
-    async def _send_chan_info(self, channel_name: bytes, slchan: slack.Channel):
+    async def _send_chan_info(self, channel_name: bytes, slchan: Union[slack.Channel, slack.MessageThread]):
         if not self.settings.nouserlist:
+            if isinstance(slchan, slack.MessageThread):
+                l = slchan.hardcoded_userlist
+            else:
+                l = await self.sl_client.get_members(slchan.id)
+
             userlist: List[bytes] = []
-            for i in await self.sl_client.get_members(slchan.id):
+            for i in l:
                 try:
                     u = await self.sl_client.get_user(i)
                 except Exception:
@@ -278,25 +284,38 @@ class Client:
         else:
             action = False
 
-        if dest.startswith(b'#'):
+        if dest in self.known_threads:
             to_channel = True
-            dest_object: Union[slack.User, slack.Channel] = await self.sl_client.get_channel_by_name(dest[1:].decode())
+            dest_object: Union[slack.User, slack.Channel, slack.MessageThread] = self.known_threads[dest]
+        elif dest.startswith(b'#'):
+            to_channel = True
+            try:
+                dest_object = await self.sl_client.get_channel_by_name(dest[1:].decode())
+            except KeyError:
+                await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unknown channel {dest.decode()}')
+                return
         else:
             to_channel = False
-            dest_object = await self.sl_client.get_user_by_name(dest.decode())
+            try:
+                dest_object = await self.sl_client.get_user_by_name(dest.decode())
+            except KeyError:
+                await self._sendreply(Replies.ERR_NOSUCHNICK, f'Unknown user {dest.decode()}')
+                return
 
 
         message = await self._addmagic(msg.decode('utf8'), dest_object)
 
         if to_channel:
+            assert isinstance(dest_object, (slack.Channel, slack.MessageThread))
             await self.sl_client.send_message(
-                dest_object.id,
+                dest_object,
                 message,
                 action,
             )
         else:
+            assert isinstance(dest_object, slack.User)
             await self.sl_client.send_message_to_user(
-                dest_object.id,
+                dest_object,
                 message,
                 action,
             )
@@ -359,7 +378,7 @@ class Client:
             await self._sendreply(Replies.ERR_FILEERROR, f'Unable to send file {e}')
 
     async def _parthandler(self, cmd: bytes) -> None:
-        _, name = cmd.split(b' ', 1)
+        name = cmd.split(b' ')[1]
         self.parted_channels.add(name)
 
     async def _awayhandler(self, cmd: bytes) -> None:
@@ -660,6 +679,7 @@ class Client:
             source = (await self.sl_client.get_user(sl_ev.user)).name.encode('utf8')
         else:
             source = b'bot'
+
         try:
             dest = b'#' + (await self.sl_client.get_channel(sl_ev.channel)).name.encode('utf8')
         except KeyError:
@@ -670,6 +690,21 @@ class Client:
         if dest in self.parted_channels:
             # Ignoring messages, channel was left on IRC
             return
+
+        if sl_ev.thread_ts:
+            # Threaded message
+            thread = await self.sl_client.get_thread(sl_ev.thread_ts, sl_ev.channel)
+            dest = b'#' + thread.name.encode('utf8')
+
+            if not isinstance(sl_ev, slack.MessageBot):
+                thread.hardcoded_userlist.add(sl_ev.user)
+
+            # Join thread channel if needed
+            if dest not in self.known_threads or dest in self.parted_channels:
+                if dest in self.parted_channels:
+                    self.parted_channels.remove(dest)
+                await self._send_chan_info(dest, self.known_threads.get(dest, thread))
+                self.known_threads[dest] = self.known_threads.get(dest, thread)
 
         text = sl_ev.text
 

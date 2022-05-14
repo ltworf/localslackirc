@@ -1,5 +1,5 @@
 # localslackirc
-# Copyright (C) 2018-2021 Salvo "LtWorf" Tomaselli
+# Copyright (C) 2018-2022 Salvo "LtWorf" Tomaselli
 #
 # localslackirc is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -77,7 +77,8 @@ class LatestMessage(NamedTuple):
         return datetime.datetime.utcfromtimestamp(self.ts)
 
 
-class Channel(NamedTuple):
+@dataclass(frozen=True)
+class Channel:
     """
     A channel description.
 
@@ -110,11 +111,17 @@ class Channel(NamedTuple):
             t = self.purpose.value
         return t.replace('\n', ' | ')
 
+@dataclass(frozen=True)
+class MessageThread(Channel):
+    thread_ts: str = ''
+    hardcoded_userlist: Set[str] = field(default_factory=set)
+
 
 class Message(NamedTuple):
     channel: str  # The channel id
     user: str  # The user id
     text: str
+    thread_ts: Optional[str] = None
 
 
 class NoChanMessage(NamedTuple):
@@ -159,6 +166,7 @@ class MessageDelete:
     subtype: Literal['message_deleted']
     channel: str
     previous_message: NoChanMessage
+    thread_ts: Optional[str] = None
 
     @property
     def user(self) -> str:
@@ -229,6 +237,7 @@ class MessageBot:
     channel: str
     bot_id: Optional[str] = None
     attachments: List[Dict[str, Any]] = field(default_factory=list)
+    thread_ts: Optional[str] = None
 
     @property
     def text(self):
@@ -656,6 +665,24 @@ class Slack:
                     return c
         raise KeyError()
 
+    async def get_thread(self, thread_ts: str, original_channel: str) -> MessageThread:
+        """
+        Creates a fake channel class for a chat thread
+        """
+        try:
+            channel = (await self.get_channel(original_channel)).name_normalized
+        except Exception:
+            channel = 'unknown'
+
+        t = Topic(f'Threaded discussion from {channel}')
+        return MessageThread(
+            id=original_channel,
+            name_normalized=f'threaded-{thread_ts}',
+            purpose=t,
+            topic=t,
+            thread_ts=thread_ts,
+        )
+
     async def get_im(self, im_id: str) -> Optional[IM]:
         if not im_id.startswith('D'):
             return None
@@ -762,7 +789,11 @@ class Slack:
         for i in r:
             self._sent_by_self.remove(i)
 
-    async def send_message(self, channel_id: str, msg: str, action: bool) -> None:
+    async def send_message(self, channel: Union[Channel, MessageThread], msg: str, action: bool) -> None:
+        thread_ts = channel.thread_ts if isinstance(channel, MessageThread) else None
+        return await self._send_message(channel.id, msg, action, thread_ts)
+
+    async def _send_message(self, channel_id: str, msg: str, action: bool, thread_ts: Optional[str]) -> None:
         """
         Send a message to a channel or group or whatever
         """
@@ -772,12 +803,18 @@ class Slack:
             api = 'chat.postMessage'
 
         try:
+            kwargs = {}
+
+            if thread_ts:
+                kwargs['thread_ts'] = thread_ts
+
             self._wsblock += 1
             r = await self.client.api_call(
                 api,
                 channel=channel_id,
                 text=msg,
                 as_user=True,
+                **kwargs,  # type: ignore
             )
             response = load(r, Response)
             if response.ok and response.ts:
@@ -787,7 +824,7 @@ class Slack:
         finally:
             self._wsblock -= 1
 
-    async def send_message_to_user(self, user_id: str, msg: str, action: bool):
+    async def send_message_to_user(self, user: User, msg: str, action: bool):
         """
         Send a message to a user, pass the user id
         """
@@ -796,15 +833,15 @@ class Slack:
         # so to deliver a message to them, a channel id is required.
         # Those are called IM.
 
-        if user_id in self._imcache:
+        if user.id in self._imcache:
             # channel id is cached
-            channel_id = self._imcache[user_id]
+            channel_id = self._imcache[user.id]
         else:
             # Find the channel id
             found = False
             # Iterate over all the existing conversations
             for i in await self.get_ims():
-                if i.user == user_id:
+                if i.user == user.id:
                     channel_id = i.id
                     found = True
                     break
@@ -813,16 +850,16 @@ class Slack:
                 r = await self.client.api_call(
                     "im.open",
                     return_im=True,
-                    user=user_id,
+                    user=user.id,
                 )
                 response = load(r, Response)
                 if not response.ok:
                     raise ResponseException(response.error)
                 channel_id = r['channel']['id']
 
-            self._imcache[user_id] = channel_id
+            self._imcache[user.id] = channel_id
 
-        await self.send_message(channel_id, msg, action)
+        await self._send_message(channel_id, msg, action, None)
 
     async def event(self) -> Optional[SlackEvent]:
         """
@@ -888,7 +925,7 @@ class Slack:
                     # the other user, and prepend them with "I say: "
                     im = await self.get_im(msg.channel)
                     if im and im.user != msg.user:
-                        msg = Message(user=im.user, text='I say: ' + msg.text, channel=im.id)
+                        msg = Message(user=im.user, text='I say: ' + msg.text, channel=im.id, thread_ts=msg.thread_ts)
                     if subt == 'me_message':
                         return ActionMessage(*msg)
                     else:
