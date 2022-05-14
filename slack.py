@@ -114,7 +114,6 @@ class Channel:
 @dataclass(frozen=True)
 class MessageThread(Channel):
     thread_ts: str = ''
-    original_channel: str = ''
     hardcoded_userlist: Set[str] = field(default_factory=set)
 
 
@@ -677,12 +676,11 @@ class Slack:
 
         t = Topic(f'Threaded discussion from {channel}')
         return MessageThread(
-            id='',
+            id=original_channel,
             name_normalized=f'threaded-{thread_ts}',
             purpose=t,
             topic=t,
             thread_ts=thread_ts,
-            original_channel=original_channel,
         )
 
     async def get_im(self, im_id: str) -> Optional[IM]:
