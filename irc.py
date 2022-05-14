@@ -292,14 +292,14 @@ class Client:
             try:
                 dest_object = await self.sl_client.get_channel_by_name(dest[1:].decode())
             except KeyError:
-                await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unknown channel {dest}')
+                await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unknown channel {dest.decode()}')
                 return
         else:
             to_channel = False
             try:
                 dest_object = await self.sl_client.get_user_by_name(dest.decode())
             except KeyError:
-                await self._sendreply(Replies.ERR_NOSUCHNICK, f'Unknown user {dest}')
+                await self._sendreply(Replies.ERR_NOSUCHNICK, f'Unknown user {dest.decode()}')
                 return
 
 
