@@ -289,10 +289,18 @@ class Client:
             dest_object: Union[slack.User, slack.Channel, slack.MessageThread] = self.known_threads[dest]
         elif dest.startswith(b'#'):
             to_channel = True
-            dest_object = await self.sl_client.get_channel_by_name(dest[1:].decode())
+            try:
+                dest_object = await self.sl_client.get_channel_by_name(dest[1:].decode())
+            except KeyError:
+                await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unknown channel {dest}')
+                return
         else:
             to_channel = False
-            dest_object = await self.sl_client.get_user_by_name(dest.decode())
+            try:
+                dest_object = await self.sl_client.get_user_by_name(dest.decode())
+            except KeyError:
+                await self._sendreply(Replies.ERR_NOSUCHNICK, f'Unknown user {dest}')
+                return
 
 
         message = await self._addmagic(msg.decode('utf8'), dest_object)
