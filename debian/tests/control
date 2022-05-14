@@ -1,5 +1,4 @@
-Test-Command: make test
-Depends: @, mypy
+Test-Command: export PYTHONPATH=/usr/share/localslackirc && cp -r tests $AUTOPKGTEST_TMP && cd $AUTOPKGTEST_TMP && python3 -m tests
 Restrictions: allow-stderr
 
 Test-Command: ./localslackirc --help
