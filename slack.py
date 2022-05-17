@@ -391,13 +391,14 @@ class Slack:
         log('Login in slack')
         self.login_info = await self.client.login(15)
 
-    async def get_history(self, channel: Union[Channel, IM, str], ts: str, cursor: Optional[NextCursor]=None, limit: int=1000) -> History:
+    async def get_history(self, channel: Union[Channel, IM, str], ts: str, cursor: Optional[NextCursor]=None, limit: int=1000, inclusive: bool=False) -> History:
         p = await self.client.api_call(
-            'conversations.replies',
+            'conversations.history',
             channel=channel if isinstance(channel, str) else channel.id,
-            ts=ts,
+            oldest=ts,
             limit=limit,
             cursor=cursor.next_cursor if cursor else None,
+            inclusive=inclusive,
         )
         return load(p, History)
 
@@ -685,7 +686,7 @@ class Slack:
             channel = 'unknown'
 
         # Get head message
-        history = await self.get_history(original_channel, thread_ts, None, 1)
+        history = await self.get_history(original_channel, thread_ts, None, 1, True)
         if history.messages:
             msg = history.messages.pop().text.replace('\n', ' | ')
         else:
