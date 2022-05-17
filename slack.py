@@ -463,18 +463,10 @@ class Slack:
             cursor = None
             while True: # Loop to iterate the cursor
                 log('Calling cursor')
-                r = await self.client.api_call(
-                    'conversations.history',
-                    channel=channel.id,
-                    oldest=last_timestamp,
-                    limit=1000,
-                    cursor=cursor,
-                )
                 try:
-                    response = load(r, History)
+                    response = await self.get_history(channel, str(last_timestamp))
                 except Exception as e:
                     log('Failed to parse', e)
-                    log(r)
                     break
                 msg_list = list(response.messages)
                 while msg_list:
@@ -493,7 +485,7 @@ class Slack:
                         self._internalevents.append(f.announce())
 
                     # History for the thread
-                    if  msg.thread_ts and float(msg.thread_ts) == msg.ts:
+                    if msg.thread_ts and float(msg.thread_ts) == msg.ts:
                         l = await self._thread_history(channel.id, msg.thread_ts)
                         l.reverse()
                         msg_list = l + msg_list
