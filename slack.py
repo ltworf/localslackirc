@@ -391,6 +391,17 @@ class Slack:
         log('Login in slack')
         self.login_info = await self.client.login(15)
 
+    async def get_history(self, channel: Union[Channel, IM, str], ts: str, cursor: Optional[NextCursor]=None, limit: int=1000, inclusive: bool=False) -> History:
+        p = await self.client.api_call(
+            'conversations.history',
+            channel=channel if isinstance(channel, str) else channel.id,
+            oldest=ts,
+            limit=limit,
+            cursor=cursor.next_cursor if cursor else None,
+            inclusive=inclusive,
+        )
+        return load(p, History)
+
     async def _thread_history(self, channel: str, thread_id: str) -> List[Union[HistoryMessage, HistoryBotMessage]]:
         r: List[Union[HistoryMessage, HistoryBotMessage]] = []
         cursor = None
@@ -674,7 +685,14 @@ class Slack:
         except Exception:
             channel = 'unknown'
 
-        t = Topic(f'Threaded discussion from {channel}')
+        # Get head message
+        history = await self.get_history(original_channel, thread_ts, None, 1, True)
+        if history.messages:
+            msg = history.messages.pop().text.replace('\n', ' | ')
+        else:
+            msg = ''
+
+        t = Topic(f'From {channel}: {msg}')
         return MessageThread(
             id=original_channel,
             name_normalized=f'threaded-{thread_ts}',
