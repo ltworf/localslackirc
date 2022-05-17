@@ -687,11 +687,11 @@ class Slack:
         # Get head message
         history = await self.get_history(original_channel, thread_ts, None, 1)
         if history.messages:
-            msg = history.messages.pop().text
+            msg = history.messages.pop().text.replace('\n', ' | ')
         else:
             msg = ''
 
-        t = Topic(f'Discussion from {channel}: {msg}')
+        t = Topic(f'From {channel}: {msg}')
         return MessageThread(
             id=original_channel,
             name_normalized=f'threaded-{thread_ts}',
