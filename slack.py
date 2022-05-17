@@ -203,6 +203,7 @@ class File:
     channels: List[str] = field(default_factory=list)
     groups: List[str] = field(default_factory=list)
     ims: List[str] = field(default_factory=list)
+    thread_ts: Optional[str] = None
 
     def announce(self) -> Message:
         """
@@ -211,6 +212,7 @@ class File:
         return Message(
             channel=(self.channels + self.groups + self.ims).pop(),
             user=self.user,
+            thread_ts=self.thread_ts,
             text='[file upload] %s\n%s %d bytes\n%s' % (
                 self.name,
                 self.mimetype,
@@ -496,7 +498,8 @@ class Slack:
                         self._internalevents.append(Message(
                             channel=channel.id,
                             text=msg.text,
-                            user=msg.user
+                            user=msg.user,
+                            thread_ts=msg.thread_ts,
                         ))
                     elif isinstance(msg, HistoryBotMessage):
                         self._internalevents.append(MessageBot(
@@ -506,6 +509,7 @@ class Slack:
                             username=msg.username,
                             channel=channel.id,
                             bot_id=msg.bot_id,
+                            thread_ts=msg.thread_ts,
                         ))
 
                 if response.has_more and response.response_metadata:
