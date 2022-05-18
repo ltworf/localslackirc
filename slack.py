@@ -684,11 +684,17 @@ class Slack:
         # Get head message
         history = await self.get_history(original_channel, thread_ts, None, 1, True)
         if history.messages:
-            msg = history.messages.pop().text.replace('\n', ' | ')
+            msg = history.messages.pop()
+            original_txt = msg.text.strip().replace('\n', ' | ')
         else:
-            msg = ''
+            original_txt = ''
+            msg = None
 
-        t = Topic(f'From {channel}: {msg}')
+        user = 'unknown'
+        if isinstance(msg, HistoryMessage):
+            user = (await self.get_user(msg.user)).name
+
+        t = Topic(f'{user} in {channel}: {original_txt}')
         return MessageThread(
             id=original_channel,
             name_normalized=f'threaded-{thread_ts}',
