@@ -46,6 +46,7 @@ USELESS_EVENTS = {
     'file_created',
     'file_shared',
     'desktop_notification',
+    'mobile_in_app_notification',
 }
 
 
