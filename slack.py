@@ -739,7 +739,7 @@ class Slack:
         else:
             raise KeyError(response)
 
-    async def send_file(self, channel_id: str, filename: str) -> None:
+    async def send_file(self, channel_id: str, filename: str, thread_ts: Optional[str]) -> None:
         """
         Send a file to a channel or group or whatever
         """
@@ -747,6 +747,7 @@ class Slack:
             r = await self.client.api_call(
                 'files.upload',
                 channels=channel_id,
+                thread_ts=thread_ts,
                 file=f,
             )
         response = load(r, Response)
