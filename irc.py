@@ -355,8 +355,11 @@ class Client:
             return
 
         if bchannel_name in self.known_threads:
-            dest = self.known_threads[bchannel_name].id
+            dest_channel = self.known_threads[bchannel_name]
+            dest = dest_channel.id
+            thread_ts = dest_channel.thread_ts
         else:
+            thread_ts = None
             try:
                 if channel_name.startswith('#'):
                     dest = (await self.sl_client.get_channel_by_name(channel_name[1:])).id
@@ -367,7 +370,7 @@ class Client:
                 return
 
         try:
-            await self.sl_client.send_file(dest, filename)
+            await self.sl_client.send_file(dest, filename, thread_ts)
             await self._sendreply(0, 'Upload of %s completed' % filename)
         except Exception as e:
             await self._sendreply(Replies.ERR_FILEERROR, f'Unable to send file {e}')
