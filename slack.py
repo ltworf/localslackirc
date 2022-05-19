@@ -44,6 +44,7 @@ USELESS_EVENTS = {
     'file_deleted',
     'file_public',
     'file_created',
+    'file_shared',
     'desktop_notification',
 }
 
@@ -60,6 +61,17 @@ class Response(NamedTuple):
     headers: Dict[str, str]
     ts: Optional[float] = None
     error: Optional[str] = None
+
+
+@dataclass
+class File:
+    id: str
+    url_private: str
+    size: int
+    user: str
+    name: Optional[str] = None
+    title: Optional[str] = None
+    mimetype: Optional[str] = None
 
 
 class Topic(NamedTuple):
@@ -116,11 +128,13 @@ class MessageThread(Channel):
     thread_ts: str = ''
 
 
-class Message(NamedTuple):
+@dataclass(frozen=True)
+class Message:
     channel: str  # The channel id
     user: str  # The user id
     text: str
     thread_ts: Optional[str] = None
+    files: List[File] = field(default_factory=list)
 
 
 class NoChanMessage(NamedTuple):
@@ -166,6 +180,7 @@ class MessageDelete:
     channel: str
     previous_message: NoChanMessage
     thread_ts: Optional[str] = None
+    files: List[File] = field(default_factory=list)
 
     @property
     def user(self) -> str:
@@ -191,45 +206,6 @@ class Profile(NamedTuple):
 
 
 @dataclass
-class File:
-    id: str
-    url_private: str
-    size: int
-    user: str
-    name: Optional[str] = None
-    title: Optional[str] = None
-    mimetype: Optional[str] = None
-    channels: List[str] = field(default_factory=list)
-    groups: List[str] = field(default_factory=list)
-    ims: List[str] = field(default_factory=list)
-    thread_ts: Optional[str] = None
-
-    def announce(self) -> Message:
-        """
-        Returns a message to announce this file.
-        """
-        return Message(
-            channel=(self.channels + self.groups + self.ims).pop(),
-            user=self.user,
-            thread_ts=self.thread_ts,
-            text='[file upload] %s\n%s %d bytes\n%s' % (
-                self.name,
-                self.mimetype,
-                self.size,
-                self.url_private
-            )
-        )
-
-
-@dataclass
-class FileShared:
-    type: Literal['file_shared']
-    file_id: str
-    user_id: str
-    ts: float
-
-
-@dataclass
 class MessageBot:
     type: Literal['message']
     subtype: Literal['bot_message']
@@ -239,6 +215,7 @@ class MessageBot:
     bot_id: Optional[str] = None
     attachments: List[Dict[str, Any]] = field(default_factory=list)
     thread_ts: Optional[str] = None
+    files: List[File] = field(default_factory=list)
 
     @property
     def text(self):
@@ -338,7 +315,6 @@ SlackEvent = Union[
     Message,
     ActionMessage,
     MessageBot,
-    FileShared,
     Join,
     Leave,
     GroupJoined,
@@ -480,11 +456,6 @@ class Slack:
                     if self._status.last_timestamp < msg.ts:
                         self._status.last_timestamp = msg.ts
 
-                    # The attached files
-                    for f in msg.files:
-                        f.channels.append(channel.id)
-                        self._internalevents.append(f.announce())
-
                     # History for the thread
                     if msg.thread_ts and float(msg.thread_ts) == msg.ts:
                         l = await self._thread_history(channel.id, msg.thread_ts)
@@ -499,6 +470,7 @@ class Slack:
                             text=msg.text,
                             user=msg.user,
                             thread_ts=msg.thread_ts,
+                            files=msg.files,
                         ))
                     elif isinstance(msg, HistoryBotMessage):
                         self._internalevents.append(MessageBot(
@@ -766,18 +738,6 @@ class Slack:
         else:
             raise KeyError(response)
 
-    async def get_file(self, f: Union[FileShared, str]) -> File:
-        """
-        Returns a file object
-        """
-        fileid = f if isinstance(f, str) else f.file_id
-        r = await self.client.api_call("files.info", file=fileid)
-        response = load(r, Response)
-        if response.ok:
-            return load(r['file'], File)
-        else:
-            raise KeyError(response)
-
     async def send_file(self, channel_id: str, filename: str) -> None:
         """
         Send a file to a channel or group or whatever
@@ -912,7 +872,7 @@ class Slack:
                 continue
 
             debug(event)
-            loadable_events = Union[TopicChange, FileShared, MessageBot, MessageEdit, MessageDelete, GroupJoined, Join, Leave, UserTyping]
+            loadable_events = Union[TopicChange, MessageBot, MessageEdit, MessageDelete, GroupJoined, Join, Leave, UserTyping]
             try:
                 ev: Optional[loadable_events] = load(
                     event,
@@ -943,7 +903,7 @@ class Slack:
                     if im and im.user != msg.user:
                         msg = Message(user=im.user, text='I say: ' + msg.text, channel=im.id, thread_ts=msg.thread_ts)
                     if subt == 'me_message':
-                        return ActionMessage(*msg)
+                        return ActionMessage(*msg)  # type: ignore
                     else:
                         return msg
                 elif t == 'message' and subt == 'slackbot_response':
