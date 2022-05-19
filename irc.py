@@ -244,10 +244,7 @@ class Client:
 
     async def _send_chan_info(self, channel_name: bytes, slchan: Union[slack.Channel, slack.MessageThread]):
         if not self.settings.nouserlist:
-            if isinstance(slchan, slack.MessageThread):
-                l = slchan.hardcoded_userlist
-            else:
-                l = await self.sl_client.get_members(slchan.id)
+            l = await self.sl_client.get_members(slchan.id)
 
             userlist: List[bytes] = []
             for i in l:
@@ -689,9 +686,6 @@ class Client:
             # Threaded message
             thread = await self.sl_client.get_thread(sl_ev.thread_ts, sl_ev.channel)
             dest = b'#' + thread.name.encode('utf8')
-
-            if not isinstance(sl_ev, slack.MessageBot):
-                thread.hardcoded_userlist.add(sl_ev.user)
 
             # Join thread channel if needed
             if dest not in self.known_threads or dest in self.parted_channels:

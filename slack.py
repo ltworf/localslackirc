@@ -114,7 +114,6 @@ class Channel:
 @dataclass(frozen=True)
 class MessageThread(Channel):
     thread_ts: str = ''
-    hardcoded_userlist: Set[str] = field(default_factory=set)
 
 
 class Message(NamedTuple):
@@ -676,23 +675,20 @@ class Slack:
         """
         Creates a fake channel class for a chat thread
         """
-        try:
-            channel = (await self.get_channel(original_channel)).name_normalized
-        except Exception:
-            channel = 'unknown'
+        channel = (await self.get_channel(original_channel)).name_normalized
 
         # Get head message
         history = await self.get_history(original_channel, thread_ts, None, 1, True)
-        if history.messages:
-            msg = history.messages.pop()
-            original_txt = msg.text.strip().replace('\n', ' | ')
-        else:
-            original_txt = ''
-            msg = None
 
-        user = 'unknown'
-        if isinstance(msg, HistoryMessage):
-            user = (await self.get_user(msg.user)).name
+        msg = history.messages.pop()
+        user = (await self.get_user(msg.user)).name if isinstance(msg, HistoryMessage) else 'bot'
+
+        # Top message is a file
+        if msg.text == '' and msg.files:
+            f = msg.files[0]
+            original_txt = f'{f.title} {f.mimetype} {f.url_private}'
+        else:
+            original_txt = msg.text.strip().replace('\n', ' | ')
 
         t = Topic(f'{user} in {channel}: {original_txt}')
         return MessageThread(
