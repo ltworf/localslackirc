@@ -696,6 +696,10 @@ class Client:
 
         text = sl_ev.text
 
+        if sl_ev.files:
+            for f in sl_ev.files:
+                text+=f'\n[file upload] {f.name}\n{f.mimetype} {f.size} bytes\n{f.url_private}'
+
         lines = await self.parse_message(prefix + text, source)
         for i in lines.split(b'\n'):
             if not i:
@@ -749,9 +753,6 @@ class Client:
                 await self._message(sl_ev.diffmsg)
         elif isinstance(sl_ev, slack.MessageBot):
             await self._message(sl_ev, '[%s] ' % sl_ev.username)
-        elif isinstance(sl_ev, slack.FileShared):
-            f = await self.sl_client.get_file(sl_ev)
-            await self._message(f.announce())
         elif isinstance(sl_ev, slack.Join):
             await self._joined_parted(sl_ev, True)
         elif isinstance(sl_ev, slack.Leave):
