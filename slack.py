@@ -114,7 +114,6 @@ class Channel:
 @dataclass(frozen=True)
 class MessageThread(Channel):
     thread_ts: str = ''
-    hardcoded_userlist: Set[str] = field(default_factory=set)
 
 
 class Message(NamedTuple):
