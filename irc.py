@@ -347,23 +347,30 @@ class Client:
         #/sendfile #destination filename
         params = cmd.split(b' ', 2)
         try:
+            bchannel_name = params[1]
             channel_name = params[1].decode('utf8')
             filename = params[2].decode('utf8')
         except IndexError:
             await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Syntax: /sendfile #channel filename')
             return
 
-        try:
-            if channel_name.startswith('#'):
-                dest = (await self.sl_client.get_channel_by_name(channel_name[1:])).id
-            else:
-                dest = (await self.sl_client.get_user_by_name(channel_name)).id
-        except KeyError:
-            await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find destination: {channel_name}')
-            return
+        if bchannel_name in self.known_threads:
+            dest_channel = self.known_threads[bchannel_name]
+            dest = dest_channel.id
+            thread_ts = dest_channel.thread_ts
+        else:
+            thread_ts = None
+            try:
+                if channel_name.startswith('#'):
+                    dest = (await self.sl_client.get_channel_by_name(channel_name[1:])).id
+                else:
+                    dest = (await self.sl_client.get_user_by_name(channel_name)).id
+            except KeyError:
+                await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find destination: {channel_name}')
+                return
 
         try:
-            await self.sl_client.send_file(dest, filename)
+            await self.sl_client.send_file(dest, filename, thread_ts)
             await self._sendreply(0, 'Upload of %s completed' % filename)
         except Exception as e:
             await self._sendreply(Replies.ERR_FILEERROR, f'Unable to send file {e}')
