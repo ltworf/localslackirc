@@ -141,6 +141,7 @@ class Message:
 class NoChanMessage(NamedTuple):
     user: str
     text: str
+    thread_ts: Optional[str] = None
 
 
 class ActionMessage(Message):
@@ -171,6 +172,7 @@ class MessageEdit:
             text=seddiff(self.previous.text, self.current.text),
             channel=self.channel,
             user=self.current.user,
+            thread_ts=self.previous.thread_ts
         )
 
 
@@ -180,8 +182,11 @@ class MessageDelete:
     subtype: Literal['message_deleted']
     channel: str
     previous_message: NoChanMessage
-    thread_ts: Optional[str] = None
     files: List[File] = field(default_factory=list)
+
+    @property
+    def thread_ts(self) -> Optional[str]:
+        return self.previous_message.thread_ts
 
     @property
     def user(self) -> str:
