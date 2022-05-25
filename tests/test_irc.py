@@ -27,45 +27,42 @@ class TestIRC(IsolatedAsyncioTestCase):
         self.client = Client(stream_writer, slack_client, settings)
 
 
-def b(s: str) -> bytes:
-    return bytes(s, encoding="utf-8")
-
 class TestAnnoyanceAvoidance(TestIRC):
     async def test_yelling_prevention(self):
         self.client.nick = b'aldo'
 
         # Mention generated
         msg = await self.client.parse_message("<!here> watch this!", b'rose.adams')
-        assert msg == b'yelling [aldo]: watch this!'
+        assert msg == 'yelling [aldo]: watch this!'
 
         # Add rose.adams to silenced yellers
         self.client.settings.silenced_yellers.add(b'rose.adams')
 
         # Mention no longer generated
         msg = await self.client.parse_message("<!here> watch this!", b'rose.adams')
-        assert msg == b'yelling: watch this!'
+        assert msg == 'yelling: watch this!'
 
         # No effect on regular messages
         msg = await self.client.parse_message("hello world", b'rose.adams')
-        assert msg == b'hello world'
+        assert msg == 'hello world'
 
 
 class TestParseMessage(TestIRC):
     async def test_simple_message(self):
         msg = await self.client.parse_message("hello world", b'ciccio')
-        self.assertEqual(msg, b"hello world")
+        self.assertEqual(msg, "hello world")
 
     async def test_url(self):
         msg = await self.client.parse_message("See <https://example.com/docs/|the documentation>", b'ciccio')
-        self.assertEqual(msg, b("See the documentation¹\n  ¹ https://example.com/docs/"))
+        self.assertEqual(msg, "See the documentation¹\n  ¹ https://example.com/docs/")
 
     async def test_url_aggressive_shortening(self):
         msg = await self.client.parse_message("See <https://example.com/docs/iqjweoijsodijijaoij?oiwje|https://example.com/docs/iqjweoijsodijijaoij>", b'ciccio')
-        self.assertEqual(msg, b("See LINK¹\n  ¹ https://example.com/docs/iqjweoijsodijijaoij?oiwje"))
+        self.assertEqual(msg, "See LINK¹\n  ¹ https://example.com/docs/iqjweoijsodijijaoij?oiwje")
 
     async def test_multiple_urls(self):
         msg = await self.client.parse_message("See <https://example.com/docs/|the documentation>. Try also the <https://example.com/faq/|FAQ>", b'ciccio')
-        self.assertEqual(msg, b("See the documentation¹. Try also the FAQ²\n  ¹ https://example.com/docs/\n  ² https://example.com/faq/"))
+        self.assertEqual(msg, "See the documentation¹. Try also the FAQ²\n  ¹ https://example.com/docs/\n  ² https://example.com/faq/")
 
     async def test_a_lot_of_urls(self):
         input_msg = "<https://example.com/|url> " * 10
@@ -83,12 +80,12 @@ class TestParseMessage(TestIRC):
             "  ¹⁰ https://example.com/",
         ])
         msg = await self.client.parse_message(input_msg, b'ciccio')
-        self.assertEqual(msg, b(output))
+        self.assertEqual(msg, output)
 
     async def test_url_with_no_label_just_goes_inline(self):
         msg = await self.client.parse_message("Please look at <https://example.com/>", b'ciccio')
-        self.assertEqual(msg, b("Please look at https://example.com/"))
+        self.assertEqual(msg, "Please look at https://example.com/")
 
     async def test_dont_expand_urls_with_no_different_text(self):
         msg = await self.client.parse_message("<https://example.com/|https://example.com/>", b'ciccio')
-        self.assertEqual(msg, b"https://example.com/")
+        self.assertEqual(msg, "https://example.com/")
