@@ -40,3 +40,26 @@ def preblocks(msg: str) -> Iterable[Tuple[str, bool]]:
         pre = not pre
         msg = msg[p+3:]
     yield msg, pre
+
+
+def split_tokens(msg: str) -> Iterable[str]:
+    """
+    yields separately the normal text and the special slack
+    <stuff> items
+    """
+    while True:
+        try:
+            begin = msg.index('<')
+        except ValueError:
+            break
+
+        if begin != 0: # There is stuff before
+            yield msg[0:begin]
+            msg = msg[begin:]
+        else: # Tag at the beginning
+            end = msg.index('>')
+            block = msg[0:end + 1]
+            msg = msg[end + 1:]
+            yield block
+    if msg:
+        yield msg

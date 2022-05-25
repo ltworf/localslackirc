@@ -16,7 +16,7 @@
 
 import unittest
 
-from msgparsing import preblocks
+from msgparsing import preblocks, split_tokens
 
 
 class TestMsgParsing(unittest.TestCase):
@@ -27,3 +27,7 @@ class TestMsgParsing(unittest.TestCase):
         assert list(preblocks('a ```a``` a')) == [('a ', False), ('a', True), (' a', False)]
         assert list(preblocks('```a``` a')) == [('', False), ('a', True), (' a', False)]
         assert list(preblocks('```a')) == [('', False), ('a', True)]
+
+    def test_split_tokens(self):
+        assert list(split_tokens('a b c d')) == ['a b c d']
+        assert list(split_tokens('a <b> <c> d')) == ['a ', '<b>', ' ', '<c>', ' d']
