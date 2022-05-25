@@ -43,6 +43,7 @@ except ModuleNotFoundError:
 
 import slack
 from log import *
+from msgparsing import SLACK_SUBSTITUTIONS
 
 
 # How slack expresses mentioning users
@@ -51,13 +52,6 @@ _CHANNEL_MENTIONS_REGEXP = re.compile(r'<#([A-Z0-9]+)\|[_\w-]+>')
 _URL_REGEXP = re.compile(r'<([a-z0-9\-\.]+)://([^\s\|]+)[\|]{0,1}([^<>]*)>')
 
 VERSION = '1.15'
-
-
-_SLACK_SUBSTITUTIONS = [
-    ('&amp;', '&'),
-    ('&gt;', '>'),
-    ('&lt;', '<'),
-]
 
 
 class IrcDisconnectError(Exception): ...
@@ -556,7 +550,7 @@ class Client:
         Adds magic codes and various things to
         outgoing messages
         """
-        for i in _SLACK_SUBSTITUTIONS:
+        for i in SLACK_SUBSTITUTIONS:
             msg = msg.replace(i[1], i[0])
         if self.settings.provider == Provider.SLACK:
             msg = msg.replace('@here', '<!here>')
@@ -620,7 +614,7 @@ class Client:
                 )
         i += bottom
 
-        for s in _SLACK_SUBSTITUTIONS:
+        for s in SLACK_SUBSTITUTIONS:
             i = i.replace(s[0], s[1])
 
         # Replace emoji codes (e.g. :thumbsup:)

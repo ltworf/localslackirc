@@ -20,6 +20,13 @@ from enum import Enum
 from typing import Iterable, Tuple, NamedTuple, Union, Optional
 
 
+SLACK_SUBSTITUTIONS = [
+    ('&amp;', '&'),
+    ('&gt;', '>'),
+    ('&lt;', '<'),
+]
+
+
 def preblocks(msg: str) -> Iterable[Tuple[str, bool]]:
     """
     Iterates the preformatted and normal text blocks
