@@ -1,5 +1,5 @@
 # localslackirc
-# Copyright (C) 2020 Salvo "LtWorf" Tomaselli
+# Copyright (C) 2022 Salvo "LtWorf" Tomaselli
 #
 # localslackirc is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,14 +16,27 @@
 #
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
-import unittest
+from typing import Iterable, Tuple
 
-from .test_re import *
-from .test_diff import *
-from .test_executable import *
-from .test_message_bot import *
-from .test_irc import *
-from .test_msgparsing import *
 
-if __name__ == '__main__':
-    unittest.main()
+def preblocks(msg: str) -> Iterable[Tuple[str, bool]]:
+    """
+    Iterates the preformatted and normal text blocks
+    in the message.
+
+    The boolean indicates if the block is preformatted.
+
+    The three ``` ticks are removed by this.
+    """
+    pre = False
+
+    while True:
+        try:
+            p = msg.index('```')
+        except ValueError:
+            break
+
+        yield msg[0:p], pre
+        pre = not pre
+        msg = msg[p+3:]
+    yield msg, pre

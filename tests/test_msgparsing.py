@@ -1,5 +1,5 @@
 # localslackirc
-# Copyright (C) 2020 Salvo "LtWorf" Tomaselli
+# Copyright (C) 2021 Antonio Terceiro
 #
 # localslackirc is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,17 +13,17 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-# author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
 import unittest
 
-from .test_re import *
-from .test_diff import *
-from .test_executable import *
-from .test_message_bot import *
-from .test_irc import *
-from .test_msgparsing import *
+from msgparsing import preblocks
 
-if __name__ == '__main__':
-    unittest.main()
+
+class TestMsgParsing(unittest.TestCase):
+
+    def test_preblocks(self):
+        assert list(preblocks('')) == [('', False)]
+        assert list(preblocks('asd')) == [('asd', False)]
+        assert list(preblocks('a ```a``` a')) == [('a ', False), ('a', True), (' a', False)]
+        assert list(preblocks('```a``` a')) == [('', False), ('a', True), (' a', False)]
+        assert list(preblocks('```a')) == [('', False), ('a', True)]
