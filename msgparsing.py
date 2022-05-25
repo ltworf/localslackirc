@@ -74,6 +74,10 @@ class Itemkind(Enum):
 class PreBlock(NamedTuple):
     txt: str
 
+    @property
+    def lines(self) -> int:
+        return self.txt.count('\n')
+
 
 class SpecialItem(NamedTuple):
     txt: str
