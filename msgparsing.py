@@ -19,6 +19,12 @@
 from enum import Enum
 from typing import Iterable, Tuple, NamedTuple, Union, Optional
 
+try:
+    from emoji import emojize  # type: ignore
+except ModuleNotFoundError:
+    def emojize(string:str, use_aliases:bool=False, delimiters: Tuple[str,str]=(':', ':')) -> str:  # type: ignore
+        return string
+
 
 SLACK_SUBSTITUTIONS = [
     ('&amp;', '&'),
@@ -55,6 +61,10 @@ class Itemkind(Enum):
     MENTION = 1 # @user
     CHANNEL = 2 # #channel
     OTHER = 3 # Everything else
+
+
+class PreBlock(NamedTuple):
+    txt: str
 
 
 class SpecialItem(NamedTuple):
@@ -152,3 +162,26 @@ def convertpre(msg: str) -> str:
     for s in SLACK_SUBSTITUTIONS:
         l = l.replace(s[0], s[1])
     return l
+
+
+def tokenize(msg: str) -> Iterable[Union[PreBlock, SpecialItem, str]]:
+    """
+    Yields the various possible tokens
+
+    Changes the &gt; codes
+
+    Puts the emoji in place
+    """
+    for txt, pre in preblocks(msg):
+        if pre:
+            yield PreBlock(convertpre(txt))
+        else:
+            for t in split_tokens(txt):
+                if isinstance(t, str):
+                    # Replace emoji codes (e.g. :thumbsup:)
+                    t = emojize(t, use_aliases=True)
+                    # Usual substitutions
+                    for s in SLACK_SUBSTITUTIONS:
+                        t = t.replace(s[0], s[1])  # type: ignore
+                yield  t
+

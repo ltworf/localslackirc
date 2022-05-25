@@ -16,7 +16,7 @@
 
 import unittest
 
-from msgparsing import preblocks, split_tokens, SpecialItem, Itemkind, convertpre
+from msgparsing import preblocks, split_tokens, SpecialItem, Itemkind, convertpre, tokenize, PreBlock
 
 
 class TestMsgParsing(unittest.TestCase):
@@ -56,3 +56,10 @@ class TestMsgParsing(unittest.TestCase):
     def test_convertpre(self):
         assert convertpre('asd') == 'asd'
         assert convertpre('asd <http://ciccio> &gt;') == 'asd http://ciccio >'
+
+    def test_tokenize(self):
+        assert list(tokenize('a')) == ['a']
+        assert list(tokenize('a ```ciao```')) == ['a ', PreBlock('ciao')]
+        assert list(tokenize(':coffin:')) == ['⚰️']
+        assert list(tokenize('&gt;')) == ['>']
+        assert list(tokenize('a <b> <c> d ```<http://ciccio>```')) == ['a ', SpecialItem('<b>'), ' ', SpecialItem('<c>'), ' d ', PreBlock('http://ciccio')]
