@@ -32,6 +32,14 @@ SLACK_SUBSTITUTIONS = [
     ('&lt;', '<'),
 ]
 
+__all__ = [
+    'SLACK_SUBSTITUTIONS',
+    'tokenize',
+    'Itemkind',
+    'PreBlock',
+    'SpecialItem',
+]
+
 
 def preblocks(msg: str) -> Iterable[Tuple[str, bool]]:
     """
