@@ -167,8 +167,9 @@ def convertpre(msg: str) -> str:
         if t.kind != Itemkind.OTHER:
             raise ValueError(f'Unexpected slack item in preformatted block {t}')
         if t.human:
-            raise ValueError(f'Unexpected slack item with human representation in preformatted block {t}')
-        r.append(t.val)
+            r.append(t.human)
+        else:
+            r.append(t.val)
 
     l = ''.join(r)
     for s in SLACK_SUBSTITUTIONS:
