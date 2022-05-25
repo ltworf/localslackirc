@@ -140,11 +140,6 @@ class Client:
         self._mentions_regex_cache: Dict[str, Optional[re.Pattern]] = {}  # Cache for the regexp to perform mentions. Key is channel id
         self._annoy_users: Dict[str, int] = {} # Users to annoy pretending to type when they type
 
-        if self.settings.provider == Provider.SLACK:
-            self.substitutions = _SLACK_SUBSTITUTIONS
-        else:
-            self.substitutions = []
-
     async def _nickhandler(self, cmd: bytes) -> None:
         if b' ' not in cmd:
             self.nick = b'localslackirc'
@@ -561,7 +556,7 @@ class Client:
         Adds magic codes and various things to
         outgoing messages
         """
-        for i in self.substitutions:
+        for i in _SLACK_SUBSTITUTIONS:
             msg = msg.replace(i[1], i[0])
         if self.settings.provider == Provider.SLACK:
             msg = msg.replace('@here', '<!here>')
@@ -625,7 +620,7 @@ class Client:
                 )
         i += bottom
 
-        for s in self.substitutions:
+        for s in _SLACK_SUBSTITUTIONS:
             i = i.replace(s[0], s[1])
 
         # Replace emoji codes (e.g. :thumbsup:)
