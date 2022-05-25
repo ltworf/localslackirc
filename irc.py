@@ -34,22 +34,10 @@ import sys
 import time
 
 
-try:
-    from emoji import emojize  # type: ignore
-except ModuleNotFoundError:
-    def emojize(string:str, use_aliases:bool=False, delimiters: Tuple[str,str]=(':', ':')) -> str:  # type: ignore
-        return string
-
-
 import slack
 from log import *
-from msgparsing import SLACK_SUBSTITUTIONS
+import msgparsing
 
-
-# How slack expresses mentioning users
-_MENTIONS_REGEXP = re.compile(r'<@([0-9A-Za-z]+)>')
-_CHANNEL_MENTIONS_REGEXP = re.compile(r'<#([A-Z0-9]+)\|[_\w-]+>')
-_URL_REGEXP = re.compile(r'<([a-z0-9\-\.]+)://([^\s\|]+)[\|]{0,1}([^<>]*)>')
 
 VERSION = '1.15'
 
@@ -550,7 +538,7 @@ class Client:
         Adds magic codes and various things to
         outgoing messages
         """
-        for i in SLACK_SUBSTITUTIONS:
+        for i in msgparsing.SLACK_SUBSTITUTIONS:
             msg = msg.replace(i[1], i[0])
         if self.settings.provider == Provider.SLACK:
             msg = msg.replace('@here', '<!here>')
@@ -571,92 +559,56 @@ class Client:
                 msg = msg[0:m.start()] + '<@%s>' % (await self.sl_client.get_user_by_name(username)).id + msg[m.end():]
         return msg
 
-    async def parse_message(self, i: str, source: bytes) -> bytes:
-        # Replace all mentions with @user
-        while mention := _MENTIONS_REGEXP.search(i):
-            i = (
-                i[0:mention.span()[0]] +
-                (await self.sl_client.get_user(mention.groups()[0])).name +
-                i[mention.span()[1]:]
-            )
+    async def parse_message(self, i: str, source: bytes) -> str:
 
-        # Replace all channel mentions
-        while mention := _CHANNEL_MENTIONS_REGEXP.search(i):
-            i = (
-                i[0:mention.span()[0]] +
-                '#' +
-                (await self.sl_client.get_channel(mention.groups()[0])).name_normalized +
-                i[mention.span()[1]:]
-            )
+        r = ''
 
-        #Replace URL with bottom links
-        bottom = ""
+        # Url replacing
+        links = ''
         refs = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
         refn = 1
-        while url := _URL_REGEXP.search(i):
-            schema, path, label = url.groups()
-            if label and (label != f"{schema}://{path}"):
-                if '://' in label:
-                    label = 'LINK'
-                ref = str(refn).translate(refs)
-                refn += 1
-                i = (
-                    i[0:url.span()[0]] +
-                    f'{label}{ref}' +
-                    i[url.span()[1]:]
-                )
-                bottom += f'\n  {ref} {schema}://{path}'
-            else:
-                i = (
-                    i[0:url.span()[0]] +
-                    f'{schema}://{path}' +
-                    i[url.span()[1]:]
-                )
-        i += bottom
 
-        for s in SLACK_SUBSTITUTIONS:
-            i = i.replace(s[0], s[1])
-
-        # Replace emoji codes (e.g. :thumbsup:)
-        i = emojize(i, use_aliases=True)
-
-        # Store long formatted text into txt files
-        if self.settings.formatted_max_lines:
-            begin = 0
-            while True:
-                try:
-                    fmtstart = i.index('```', begin)
-                    fmtend = i.index('```', fmtstart + 1)
-
-                    formatted = i[fmtstart + 3:fmtend]
-                    prefix = i[0:fmtstart]
-                    suffix = i[fmtend + 3:]
-
-                    if formatted.count('\n') > self.settings.formatted_max_lines:
-                        import tempfile
-                        with tempfile.NamedTemporaryFile(
-                                    mode='wt',
-                                    dir=self.settings.downloads_directory,
-                                    suffix='.txt',
-                                    prefix='localslackirc-attachment-',
-                                    delete=False) as tmpfile:
-                            tmpfile.write(formatted)
-                            i = prefix + f'\n === PREFORMATTED TEXT AT file://{tmpfile.name}\n' + suffix
+        for t in msgparsing.tokenize(i):
+            if isinstance(t, str): # A normal nice string
+                r += t
+            elif isinstance(t, msgparsing.PreBlock): # Preformatted block
+                # Store long formatted text into txt files
+                if self.settings.formatted_max_lines and t.lines > self.settings.formatted_max_lines:
+                    import tempfile
+                    with tempfile.NamedTemporaryFile(
+                            mode='wt',
+                            dir=self.settings.downloads_directory,
+                            suffix='.txt',
+                            prefix='localslackirc-attachment-',
+                            delete=False) as tmpfile:
+                        tmpfile.write(t.txt)
+                        r += f'\n === PREFORMATTED TEXT AT file://{tmpfile.name}\n'
+                else: # Do not store to file
+                    r += f'```{t.txt}```'
+            elif isinstance(t, msgparsing.SpecialItem):
+                if t.kind == msgparsing.Itemkind.MENTION: # User mention
+                    r += (await self.sl_client.get_user(t.val)).name
+                elif t.kind == msgparsing.Itemkind.CHANNEL: # Channel mention
+                    r += '#' + (await self.sl_client.get_channel(t.val)).name_normalized
+                elif t.kind == msgparsing.Itemkind.GROUPMENTION: # Channel shouting
+                    yell = ' [%s]:' % self.nick.decode('utf8') if source not in self.settings.silenced_yellers else ':'
+                    if t.val == 'here':
+                        r += 'yelling' + yell
+                    elif t.val == 'channel':
+                        r += 'YELLING LOUDER' + yell
                     else:
-                        i = '```'.join((prefix, formatted, suffix))
-                        begin = fmtend + 1
-                except ValueError:
-                    break
-
-        encoded = i.encode('utf8')
-
-        if self.settings.provider == Provider.SLACK:
-            yell = b' [%s]:' % self.nick if source not in self.settings.silenced_yellers else b':'
-            encoded = encoded.replace(b'<!here>', b'yelling%s' % yell)
-            encoded = encoded.replace(b'<!channel>', b'YELLING LOUDER%s' % yell)
-            encoded = encoded.replace(b'<!everyone>', b'DEAFENING YELL%s' % yell)
-
-        return encoded
+                        r += 'DEAFENING YELL' + yell
+                else: # Link
+                    label = t.human
+                    if label is None or '://' in label:
+                        r += t.val
+                    else:
+                        label = 'LINK'
+                        ref = str(refn).translate(refs)
+                        links += f'\n  {ref} {t.val}'
+                        r += label + ref
+                        refn += 1
+        return r + links
 
     async def _message(self, sl_ev: Union[slack.Message, slack.MessageDelete, slack.MessageBot, slack.ActionMessage], prefix: str=''):
         """
@@ -696,7 +648,7 @@ class Client:
             for f in sl_ev.files:
                 text+=f'\n[file upload] {f.name}\n{f.mimetype} {f.size} bytes\n{f.url_private}'
 
-        lines = await self.parse_message(prefix + text, source)
+        lines = (await self.parse_message(prefix + text, source)).encode('utf-8')
         for i in lines.split(b'\n'):
             if not i:
                 continue
