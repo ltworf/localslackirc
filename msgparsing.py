@@ -101,7 +101,7 @@ class SpecialItem(NamedTuple):
         return self.txt[sep+1:-1]
 
 
-def split_tokens(msg: str) -> Iterable[Union[SpecialItem,str]]:
+def split_tokens(msg: str) -> Iterable[Union[SpecialItem, str]]:
     """
     yields separately the normal text and the special slack
     <stuff> items
@@ -122,3 +122,33 @@ def split_tokens(msg: str) -> Iterable[Union[SpecialItem,str]]:
             yield SpecialItem(block)
     if msg:
         yield msg
+
+
+def convertpre(msg: str) -> str:
+    """
+    Fixes a preformatted block so that it can
+    be displayed by an irc client.
+
+    Links can be present in preformatted blocks
+    with the format <http://> and MAYBE with
+    <http://blabla|bla> but no channel or user
+    mentions are allowed, and emoji substitution
+    should not happen here.
+    """
+    r = []
+
+    for t in split_tokens(msg):
+        if isinstance(t, str):
+            r.append(t)
+            continue
+
+        if t.kind != Itemkind.OTHER:
+            raise ValueError(f'Unexpected slack item in preformatted block {t}')
+        if t.human:
+            raise ValueError(f'Unexpected slack item with human representation in preformatted block {t}')
+        r.append(t.val)
+
+    l = ''.join(r)
+    for s in SLACK_SUBSTITUTIONS:
+        l = l.replace(s[0], s[1])
+    return l

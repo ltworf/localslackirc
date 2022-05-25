@@ -16,7 +16,7 @@
 
 import unittest
 
-from msgparsing import preblocks, split_tokens, SpecialItem, Itemkind
+from msgparsing import preblocks, split_tokens, SpecialItem, Itemkind, convertpre
 
 
 class TestMsgParsing(unittest.TestCase):
@@ -52,3 +52,7 @@ class TestMsgParsing(unittest.TestCase):
         assert c.kind == Itemkind.GROUPMENTION
         assert c.human is None
         assert c.val == 'here'
+
+    def test_convertpre(self):
+        assert convertpre('asd') == 'asd'
+        assert convertpre('asd <http://ciccio> &gt;') == 'asd http://ciccio >'
