@@ -16,7 +16,7 @@
 
 import unittest
 
-from msgparsing import preblocks, split_tokens
+from msgparsing import preblocks, split_tokens, SpecialItem, Itemkind
 
 
 class TestMsgParsing(unittest.TestCase):
@@ -30,4 +30,25 @@ class TestMsgParsing(unittest.TestCase):
 
     def test_split_tokens(self):
         assert list(split_tokens('a b c d')) == ['a b c d']
-        assert list(split_tokens('a <b> <c> d')) == ['a ', '<b>', ' ', '<c>', ' d']
+        assert list(split_tokens('a <b> <c> d')) == ['a ', SpecialItem('<b>'), ' ', SpecialItem('<c>'), ' d']
+
+    def test_special_item(self):
+        c = SpecialItem('<@ciccio>')
+        assert c.kind == Itemkind.MENTION
+        assert c.human is None
+        assert c.val == 'ciccio'
+
+        c = SpecialItem('<http://ciccio|link>')
+        assert c.kind == Itemkind.OTHER
+        assert c.human == 'link'
+        assert c.val == 'http://ciccio'
+
+        c = SpecialItem('<#ciccio>')
+        assert c.kind == Itemkind.CHANNEL
+        assert c.human is None
+        assert c.val == 'ciccio'
+
+        c = SpecialItem('<!here>')
+        assert c.kind == Itemkind.GROUPMENTION
+        assert c.human is None
+        assert c.val == 'here'

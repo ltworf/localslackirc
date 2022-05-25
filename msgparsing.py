@@ -16,7 +16,8 @@
 #
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
-from typing import Iterable, Tuple
+from enum import Enum
+from typing import Iterable, Tuple, NamedTuple, Union, Optional
 
 
 def preblocks(msg: str) -> Iterable[Tuple[str, bool]]:
@@ -42,7 +43,58 @@ def preblocks(msg: str) -> Iterable[Tuple[str, bool]]:
     yield msg, pre
 
 
-def split_tokens(msg: str) -> Iterable[str]:
+class Itemkind(Enum):
+    GROUPMENTION = 0  # HERE, EVERYONE and such
+    MENTION = 1 # @user
+    CHANNEL = 2 # #channel
+    OTHER = 3 # Everything else
+
+
+class SpecialItem(NamedTuple):
+    txt: str
+
+    @property
+    def kind(self) -> Itemkind:
+        k = self.txt[1]
+        if k == '!':
+            return Itemkind.GROUPMENTION
+        elif k == '@':
+            return Itemkind.MENTION
+        elif k == '#':
+            return Itemkind.CHANNEL
+        return Itemkind.OTHER
+
+    @property
+    def val(self) -> str:
+        """
+        Return the value
+        """
+
+        sep = self.txt.find('|')
+
+        # No human readable, just take the whole thing
+        if sep == -1:
+            sep = len(self.txt) - 1
+
+
+        if self.kind != Itemkind.OTHER:
+            return self.txt[2:sep]
+        return self.txt[1:sep]
+
+    @property
+    def human(self) -> Optional[str]:
+        """
+        Return the eventual human readable
+        message
+        """
+        sep = self.txt.find('|')
+
+        if sep == -1:
+            return None
+        return self.txt[sep+1:-1]
+
+
+def split_tokens(msg: str) -> Iterable[Union[SpecialItem,str]]:
     """
     yields separately the normal text and the special slack
     <stuff> items
@@ -60,6 +112,6 @@ def split_tokens(msg: str) -> Iterable[str]:
             end = msg.index('>')
             block = msg[0:end + 1]
             msg = msg[end + 1:]
-            yield block
+            yield SpecialItem(block)
     if msg:
         yield msg
