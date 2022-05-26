@@ -600,10 +600,11 @@ class Client:
                         r += 'DEAFENING YELL' + yell
                 else: # Link
                     label = t.human
-                    if label is None or '://' in label:
+                    if label is None:
                         r += t.val
                     else:
-                        label = 'LINK'
+                        if '://' in label:
+                            label = 'LINK'
                         ref = str(refn).translate(refs)
                         links += f'\n  {ref} {t.val}'
                         r += label + ref
