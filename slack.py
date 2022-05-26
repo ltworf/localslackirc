@@ -122,7 +122,7 @@ class Channel:
             t = self.topic.value
         else:
             t = self.purpose.value
-        return t.replace('\n', ' | ')
+        return t
 
 @dataclass(frozen=True)
 class MessageThread(Channel):
