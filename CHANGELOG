@@ -1,5 +1,6 @@
 1.15
 * Map slack threads to IRC channels
+* Rewritten parser for slack messages
 
 1.14
 * Write "LINK" instead of the URL when slack labels a URL with another URL
