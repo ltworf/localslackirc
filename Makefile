@@ -20,6 +20,7 @@ install:
 	# Install files from the root dir
 	install -m644 diff.py $${DESTDIR:-/}/usr/share/localslackirc/
 	install -m644 log.py $${DESTDIR:-/}/usr/share/localslackirc/
+	install -m644 msgparsing.py $${DESTDIR:-/}/usr/share/localslackirc/
 	install -m644 slack.py $${DESTDIR:-/}/usr/share/localslackirc/
 	install -m644 irc.py $${DESTDIR:-/}/usr/share/localslackirc/
 	install localslackirc $${DESTDIR:-/}/usr/share/localslackirc/
