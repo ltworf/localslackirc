@@ -80,7 +80,7 @@ Sources
 
 ### Requirements
 
-* At least Python 3.8
+* At least Python 3.10
 * The modules indicated in `requirements.txt`
 
 Check the manpage for the parameters.
