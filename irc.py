@@ -238,9 +238,10 @@ class Client:
 
             users = b' '.join(userlist)
 
+        topic = (await self.parse_message(slchan.real_topic, b'')).replace('\n', ' | ')
         self.s.write(b':%s!%s@127.0.0.1 JOIN %s\r\n' % (self.nick, self.nick, channel_name))
         await self.s.drain()
-        await self._sendreply(Replies.RPL_TOPIC, slchan.real_topic, [channel_name])
+        await self._sendreply(Replies.RPL_TOPIC, topic, [channel_name])
         await self._sendreply(Replies.RPL_NAMREPLY, b'' if self.settings.nouserlist else users, ['=', channel_name])
         await self._sendreply(Replies.RPL_ENDOFNAMES, 'End of NAMES list', [channel_name])
 
@@ -290,7 +291,8 @@ class Client:
 
     async def _listhandler(self, cmd: bytes) -> None:
         for c in await self.sl_client.channels(refresh=True):
-            await self._sendreply(Replies.RPL_LIST, c.real_topic, ['#' + c.name, str(c.num_members)])
+            topic = (await self.parse_message(c.real_topic, b'')).replace('\n', ' | ')
+            await self._sendreply(Replies.RPL_LIST, topic, ['#' + c.name, str(c.num_members)])
         await self._sendreply(Replies.RPL_LISTEND, 'End of LIST')
 
     async def _modehandler(self, cmd: bytes) -> None:
