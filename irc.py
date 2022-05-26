@@ -600,7 +600,7 @@ class Client:
                     r += (await self.sl_client.get_user(t.val)).name
                 elif t.kind == msgparsing.Itemkind.CHANNEL: # Channel mention
                     r += '#' + (await self.sl_client.get_channel(t.val)).name_normalized
-                elif t.kind == msgparsing.Itemkind.GROUPMENTION: # Channel shouting
+                elif t.kind == msgparsing.Itemkind.YELL: # Channel shouting
                     yell = ' [%s]:' % self.nick.decode('utf8') if source not in self.settings.silenced_yellers else ':'
                     if t.val == 'here':
                         r += 'yelling' + yell

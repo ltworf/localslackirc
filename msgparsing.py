@@ -65,7 +65,7 @@ def preblocks(msg: str) -> Iterable[Tuple[str, bool]]:
 
 
 class Itemkind(Enum):
-    GROUPMENTION = 0  # HERE, EVERYONE and such
+    YELL = 0  # HERE, EVERYONE and such
     MENTION = 1 # @user
     CHANNEL = 2 # #channel
     OTHER = 3 # Everything else
@@ -86,7 +86,7 @@ class SpecialItem(NamedTuple):
     def kind(self) -> Itemkind:
         k = self.txt[1]
         if k == '!':
-            return Itemkind.GROUPMENTION
+            return Itemkind.YELL
         elif k == '@':
             return Itemkind.MENTION
         elif k == '#':

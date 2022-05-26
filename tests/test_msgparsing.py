@@ -49,7 +49,7 @@ class TestMsgParsing(unittest.TestCase):
         assert c.val == 'ciccio'
 
         c = SpecialItem('<!here>')
-        assert c.kind == Itemkind.GROUPMENTION
+        assert c.kind == Itemkind.YELL
         assert c.human is None
         assert c.val == 'here'
 
