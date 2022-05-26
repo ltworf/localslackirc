@@ -86,6 +86,6 @@ class TestParseMessage(TestIRC):
         msg = await self.client.parse_message("Please look at <https://example.com/>", b'ciccio')
         self.assertEqual(msg, "Please look at https://example.com/")
 
-    async def test_dont_expand_urls_with_no_different_text(self):
+    async def test_replace_label_for_urls_with_no_different_text(self):
         msg = await self.client.parse_message("<https://example.com/|https://example.com/>", b'ciccio')
-        self.assertEqual(msg, "https://example.com/")
+        self.assertEqual(msg, "LINK¹\n  ¹ https://example.com/")
