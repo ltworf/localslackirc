@@ -1,9 +1,9 @@
-localslackirc (1.15-1) UNRELEASED; urgency=medium
+localslackirc (1.15-1) unstable; urgency=medium
 
   * New upstream release
   * Simpler test/control file (thanks to Antonio Terceiro)
 
- -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Thu, 28 Oct 2021 21:03:59 +0200
+ -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Thu, 26 May 2022 10:44:03 +0200
 
 localslackirc (1.14-1) unstable; urgency=high
 
