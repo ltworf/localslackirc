@@ -17,7 +17,7 @@
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
 from enum import Enum
-from typing import Iterable, Tuple, NamedTuple, Union, Optional
+from typing import Iterable, Tuple, NamedTuple, Optional
 
 try:
     from emoji import emojize  # type: ignore
@@ -123,7 +123,7 @@ class SpecialItem(NamedTuple):
         return self.txt[sep+1:-1]
 
 
-def split_tokens(msg: str) -> Iterable[Union[SpecialItem, str]]:
+def split_tokens(msg: str) -> Iterable[SpecialItem|str]:
     """
     yields separately the normal text and the special slack
     <stuff> items
@@ -177,7 +177,7 @@ def convertpre(msg: str) -> str:
     return l
 
 
-def tokenize(msg: str) -> Iterable[Union[PreBlock, SpecialItem, str]]:
+def tokenize(msg: str) -> Iterable[PreBlock|SpecialItem|str]:
     """
     Yields the various possible tokens
 

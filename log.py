@@ -19,7 +19,6 @@
 from os import isatty
 from syslog import LOG_INFO, LOG_DEBUG, syslog
 from syslog import openlog as _openlog
-from typing import Union
 
 __all__ = [
     'log',
@@ -56,7 +55,7 @@ def log(*args) -> None:
     syslog(LOG_INFO, ' '.join(str(i) for i in args))
 
 
-def set_debug(state: Union[str, bool]) -> None:
+def set_debug(state: str|bool) -> None:
     global debug_enabled
     debug_enabled = bool(state)
 

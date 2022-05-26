@@ -1,4 +1,4 @@
-typedload>=2.6
+typedload>=2.16
 emoji
 types-emoji
 websockets

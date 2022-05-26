@@ -294,7 +294,7 @@ class NextCursor(NamedTuple):
 
 class History(NamedTuple):
     ok: Literal[True]
-    messages: List[Union[HistoryMessage, HistoryBotMessage]]
+    messages: List[HistoryMessage|HistoryBotMessage]
     has_more: bool
     response_metadata: Optional[NextCursor] = None
 
@@ -304,18 +304,18 @@ class Conversations(NamedTuple):
     response_metadata: Optional[NextCursor] = None
 
 
-SlackEvent = Union[
-    TopicChange,
-    MessageDelete,
-    MessageEdit,
-    Message,
-    ActionMessage,
-    MessageBot,
-    Join,
-    Leave,
-    GroupJoined,
-    UserTyping,
-]
+SlackEvent = (
+    TopicChange|
+    MessageDelete|
+    MessageEdit|
+    Message|
+    ActionMessage|
+    MessageBot|
+    Join|
+    Leave|
+    GroupJoined|
+    UserTyping
+)
 
 
 @dataclass
@@ -364,7 +364,7 @@ class Slack:
         log('Login in slack')
         self.login_info = await self.client.login(15)
 
-    async def get_history(self, channel: Union[Channel, IM, str], ts: str, cursor: Optional[NextCursor]=None, limit: int=1000, inclusive: bool=False) -> History:
+    async def get_history(self, channel: Channel|IM|str, ts: str, cursor: Optional[NextCursor]=None, limit: int=1000, inclusive: bool=False) -> History:
         p = await self.client.api_call(
             'conversations.history',
             channel=channel if isinstance(channel, str) else channel.id,
@@ -375,8 +375,8 @@ class Slack:
         )
         return load(p, History)
 
-    async def _thread_history(self, channel: str, thread_id: str) -> List[Union[HistoryMessage, HistoryBotMessage]]:
-        r: List[Union[HistoryMessage, HistoryBotMessage]] = []
+    async def _thread_history(self, channel: str, thread_id: str) -> List[HistoryMessage|HistoryBotMessage]:
+        r: List[HistoryMessage|HistoryBotMessage] = []
         cursor = None
         log('Thread history', channel, thread_id)
         while True:
@@ -422,7 +422,7 @@ class Slack:
         dt = datetime.datetime.fromtimestamp(last_timestamp)
         log(f'Last known timestamp {dt}')
 
-        chats: Sequence[Union[IM, Channel]] = []
+        chats: Sequence[IM|Channel] = []
         chats += await self.channels() + await self.get_ims()  # type: ignore
         for channel in chats:
             if isinstance(channel, Channel):
@@ -501,7 +501,7 @@ class Slack:
         if not response.ok:
             raise ResponseException(response.error)
 
-    async def typing(self, channel: Union[Channel, str]) -> None:
+    async def typing(self, channel: Channel|str) -> None:
         """
         Sends a typing event to slack
         """
@@ -529,7 +529,7 @@ class Slack:
         if not response.ok:
             raise ResponseException(response.error)
 
-    async def invite(self, channel: Channel, user: Union[User, List[User]]) -> None:
+    async def invite(self, channel: Channel, user: User|List[User]) -> None:
         if isinstance(user, User):
             ids = user.id
         else:
@@ -542,7 +542,7 @@ class Slack:
         if not response.ok:
             raise ResponseException(response.error)
 
-    async def get_members(self, channel: Union[str, Channel]) -> Set[str]:
+    async def get_members(self, channel: str|Channel) -> Set[str]:
         """
         Returns the list (as a set) of users in a channel.
 
@@ -762,7 +762,7 @@ class Slack:
         for i in r:
             self._sent_by_self.remove(i)
 
-    async def send_message(self, channel: Union[Channel, MessageThread], msg: str, action: bool) -> None:
+    async def send_message(self, channel: Channel|MessageThread, msg: str, action: bool) -> None:
         thread_ts = channel.thread_ts if isinstance(channel, MessageThread) else None
         return await self._send_message(channel.id, msg, action, thread_ts)
 
@@ -869,7 +869,7 @@ class Slack:
                 continue
 
             debug(event)
-            loadable_events = Union[TopicChange, MessageBot, MessageEdit, MessageDelete, GroupJoined, Join, Leave, UserTyping]
+            loadable_events = TopicChange|MessageBot|MessageEdit|MessageDelete|GroupJoined|Join|Leave|UserTyping
             try:
                 ev: Optional[loadable_events] = load(
                     event,
