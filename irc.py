@@ -560,6 +560,16 @@ class Client:
         return msg
 
     async def parse_message(self, i: str, source: bytes) -> str:
+        """
+        This converts a slack message into a message for IRC.
+
+        It will replace mentions and shouts with the IRC equivalent.
+
+        It will save preformatted text into txt files and link them
+        if the settings are such.
+
+        It will put the links at the end like with emails.
+        """
 
         r = ''
 
