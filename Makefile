@@ -42,6 +42,7 @@ dist:
 		localslackirc/irc.py \
 		localslackirc/diff.py \
 		localslackirc/log.py \
+		localslackirc/msgparsing.py \
 		localslackirc/slack.py \
 		localslackirc/slackclient/__init__.py \
 		localslackirc/slackclient/http.py \
@@ -70,6 +71,7 @@ deb-pkg: dist
 	install -d deb-pkg
 	mv /tmp/localslackirc_* deb-pkg
 	$(RM) -r /tmp/localslackirc
+	lintian --pedantic -E --color auto -i -I deb-pkg/*changes deb-pkg/*deb
 
 .PHONY: clean
 clean:
