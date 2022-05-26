@@ -112,16 +112,16 @@ class Client:
         self.username = b''
         self.realname = b''
         self.parted_channels: Set[bytes] = settings.ignored_channels
-        self.known_threads: Dict[bytes, slack.MessageThread] = {}
+        self.known_threads: dict[bytes, slack.MessageThread] = {}
         self.hostname = gethostname().encode('utf8')
 
         self.settings = settings
         self.s = s
         self.sl_client = sl_client
         self._usersent = False # Used to hold all events until the IRC client sends the initial USER message
-        self._held_events: List[slack.SlackEvent] = []
-        self._mentions_regex_cache: Dict[str, Optional[re.Pattern]] = {}  # Cache for the regexp to perform mentions. Key is channel id
-        self._annoy_users: Dict[str, int] = {} # Users to annoy pretending to type when they type
+        self._held_events: list[slack.SlackEvent] = []
+        self._mentions_regex_cache: dict[str, Optional[re.Pattern]] = {}  # Cache for the regexp to perform mentions. Key is channel id
+        self._annoy_users: dict[str, int] = {} # Users to annoy pretending to type when they type
 
     async def _nickhandler(self, cmd: bytes) -> None:
         if b' ' not in cmd:
@@ -224,7 +224,7 @@ class Client:
         if not self.settings.nouserlist:
             l = await self.sl_client.get_members(slchan.id)
 
-            userlist: List[bytes] = []
+            userlist: list[bytes] = []
             for i in l:
                 try:
                     u = await self.sl_client.get_user(i)
