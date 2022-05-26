@@ -166,7 +166,7 @@ def convertpre(msg: str) -> str:
 
         if t.kind != Itemkind.OTHER:
             raise ValueError(f'Unexpected slack item in preformatted block {t}')
-        if t.human:
+        elif t.human: # For some very strange reason slack converts text like "asd.com" into links
             r.append(t.human)
         else:
             r.append(t.val)
