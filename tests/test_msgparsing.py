@@ -56,6 +56,7 @@ class TestMsgParsing(unittest.TestCase):
     def test_convertpre(self):
         assert convertpre('asd') == 'asd'
         assert convertpre('asd <http://ciccio> &gt;') == 'asd http://ciccio >'
+        assert convertpre(':coffin:') == ':coffin:'
 
     def test_tokenize(self):
         assert list(tokenize('a')) == ['a']
