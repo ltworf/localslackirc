@@ -42,6 +42,7 @@ dist:
 		localslackirc/irc.py \
 		localslackirc/diff.py \
 		localslackirc/log.py \
+		localslackirc/msgparsing.py \
 		localslackirc/slack.py \
 		localslackirc/slackclient/__init__.py \
 		localslackirc/slackclient/http.py \
