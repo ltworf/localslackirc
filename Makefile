@@ -71,6 +71,7 @@ deb-pkg: dist
 	install -d deb-pkg
 	mv /tmp/localslackirc_* deb-pkg
 	$(RM) -r /tmp/localslackirc
+	lintian --pedantic -E --color auto -i -I deb-pkg/*changes deb-pkg/*deb
 
 .PHONY: clean
 clean:
