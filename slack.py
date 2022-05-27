@@ -25,7 +25,6 @@ from typing import *
 
 from typedload import load, dump
 
-from diff import seddiff
 from slackclient import SlackClient
 from slackclient.client import LoginInfo
 from log import *
@@ -165,15 +164,6 @@ class MessageEdit:
     @property
     def is_changed(self) -> bool:
         return self.previous.text != self.current.text
-
-    @property
-    def diffmsg(self) -> Message:
-        return Message(
-            text=seddiff(self.previous.text, self.current.text),
-            channel=self.channel,
-            user=self.current.user,
-            thread_ts=self.previous.thread_ts
-        )
 
 
 @dataclass

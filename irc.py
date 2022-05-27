@@ -37,6 +37,7 @@ import time
 import slack
 from log import *
 import msgparsing
+from diff import seddiff
 
 
 VERSION = '1.15'
@@ -623,7 +624,23 @@ class Client:
                         refn += 1
         return r + links
 
-    async def _message(self, sl_ev: Union[slack.Message, slack.MessageDelete, slack.MessageBot, slack.ActionMessage], prefix: str=''):
+    async def _messageedit(self, sl_ev: slack.MessageEdit) -> None:
+        if not sl_ev.is_changed:
+            return
+        source = (await self.sl_client.get_user(sl_ev.previous.user)).name.encode('utf8')
+        previous = await self.parse_message(sl_ev.previous.text, source)
+        current = await self.parse_message(sl_ev.current.text, source)
+
+        diffmsg = slack.Message(
+            text=seddiff(sl_ev.previous.text, sl_ev.current.text),
+            channel=sl_ev.channel,
+            user=sl_ev.previous.user,
+            thread_ts=sl_ev.previous.thread_ts
+        )
+
+        await self._message(diffmsg)
+
+    async def _message(self, sl_ev: Union[slack.Message, slack.MessageDelete, slack.MessageBot, slack.ActionMessage], prefix: str='') -> None:
         """
         Sends a message to the irc client
         """
@@ -710,8 +727,7 @@ class Client:
         elif isinstance(sl_ev, slack.ActionMessage):
             await self._message(sl_ev)
         elif isinstance(sl_ev, slack.MessageEdit):
-            if sl_ev.is_changed:
-                await self._message(sl_ev.diffmsg)
+            await self._messageedit(sl_ev)
         elif isinstance(sl_ev, slack.MessageBot):
             await self._message(sl_ev, '[%s] ' % sl_ev.username)
         elif isinstance(sl_ev, slack.Join):
