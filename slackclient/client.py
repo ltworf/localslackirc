@@ -84,7 +84,6 @@ class SlackClient:
 
         if self._websocket and loop:
             asyncio.create_task(self._websocket.close())
-        del self._request
 
     async def _do(self, request: str, post_data: Dict[str, Any], timeout: float):
         """
