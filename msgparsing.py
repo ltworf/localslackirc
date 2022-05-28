@@ -17,12 +17,12 @@
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
 from enum import Enum
-from typing import Iterable, Tuple, NamedTuple, Union, Optional
+from typing import Iterable, NamedTuple, Optional
 
 try:
     from emoji import emojize  # type: ignore
 except ModuleNotFoundError:
-    def emojize(string:str, use_aliases:bool=False, delimiters: Tuple[str,str]=(':', ':')) -> str:  # type: ignore
+    def emojize(string:str, use_aliases:bool=False, delimiters: tuple[str,str]=(':', ':')) -> str:  # type: ignore
         return string
 
 
@@ -41,7 +41,7 @@ __all__ = [
 ]
 
 
-def preblocks(msg: str) -> Iterable[Tuple[str, bool]]:
+def preblocks(msg: str) -> Iterable[tuple[str, bool]]:
     """
     Iterates the preformatted and normal text blocks
     in the message.
@@ -123,7 +123,7 @@ class SpecialItem(NamedTuple):
         return self.txt[sep+1:-1]
 
 
-def split_tokens(msg: str) -> Iterable[Union[SpecialItem, str]]:
+def split_tokens(msg: str) -> Iterable[SpecialItem|str]:
     """
     yields separately the normal text and the special slack
     <stuff> items
@@ -177,7 +177,7 @@ def convertpre(msg: str) -> str:
     return l
 
 
-def tokenize(msg: str) -> Iterable[Union[PreBlock, SpecialItem, str]]:
+def tokenize(msg: str) -> Iterable[PreBlock|SpecialItem|str]:
     """
     Yields the various possible tokens
 
