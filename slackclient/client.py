@@ -76,9 +76,14 @@ class SlackClient:
         await self._websocket.send(json.dumps(kwargs))
 
     def __del__(self):
-        if self._websocket:
+        try:
+            asyncio.get_running_loop()
+            loop = True
+        except RuntimeError:
+            loop = False
+
+        if self._websocket and loop:
             asyncio.create_task(self._websocket.close())
-        del self._request
 
     async def _do(self, request: str, post_data: Dict[str, Any], timeout: float):
         """
