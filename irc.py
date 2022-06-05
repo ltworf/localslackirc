@@ -40,7 +40,7 @@ import msgparsing
 from diff import seddiff
 
 
-VERSION = '1.15'
+VERSION = '1.16'
 
 
 class IrcDisconnectError(Exception): ...
@@ -104,7 +104,7 @@ class Client:
     def __init__(
                     self,
                     s: asyncio.streams.StreamWriter,
-                    sl_client: Union[slack.Slack],
+                    sl_client: slack.Slack,
                     settings: ClientSettings,
 
     ):
@@ -112,16 +112,16 @@ class Client:
         self.username = b''
         self.realname = b''
         self.parted_channels: Set[bytes] = settings.ignored_channels
-        self.known_threads: Dict[bytes, slack.MessageThread] = {}
+        self.known_threads: dict[bytes, slack.MessageThread] = {}
         self.hostname = gethostname().encode('utf8')
 
         self.settings = settings
         self.s = s
         self.sl_client = sl_client
         self._usersent = False # Used to hold all events until the IRC client sends the initial USER message
-        self._held_events: List[slack.SlackEvent] = []
-        self._mentions_regex_cache: Dict[str, Optional[re.Pattern]] = {}  # Cache for the regexp to perform mentions. Key is channel id
-        self._annoy_users: Dict[str, int] = {} # Users to annoy pretending to type when they type
+        self._held_events: list[slack.SlackEvent] = []
+        self._mentions_regex_cache: dict[str, Optional[re.Pattern]] = {}  # Cache for the regexp to perform mentions. Key is channel id
+        self._annoy_users: dict[str, int] = {} # Users to annoy pretending to type when they type
 
     async def _nickhandler(self, cmd: bytes) -> None:
         if b' ' not in cmd:
@@ -133,7 +133,7 @@ class Client:
         if self.nick != self.sl_client.login_info.self.name.encode('ascii'):
             await self._sendreply(Replies.ERR_ERRONEUSNICKNAME, 'Incorrect nickname, use %s' % self.sl_client.login_info.self.name)
 
-    async def _sendreply(self, code: Union[int,Replies], message: Union[str,bytes], extratokens: Iterable[Union[str,bytes]] = []) -> None:
+    async def _sendreply(self, code: int|Replies, message: str|bytes, extratokens: Iterable[str|bytes] = []) -> None:
         codeint = code if isinstance(code, int) else code.value
         bytemsg = message if isinstance(message, bytes) else message.encode('utf8')
 
@@ -220,11 +220,11 @@ class Client:
         except Exception:
             await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to join channel: {channel_name}')
 
-    async def _send_chan_info(self, channel_name: bytes, slchan: Union[slack.Channel, slack.MessageThread]):
+    async def _send_chan_info(self, channel_name: bytes, slchan: slack.Channel|slack.MessageThread):
         if not self.settings.nouserlist:
             l = await self.sl_client.get_members(slchan.id)
 
-            userlist: List[bytes] = []
+            userlist: list[bytes] = []
             for i in l:
                 try:
                     u = await self.sl_client.get_user(i)
@@ -261,7 +261,7 @@ class Client:
             action = False
 
         if dest in self.known_threads:
-            dest_object: Union[slack.User, slack.Channel, slack.MessageThread] = self.known_threads[dest]
+            dest_object: slack.User|slack.Channel|slack.MessageThread = self.known_threads[dest]
         elif dest.startswith(b'#'):
             try:
                 dest_object = await self.sl_client.get_channel_by_name(dest[1:].decode())
@@ -509,7 +509,7 @@ class Client:
         ))
         await self.s.drain()
 
-    async def _get_regexp(self, dest: Union[slack.User, slack.Channel]) -> Optional[re.Pattern]:
+    async def _get_regexp(self, dest: slack.User|slack.Channel) -> Optional[re.Pattern]:
         #del self._mentions_regex_cache[sl_ev.channel]
         # No nick substitutions for private chats
         if isinstance(dest, slack.User):
@@ -536,7 +536,7 @@ class Client:
         self._mentions_regex_cache[dest_id] = regex
         return regex
 
-    async def _addmagic(self, msg: str, dest: Union[slack.User, slack.Channel]) -> str:
+    async def _addmagic(self, msg: str, dest: slack.User|slack.Channel) -> str:
         """
         Adds magic codes and various things to
         outgoing messages
@@ -640,7 +640,7 @@ class Client:
 
         await self._message(diffmsg)
 
-    async def _message(self, sl_ev: Union[slack.Message, slack.MessageDelete, slack.MessageBot, slack.ActionMessage], prefix: str='') -> None:
+    async def _message(self, sl_ev: slack.Message|slack.MessageDelete|slack.MessageBot|slack.ActionMessage, prefix: str=''):
         """
         Sends a message to the irc client
         """
@@ -690,7 +690,7 @@ class Client:
                 i
             )
 
-    async def _joined_parted(self, sl_ev: Union[slack.Join, slack.Leave], joined: bool) -> None:
+    async def _joined_parted(self, sl_ev: slack.Join|slack.Leave, joined: bool) -> None:
         """
         Handle join events from slack, by sending a JOIN notification
         to IRC.
@@ -1002,7 +1002,7 @@ async def from_irc(reader, ircclient: Client):
             raise IrcDisconnectError()
         await ircclient.command(cmd.strip())
 
-async def to_irc(sl_client: Union[slack.Slack], ircclient: Client):
+async def to_irc(sl_client: slack.Slack, ircclient: Client):
     while True:
         ev = await sl_client.event()
         if ev:

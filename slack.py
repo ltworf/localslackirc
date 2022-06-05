@@ -58,7 +58,7 @@ class Response(NamedTuple):
     Internally used to parse a response from the API.
     """
     ok: bool
-    headers: Dict[str, str]
+    headers: dict[str, str]
     ts: Optional[float] = None
     error: Optional[str] = None
 
@@ -134,7 +134,7 @@ class Message:
     user: str  # The user id
     text: str
     thread_ts: Optional[str] = None
-    files: List[File] = field(default_factory=list)
+    files: list[File] = field(default_factory=list)
 
 
 class NoChanMessage(NamedTuple):
@@ -172,7 +172,7 @@ class MessageDelete:
     subtype: Literal['message_deleted']
     channel: str
     previous_message: NoChanMessage
-    files: List[File] = field(default_factory=list)
+    files: list[File] = field(default_factory=list)
 
     @property
     def thread_ts(self) -> Optional[str]:
@@ -209,9 +209,9 @@ class MessageBot:
     username: str
     channel: str
     bot_id: Optional[str] = None
-    attachments: List[Dict[str, Any]] = field(default_factory=list)
+    attachments: list[dict[str, Any]] = field(default_factory=list)
     thread_ts: Optional[str] = None
-    files: List[File] = field(default_factory=list)
+    files: list[File] = field(default_factory=list)
 
     @property
     def text(self):
@@ -273,9 +273,9 @@ class HistoryBotMessage:
     bot_id: Optional[str]
     username: str = 'bot'
     ts: float = 0
-    files: List[File] = field(default_factory=list)
+    files: list[File] = field(default_factory=list)
     thread_ts: Optional[str] = None
-    attachments: List[Dict[str, Any]] = field(default_factory=list)
+    attachments: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass
@@ -284,7 +284,7 @@ class HistoryMessage:
     user: str
     text: str
     ts: float
-    files: List[File] = field(default_factory=list)
+    files: list[File] = field(default_factory=list)
     thread_ts: Optional[str] = None
 
 
@@ -294,28 +294,28 @@ class NextCursor(NamedTuple):
 
 class History(NamedTuple):
     ok: Literal[True]
-    messages: List[Union[HistoryMessage, HistoryBotMessage]]
+    messages: list[HistoryMessage|HistoryBotMessage]
     has_more: bool
     response_metadata: Optional[NextCursor] = None
 
 
 class Conversations(NamedTuple):
-    channels: List[Channel]
+    channels: list[Channel]
     response_metadata: Optional[NextCursor] = None
 
 
-SlackEvent = Union[
-    TopicChange,
-    MessageDelete,
-    MessageEdit,
-    Message,
-    ActionMessage,
-    MessageBot,
-    Join,
-    Leave,
-    GroupJoined,
-    UserTyping,
-]
+SlackEvent = (
+    TopicChange|
+    MessageDelete|
+    MessageEdit|
+    Message|
+    ActionMessage|
+    MessageBot|
+    Join|
+    Leave|
+    GroupJoined|
+    UserTyping
+)
 
 
 @dataclass
@@ -338,14 +338,14 @@ class Slack:
                 from a different object. Obtained from get_status()
         """
         self.client = SlackClient(token, cookie)
-        self._usercache: Dict[str, User] = {}
-        self._usermapcache: Dict[str, User] = {}
-        self._usermapcache_keys: List[str]
-        self._imcache: Dict[str, str] = {}
-        self._channelscache: List[Channel] = []
-        self._get_members_cache: Dict[str, Set[str]] = {}
-        self._get_members_cache_cursor: Dict[str, Optional[str]] = {}
-        self._internalevents: List[SlackEvent] = []
+        self._usercache: dict[str, User] = {}
+        self._usermapcache: dict[str, User] = {}
+        self._usermapcache_keys: list[str]
+        self._imcache: dict[str, str] = {}
+        self._channelscache: list[Channel] = []
+        self._get_members_cache: dict[str, Set[str]] = {}
+        self._get_members_cache_cursor: dict[str, Optional[str]] = {}
+        self._internalevents: list[SlackEvent] = []
         self._sent_by_self: Set[float] = set()
         self._wsblock: int = 0 # Semaphore to block the socket and avoid events being received before their API call ended.
         self.login_info: Optional[LoginInfo] = None
@@ -364,7 +364,7 @@ class Slack:
         log('Login in slack')
         self.login_info = await self.client.login(15)
 
-    async def get_history(self, channel: Union[Channel, IM, str], ts: str, cursor: Optional[NextCursor]=None, limit: int=1000, inclusive: bool=False) -> History:
+    async def get_history(self, channel: Channel|IM|str, ts: str, cursor: Optional[NextCursor]=None, limit: int=1000, inclusive: bool=False) -> History:
         p = await self.client.api_call(
             'conversations.history',
             channel=channel if isinstance(channel, str) else channel.id,
@@ -375,8 +375,8 @@ class Slack:
         )
         return load(p, History)
 
-    async def _thread_history(self, channel: str, thread_id: str) -> List[Union[HistoryMessage, HistoryBotMessage]]:
-        r: List[Union[HistoryMessage, HistoryBotMessage]] = []
+    async def _thread_history(self, channel: str, thread_id: str) -> list[HistoryMessage|HistoryBotMessage]:
+        r: list[HistoryMessage|HistoryBotMessage] = []
         cursor = None
         log('Thread history', channel, thread_id)
         while True:
@@ -422,7 +422,7 @@ class Slack:
         dt = datetime.datetime.fromtimestamp(last_timestamp)
         log(f'Last known timestamp {dt}')
 
-        chats: Sequence[Union[IM, Channel]] = []
+        chats: Sequence[IM|Channel] = []
         chats += await self.channels() + await self.get_ims()  # type: ignore
         for channel in chats:
             if isinstance(channel, Channel):
@@ -501,7 +501,7 @@ class Slack:
         if not response.ok:
             raise ResponseException(response.error)
 
-    async def typing(self, channel: Union[Channel, str]) -> None:
+    async def typing(self, channel: Channel|str) -> None:
         """
         Sends a typing event to slack
         """
@@ -529,7 +529,7 @@ class Slack:
         if not response.ok:
             raise ResponseException(response.error)
 
-    async def invite(self, channel: Channel, user: Union[User, List[User]]) -> None:
+    async def invite(self, channel: Channel, user: User|list[User]) -> None:
         if isinstance(user, User):
             ids = user.id
         else:
@@ -542,7 +542,7 @@ class Slack:
         if not response.ok:
             raise ResponseException(response.error)
 
-    async def get_members(self, channel: Union[str, Channel]) -> Set[str]:
+    async def get_members(self, channel: str|Channel) -> Set[str]:
         """
         Returns the list (as a set) of users in a channel.
 
@@ -581,7 +581,7 @@ class Slack:
         self._get_members_cache_cursor[id_] = r.get('response_metadata', {}).get('next_cursor')
         return self._get_members_cache[id_]
 
-    async def channels(self, refresh: bool = False) -> List[Channel]:
+    async def channels(self, refresh: bool = False) -> list[Channel]:
         """
         Returns the list of slack channels
 
@@ -680,7 +680,7 @@ class Slack:
                 return im;
         return None
 
-    async def get_ims(self) -> List[IM]:
+    async def get_ims(self) -> list[IM]:
         """
         Returns a list of the IMs
 
@@ -695,7 +695,7 @@ class Slack:
         )
         response = load(r, Response)
         if response.ok:
-            return load(r['channels'], List[IM])
+            return load(r['channels'], list[IM])
         raise ResponseException(response.error)
 
     async def get_user_by_name(self, name: str) -> User:
@@ -708,7 +708,7 @@ class Slack:
         r = await self.client.api_call("users.list")
         response = load(r, Response)
         if response.ok:
-            for user in load(r['members'], List[User]):
+            for user in load(r['members'], list[User]):
                 self._usercache[user.id] = user
                 self._usermapcache[user.name] = user
             self._usermapcache_keys = list()
@@ -762,7 +762,7 @@ class Slack:
         for i in r:
             self._sent_by_self.remove(i)
 
-    async def send_message(self, channel: Union[Channel, MessageThread], msg: str, action: bool) -> None:
+    async def send_message(self, channel: Channel|MessageThread, msg: str, action: bool) -> None:
         thread_ts = channel.thread_ts if isinstance(channel, MessageThread) else None
         return await self._send_message(channel.id, msg, action, thread_ts)
 
@@ -869,7 +869,7 @@ class Slack:
                 continue
 
             debug(event)
-            loadable_events = Union[TopicChange, MessageBot, MessageEdit, MessageDelete, GroupJoined, Join, Leave, UserTyping]
+            loadable_events = TopicChange|MessageBot|MessageEdit|MessageDelete|GroupJoined|Join|Leave|UserTyping
             try:
                 ev: Optional[loadable_events] = load(
                     event,
