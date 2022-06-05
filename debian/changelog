@@ -1,3 +1,15 @@
+localslackirc (1.15-3) unstable; urgency=medium
+
+  * Fix the fix with autopkgtest
+
+ -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Sun, 05 Jun 2022 09:09:53 +0200
+
+localslackirc (1.15-2) unstable; urgency=medium
+
+  * Fix autotest
+
+ -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Sun, 05 Jun 2022 01:09:02 +0200
+
 localslackirc (1.15-1) unstable; urgency=medium
 
   * New upstream release
