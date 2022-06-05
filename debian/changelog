@@ -2,7 +2,19 @@ localslackirc (1.16-1) UNRELEASED; urgency=medium
 
   * New upstream release
 
- -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Thu, 26 May 2022 10:46:21 +0200
+ -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Sun, 05 Jun 2022 09:13:40 +0200
+
+localslackirc (1.15-3) unstable; urgency=medium
+
+  * Fix the fix with autopkgtest
+
+ -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Sun, 05 Jun 2022 09:09:53 +0200
+
+localslackirc (1.15-2) unstable; urgency=medium
+
+  * Fix autotest
+
+ -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Sun, 05 Jun 2022 01:09:02 +0200
 
 localslackirc (1.15-1) unstable; urgency=medium
 
