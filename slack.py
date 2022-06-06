@@ -882,7 +882,7 @@ class Slack:
                 if isinstance(ev, Join):
                     self._get_members_cache[ev.channel].add(ev.user)
                 else:
-                    self._get_members_cache[ev.channel].remove(ev.user)
+                    self._get_members_cache[ev.channel].discard(ev.user)
 
             if ev:
                 return ev
