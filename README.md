@@ -12,6 +12,8 @@ Why? Peace of mind!
 Using slack from IRC instead of web app offers several advantages:
 
 * You do not see all the gifs other people post.
+* You can silence @here notifications for selected users and channels where they
+  are abused.
 * You can `/ignore` users who bother you (can't do that on slack).
 * Leaving channels on slack is hard, normally I get invited back continuously
   on the off topic channels. With *localslackirc* you can leave them on the IRC
