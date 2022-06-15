@@ -238,8 +238,12 @@ class Client:
                 userlist.append(prefix + name)
 
             users = b' '.join(userlist)
+        try:
+            yelldest = b'#' + (await self.sl_client.get_channel(slchan.id)).name.encode('utf8')
+        except KeyError:
+            yelldest = b''
 
-        topic = (await self.parse_message(slchan.real_topic, b'')).replace('\n', ' | ')
+        topic = (await self.parse_message(slchan.real_topic, b'', yelldest)).replace('\n', ' | ')
         self.s.write(b':%s!%s@127.0.0.1 JOIN %s\r\n' % (self.nick, self.nick, channel_name))
         await self.s.drain()
         await self._sendreply(Replies.RPL_TOPIC, topic, [channel_name])
@@ -292,7 +296,7 @@ class Client:
 
     async def _listhandler(self, cmd: bytes) -> None:
         for c in await self.sl_client.channels(refresh=True):
-            topic = (await self.parse_message(c.real_topic, b'')).replace('\n', ' | ')
+            topic = (await self.parse_message(c.real_topic, b'', b'')).replace('\n', ' | ')
             await self._sendreply(Replies.RPL_LIST, topic, ['#' + c.name, str(c.num_members)])
         await self._sendreply(Replies.RPL_LISTEND, 'End of LIST')
 
@@ -562,7 +566,7 @@ class Client:
                 msg = msg[0:m.start()] + '<@%s>' % (await self.sl_client.get_user_by_name(username)).id + msg[m.end():]
         return msg
 
-    async def parse_message(self, i: str, source: bytes) -> str:
+    async def parse_message(self, i: str, source: bytes, destination: bytes) -> str:
         """
         This converts a slack message into a message for IRC.
 
@@ -604,7 +608,10 @@ class Client:
                 elif t.kind == msgparsing.Itemkind.CHANNEL: # Channel mention
                     r += '#' + (await self.sl_client.get_channel(t.val)).name_normalized
                 elif t.kind == msgparsing.Itemkind.YELL: # Channel shouting
-                    yell = ' [%s]:' % self.nick.decode('utf8') if source not in self.settings.silenced_yellers else ':'
+                    if (source not in self.settings.silenced_yellers) and (destination not in self.settings.silenced_yellers):
+                         yell = ' [%s]:' % self.nick.decode('utf8')
+                    else:
+                        yell = ':'
                     if t.val == 'here':
                         r += 'yelling' + yell
                     elif t.val == 'channel':
@@ -627,9 +634,13 @@ class Client:
     async def _messageedit(self, sl_ev: slack.MessageEdit) -> None:
         if not sl_ev.is_changed:
             return
+        try:
+            yelldest = b'#' + (await self.sl_client.get_channel(sl_ev.channel)).name.encode('utf8')
+        except KeyError:
+            yelldest = b''
         source = (await self.sl_client.get_user(sl_ev.previous.user)).name.encode('utf8')
-        previous = await self.parse_message(sl_ev.previous.text, source)
-        current = await self.parse_message(sl_ev.current.text, source)
+        previous = await self.parse_message(sl_ev.previous.text, source, yelldest)
+        current = await self.parse_message(sl_ev.current.text, source, yelldest)
 
         diffmsg = slack.Message(
             text=seddiff(sl_ev.previous.text, sl_ev.current.text),
@@ -650,9 +661,10 @@ class Client:
             source = b'bot'
 
         try:
-            dest = b'#' + (await self.sl_client.get_channel(sl_ev.channel)).name.encode('utf8')
+            yelldest = dest = b'#' + (await self.sl_client.get_channel(sl_ev.channel)).name.encode('utf8')
         except KeyError:
             dest = self.nick
+            yelldest = b''
         except Exception as e:
             log('Error: ', str(e))
             return
@@ -678,7 +690,7 @@ class Client:
             for f in sl_ev.files:
                 text+=f'\n[file upload] {f.name}\n{f.mimetype} {f.size} bytes\n{f.url_private}'
 
-        lines = (await self.parse_message(prefix + text, source)).encode('utf-8')
+        lines = (await self.parse_message(prefix + text, source, yelldest)).encode('utf-8')
         for i in lines.split(b'\n'):
             if not i:
                 continue

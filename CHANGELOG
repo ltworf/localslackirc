@@ -1,4 +1,5 @@
 1.16
+* Can ignore yelling (@here and such) for entire channels
 
 1.15
 * Map slack threads to IRC channels
