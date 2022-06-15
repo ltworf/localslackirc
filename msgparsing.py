@@ -72,6 +72,9 @@ class Itemkind(Enum):
 
 
 class PreBlock(NamedTuple):
+    """
+    Block of preformatted text
+    """
     txt: str
 
     @property
@@ -80,6 +83,9 @@ class PreBlock(NamedTuple):
 
 
 class SpecialItem(NamedTuple):
+    """
+    A link or a mention
+    """
     txt: str
 
     @property
