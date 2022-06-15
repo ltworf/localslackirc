@@ -1,4 +1,4 @@
-.TH localslackirc 1 "Sep 23, 2021" "IRC gateway for slack"
+.TH localslackirc 1 "Jun 15, 2022" "IRC gateway for slack"
 .SH NAME
 localslackirc
 \- Creates an IRC server running locally, which acts as a gateway to slack for one user.
@@ -70,11 +70,15 @@ Setting to 0 (the default) will send everything to the client and create no text
 Path to the file keeping the status. When this is set, it allows for the history to be loaded on start.
 .TP
 .B --silenced-yellers
-Comma separated list of nicknames that are prevented from using general mentions (@here, @channel, @everyone, and the likes).
+Comma separated list of nicknames and channels that are prevented from using general mentions (@here, @channel, @everyone, and the likes).
 .br
 Since some people are greatly abusing the feature, this is to make them less annoying.
 .br
 Their messages aren't blocked and are shown as "yelling MESSAGE", but the nickname of the user won't be injected in the message, so the IRC client won't create a notification.
+.br
+The channels must begin with #.
+.br
+The threads created from a silenced channel will also be silenced.
 .TP
 .B -d --debug
 Enables debugging logs.
