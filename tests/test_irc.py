@@ -1,5 +1,6 @@
 # localslackirc
 # Copyright (C) 2021 Antonio Terceiro
+# Copyright (C) 2022 Salvo "LtWorf" Tomaselli
 #
 # localslackirc is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
