@@ -157,6 +157,7 @@ class Client:
         await self._sendreply(2, 'Your team name is: %s' % self.sl_client.login_info.team.name)
         await self._sendreply(2, 'Your team domain is: %s' % self.sl_client.login_info.team.domain)
         await self._sendreply(2, 'Your nickname must be: %s' % self.sl_client.login_info.self.name)
+        await self._sendreply(2, f'Version: {VERSION}')
         await self._sendreply(Replies.RPL_LUSERCLIENT, 'There are 1 users and 0 services on 1 server')
 
         if self.settings.autojoin and not self.settings.nouserlist:
