@@ -953,7 +953,7 @@ def main() -> None:
         serversocket.bind((ip, port))
         serversocket.listen(1)
 
-        s, _ = serversocket.accept()
+        s, _ = await loop.sock_accept(serversocket)
         serversocket.close()
         loop.add_signal_handler(signal.SIGHUP, term_f)
         loop.add_signal_handler(signal.SIGTERM, term_f)
