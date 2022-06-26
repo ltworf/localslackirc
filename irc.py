@@ -955,9 +955,6 @@ def main() -> None:
 
         s, _ = await loop.sock_accept(serversocket)
         serversocket.close()
-        loop.add_signal_handler(signal.SIGHUP, term_f)
-        loop.add_signal_handler(signal.SIGTERM, term_f)
-        loop.add_signal_handler(signal.SIGINT, term_f)
         reader, writer = await asyncio.open_connection(sock=s)
 
         previous_status = None
@@ -999,11 +996,20 @@ def main() -> None:
             from_irc_task.cancel()
             to_irc_task.cancel()
 
-    while True:
-        try:
-            asyncio.run(irc_listener())
-        except IrcDisconnectError:
-            log('IRC disconnected')
+    async def restart_listener_loop():
+        loop = asyncio.get_running_loop()
+
+        loop.add_signal_handler(signal.SIGHUP, term_f)
+        loop.add_signal_handler(signal.SIGTERM, term_f)
+        loop.add_signal_handler(signal.SIGINT, term_f)
+
+        while True:
+            try:
+                await irc_listener()
+            except IrcDisconnectError:
+                log('IRC disconnected')
+
+    asyncio.run(restart_listener_loop())
 
 
 async def from_irc(reader, ircclient: Client):
@@ -1014,6 +1020,7 @@ async def from_irc(reader, ircclient: Client):
             raise IrcDisconnectError()
         await ircclient.command(cmd.strip())
 
+
 async def to_irc(sl_client: slack.Slack, ircclient: Client):
     while True:
         ev = await sl_client.event()
@@ -1021,8 +1028,10 @@ async def to_irc(sl_client: slack.Slack, ircclient: Client):
             log(ev)
             await ircclient.slack_event(ev)
 
+
 def term_f(*args):
     sys.exit(0)
+
 
 if __name__ == '__main__':
     try:
