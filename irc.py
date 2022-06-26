@@ -946,6 +946,8 @@ def main() -> None:
     # Parameters are dealt with
 
     async def irc_listener() -> None:
+        loop = asyncio.get_running_loop()
+
         serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         serversocket.bind((ip, port))
@@ -953,9 +955,9 @@ def main() -> None:
 
         s, _ = serversocket.accept()
         serversocket.close()
-        asyncio.get_running_loop().add_signal_handler(signal.SIGHUP, term_f)
-        asyncio.get_running_loop().add_signal_handler(signal.SIGTERM, term_f)
-        asyncio.get_running_loop().add_signal_handler(signal.SIGINT, term_f)
+        loop.add_signal_handler(signal.SIGHUP, term_f)
+        loop.add_signal_handler(signal.SIGTERM, term_f)
+        loop.add_signal_handler(signal.SIGINT, term_f)
         reader, writer = await asyncio.open_connection(sock=s)
 
         previous_status = None
