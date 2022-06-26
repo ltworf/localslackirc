@@ -998,9 +998,6 @@ def main() -> None:
             to_irc_task.cancel()
 
     while True:
-        signal.signal(signal.SIGHUP, term_f)
-        signal.signal(signal.SIGTERM, term_f)
-        signal.signal(signal.SIGINT, term_f)
         try:
             asyncio.run(irc_listener())
         except IrcDisconnectError:
