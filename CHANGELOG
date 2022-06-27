@@ -1,4 +1,5 @@
 1.17
+* Improve handling of UNIX signals
 
 1.16
 * Can ignore yelling (@here and such) for entire channels
