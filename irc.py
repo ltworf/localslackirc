@@ -952,6 +952,7 @@ def main() -> None:
         serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         serversocket.bind((ip, port))
         serversocket.listen(1)
+        serversocket.setblocking(False)
 
         s, _ = await loop.sock_accept(serversocket)
         serversocket.close()
