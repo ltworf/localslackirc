@@ -124,7 +124,7 @@ class SlackClient:
             timeout: in seconds
         """
         r = await self.login()
-        self._websocket = await wsconnect(r.url)
+        self._websocket = await wsconnect(r.url, close_timeout=0.2)
         return r
 
 
