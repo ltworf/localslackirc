@@ -2,6 +2,7 @@ localslackirc (1.17-1) UNRELEASED; urgency=medium
 
   * New upstream release
   * Bump required typedload version to 2.16
+  * Bump Standards-Version: 4.6.1.0
 
  -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Mon, 20 Jun 2022 23:48:57 +0200
 
