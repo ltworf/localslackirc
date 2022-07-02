@@ -3,7 +3,7 @@ Section: net
 Priority: optional
 Maintainer: Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>
 Build-Depends: debhelper (>= 12), python3:any, dh-python, python3-distutils,
- mypy, python3-typedload (>= 2), python3-websockets, python3-emoji,
+ mypy, python3-typedload (>= 2.16), python3-websockets, python3-emoji,
  debhelper-compat (= 13)
 Standards-Version: 4.6.0
 Homepage: https://github.com/ltworf/localslackirc
@@ -13,7 +13,7 @@ Rules-Requires-Root: no
 
 Package: localslackirc
 Architecture: all
-Depends: ${misc:Depends}, ${python3:Depends}, python3-typedload (>= 2.6),
+Depends: ${misc:Depends}, ${python3:Depends}, python3-typedload (>= 2.16),
  python3-websockets
 Recommends:
  python3-emoji
