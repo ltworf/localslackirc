@@ -1,5 +1,5 @@
 # localslackirc
-# Copyright (C) 2018-2021 Salvo "LtWorf" Tomaselli
+# Copyright (C) 2018-2022 Salvo "LtWorf" Tomaselli
 #
 # localslackirc is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ __all__ = [
     'seddiff',
 ]
 
-_SEPARATORS = set(' .,:;\t\n()[]{}')
+_SEPARATORS = frozenset(' .,:;\t\n()[]{}')
 
 
 def wordsplit(word: str) -> Iterable[str]:

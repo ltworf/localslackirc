@@ -30,7 +30,7 @@ from slackclient.client import LoginInfo
 from log import *
 
 
-USELESS_EVENTS = {
+USELESS_EVENTS = frozenset((
     'draft_create',
     'draft_delete',
     'accounts_changed',
@@ -46,7 +46,7 @@ USELESS_EVENTS = {
     'file_shared',
     'desktop_notification',
     'mobile_in_app_notification',
-}
+))
 
 
 class ResponseException(Exception):
