@@ -46,6 +46,7 @@ USELESS_EVENTS = frozenset((
     'file_shared',
     'desktop_notification',
     'mobile_in_app_notification',
+    'goodbye', # Server is disconnecting us
 ))
 
 
