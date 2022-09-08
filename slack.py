@@ -21,13 +21,13 @@ import datetime
 from dataclasses import dataclass, field
 import json
 from time import time
-from typing import *
+from typing import Literal, Optional, Any, NamedTuple, Sequence
 
-from typedload import load, dump
+from typedload import load
 
 from slackclient import SlackClient
 from slackclient.client import LoginInfo
-from log import *
+from log import log, debug
 
 
 USELESS_EVENTS = frozenset((
@@ -344,10 +344,10 @@ class Slack:
         self._usermapcache_keys: list[str]
         self._imcache: dict[str, str] = {}
         self._channelscache: list[Channel] = []
-        self._get_members_cache: dict[str, Set[str]] = {}
+        self._get_members_cache: dict[str, set[str]] = {}
         self._get_members_cache_cursor: dict[str, Optional[str]] = {}
         self._internalevents: list[SlackEvent] = []
-        self._sent_by_self: Set[float] = set()
+        self._sent_by_self: set[float] = set()
         self._wsblock: int = 0 # Semaphore to block the socket and avoid events being received before their API call ended.
         self.login_info: Optional[LoginInfo] = None
         if previous_status is None:
@@ -489,6 +489,7 @@ class Slack:
         '''
         A status string that will be passed back when this is started again
         '''
+        from typedload import dump
         return json.dumps(dump(self._status), ensure_ascii=True).encode('ascii')
 
 
@@ -543,7 +544,7 @@ class Slack:
         if not response.ok:
             raise ResponseException(response.error)
 
-    async def get_members(self, channel: str|Channel) -> Set[str]:
+    async def get_members(self, channel: str|Channel) -> set[str]:
         """
         Returns the list (as a set) of users in a channel.
 
@@ -571,7 +572,7 @@ class Slack:
         if not response.ok:
             raise ResponseException(response.error)
 
-        newusers = load(r['members'], Set[str])
+        newusers = load(r['members'], set[str])
 
         # Generate all the Join events, if this is not the 1st iteration
         if id_ in self._get_members_cache:
