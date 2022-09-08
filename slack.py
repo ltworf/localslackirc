@@ -21,14 +21,16 @@ import datetime
 from dataclasses import dataclass, field
 import json
 from time import time
-from typing import Literal, Optional, Any, NamedTuple, Sequence
+from typing import Literal, Optional, Any, NamedTuple, Sequence, Type, TypeVar
 
-from typedload import load
+from typedload import dataloader
 
 from slackclient import SlackClient
 from slackclient.client import LoginInfo
 from log import log, debug
 
+
+T = TypeVar('T')
 
 USELESS_EVENTS = frozenset((
     'draft_create',
@@ -350,13 +352,18 @@ class Slack:
         self._sent_by_self: set[float] = set()
         self._wsblock: int = 0 # Semaphore to block the socket and avoid events being received before their API call ended.
         self.login_info: Optional[LoginInfo] = None
+        self.loader = dataloader.Loader()
+
         if previous_status is None:
             self._status = SlackStatus()
         else:
-            self._status = load(json.loads(previous_status), SlackStatus)
+            self._status = self.tload(json.loads(previous_status), SlackStatus)
 
     def close(self):
         del self.client
+
+    def tload(self, data: Any, type_: Type[T]) -> T:
+        return self.loader.load(data, type_)
 
     async def login(self) -> None:
         """
@@ -374,7 +381,7 @@ class Slack:
             cursor=cursor.next_cursor if cursor else None,
             inclusive=inclusive,
         )
-        return load(p, History)
+        return self.tload(p, History)
 
     async def _thread_history(self, channel: str, thread_id: str) -> list[HistoryMessage|HistoryBotMessage]:
         r: list[HistoryMessage|HistoryBotMessage] = []
@@ -390,7 +397,7 @@ class Slack:
                 cursor=cursor,
             )
             try:
-                response = load(p, History)
+                response = self.tload(p, History)
             except Exception as e:
                     log('Failed to parse', e)
                     log(p)
@@ -499,7 +506,7 @@ class Slack:
         """
         status = 'away' if is_away else 'auto'
         r = await self.client.api_call('users.setPresence', presence=status)
-        response = load(r, Response)
+        response = self.tload(r, Response)
         if not response.ok:
             raise ResponseException(response.error)
 
@@ -515,19 +522,19 @@ class Slack:
 
     async def topic(self, channel: Channel, topic: str) -> None:
         r = await self.client.api_call('conversations.setTopic', channel=channel.id, topic=topic)
-        response = load(r, Response)
+        response: Response = self.tload(r, Response)
         if not response.ok:
             raise ResponseException(response.error)
 
     async def kick(self, channel: Channel, user: User) -> None:
         r = await self.client.api_call('conversations.kick', channel=channel.id, user=user.id)
-        response = load(r, Response)
+        response = self.tload(r, Response)
         if not response.ok:
             raise ResponseException(response.error)
 
     async def join(self, channel: Channel) -> None:
         r = await self.client.api_call('conversations.join', channel=channel.id)
-        response = load(r, Response)
+        response = self.tload(r, Response)
         if not response.ok:
             raise ResponseException(response.error)
 
@@ -540,7 +547,7 @@ class Slack:
             ids = ','.join(i.id for i in user)
 
         r = await self.client.api_call('conversations.invite', channel=channel.id, users=ids)
-        response = load(r, Response)
+        response = self.tload(r, Response)
         if not response.ok:
             raise ResponseException(response.error)
 
@@ -568,11 +575,11 @@ class Slack:
         if cursor:
             kwargs['cursor'] = cursor
         r = await self.client.api_call('conversations.members', channel=id_, limit=5000, **kwargs)  # type: ignore
-        response = load(r, Response)
+        response = self.tload(r, Response)
         if not response.ok:
             raise ResponseException(response.error)
 
-        newusers = load(r['members'], set[str])
+        newusers = self.tload(r['members'], set[str])
 
         # Generate all the Join events, if this is not the 1st iteration
         if id_ in self._get_members_cache:
@@ -604,10 +611,10 @@ class Slack:
                 types='public_channel,private_channel,mpim',
                 limit=1000, # In vain hope that slack would not ignore this
             )
-            response = load(r, Response)
+            response = self.tload(r, Response)
 
             if response.ok:
-                conv = load(r, Conversations)
+                conv = self.tload(r, Conversations)
                 self._channelscache += conv.channels
                 # For this API, slack sends an empty string as next cursor, just to show off their programming "skillz"
                 if not conv.response_metadata or not conv.response_metadata.next_cursor:
@@ -695,9 +702,9 @@ class Slack:
             exclude_archived=True,
             types='im', limit=1000
         )
-        response = load(r, Response)
+        response = self.tload(r, Response)
         if response.ok:
-            return load(r['channels'], list[IM])
+            return self.tload(r['channels'], list[IM])
         raise ResponseException(response.error)
 
     async def get_user_by_name(self, name: str) -> User:
@@ -708,9 +715,9 @@ class Slack:
         Prefetch all team members for the slack team.
         """
         r = await self.client.api_call("users.list")
-        response = load(r, Response)
+        response = self.tload(r, Response)
         if response.ok:
-            for user in load(r['members'], list[User]):
+            for user in self.tload(r['members'], list[User]):
                 self._usercache[user.id] = user
                 self._usermapcache[user.name] = user
             self._usermapcache_keys = list()
@@ -725,9 +732,9 @@ class Slack:
             return self._usercache[id_]
 
         r = await self.client.api_call("users.info", user=id_)
-        response = load(r, Response)
+        response = self.tload(r, Response)
         if response.ok:
-            u = load(r['user'], User)
+            u = self.tload(r['user'], User)
             self._usercache[id_] = u
             if u.name not in self._usermapcache:
                 self._usermapcache_keys = list()
@@ -747,7 +754,7 @@ class Slack:
                 thread_ts=thread_ts,
                 file=f,
             )
-        response = load(r, Response)
+        response = self.tload(r, Response)
         if response.ok:
             return
         raise ResponseException(response.error)
@@ -791,7 +798,7 @@ class Slack:
                 as_user=True,
                 **kwargs,  # type: ignore
             )
-            response = load(r, Response)
+            response = self.tload(r, Response)
             if response.ok and response.ts:
                 self._sent_by_self.add(response.ts)
                 return
@@ -827,7 +834,7 @@ class Slack:
                     return_im=True,
                     user=user.id,
                 )
-                response = load(r, Response)
+                response = self.tload(r, Response)
                 if not response.ok:
                     raise ResponseException(response.error)
                 channel_id = r['channel']['id']
@@ -873,7 +880,7 @@ class Slack:
             debug(event)
             loadable_events = TopicChange|MessageBot|MessageEdit|MessageDelete|GroupJoined|Join|Leave|UserTyping
             try:
-                ev: Optional[loadable_events] = load(
+                ev: Optional[loadable_events] = self.tload(
                     event,
                     loadable_events  # type: ignore
                 )
@@ -893,7 +900,7 @@ class Slack:
 
             try:
                 if t == 'message' and (not subt or subt == 'me_message'):
-                    msg = load(event, Message)
+                    msg = self.tload(event, Message)
 
                     # In private chats, pretend that my own messages
                     # sent from another client actually come from
@@ -906,10 +913,10 @@ class Slack:
                     else:
                         return msg
                 elif t == 'message' and subt == 'slackbot_response':
-                    return load(event, Message)
+                    return self.tload(event, Message)
                 elif t == 'user_change':
                     # Changes in the user, drop it from cache
-                    u = load(event['user'], User)
+                    u = self.tload(event['user'], User)
                     if u.id in self._usercache:
                         del self._usercache[u.id]
                         #FIXME don't know if it is wise, maybe it gets lost forever del self._usermapcache[u.name]
