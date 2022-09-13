@@ -1,6 +1,7 @@
 1.17
 * Improve handling of UNIX signals
 * More readable names for thread channels
+* Reduce CPU usage to parse messages
 
 1.16
 * Can ignore yelling (@here and such) for entire channels
