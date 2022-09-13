@@ -198,7 +198,7 @@ def tokenize(msg: str) -> Iterable[PreBlock|SpecialItem|str]:
             for t in split_tokens(txt):
                 if isinstance(t, str):
                     # Replace emoji codes (e.g. :thumbsup:)
-                    t = emojize(t, use_aliases=True)
+                    t = emojize(t, language='alias')
                     # Usual substitutions
                     for s in SLACK_SUBSTITUTIONS:
                         t = t.replace(s[0], s[1])  # type: ignore
