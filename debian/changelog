@@ -1,11 +1,11 @@
-localslackirc (1.17-1) UNRELEASED; urgency=medium
+localslackirc (1.17-1) unstable; urgency=medium
 
   * New upstream release
   * Bump required typedload version to 2.16
   * Bump Standards-Version: 4.6.1.0
   * Add metadata file
 
- -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Mon, 20 Jun 2022 23:48:57 +0200
+ -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Tue, 13 Sep 2022 09:07:56 +0200
 
 localslackirc (1.16-1) unstable; urgency=medium
 
