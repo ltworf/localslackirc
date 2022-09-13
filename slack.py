@@ -662,7 +662,7 @@ class Slack:
         t = Topic(f'{user} in {channel}: {original_txt}')
         return MessageThread(
             id=original_channel,
-            name_normalized=f'threaded-{thread_ts}',
+            name_normalized=f't-{channel}-{thread_ts}',
             purpose=t,
             topic=t,
             thread_ts=thread_ts,
