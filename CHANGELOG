@@ -1,3 +1,5 @@
+1.18
+
 1.17
 * Improve handling of UNIX signals
 * More readable names for thread channels

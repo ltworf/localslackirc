@@ -40,7 +40,7 @@ import msgparsing
 from diff import seddiff
 
 
-VERSION = '1.17'
+VERSION = '1.18'
 
 
 class IrcDisconnectError(Exception): ...
