@@ -488,7 +488,10 @@ class Slack:
                         ))
 
                 if response.has_more and response.response_metadata:
-                    cursor = response.response_metadata.next_cursor
+                    next_cursor = response.response_metadata.next_cursor
+                    if next_cursor == cursor:
+                        break
+                    cursor = next_cursor
                 else:
                     break
 
