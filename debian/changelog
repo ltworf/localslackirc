@@ -2,7 +2,14 @@ localslackirc (1.18-1) UNRELEASED; urgency=medium
 
   * New upstream release
 
- -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Tue, 13 Sep 2022 09:14:03 +0200
+ -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Sun, 16 Oct 2022 19:26:02 +0200
+
+localslackirc (1.17-1.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * No source change upload to rebuild with debhelper 13.10.
+
+ -- Michael Biebl <biebl@debian.org>  Sat, 15 Oct 2022 12:17:10 +0200
 
 localslackirc (1.17-1) unstable; urgency=medium
 
