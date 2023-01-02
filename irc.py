@@ -768,6 +768,9 @@ class Client:
         else:
             cmdid = cmd
 
+        # commands are case insensitive
+        cmdid = cmdid.upper()
+
         handlers = {
             b'NICK': self._nickhandler,
             b'USER': self._userhandler,
@@ -782,12 +785,12 @@ class Client:
             b'TOPIC': self._topichandler,
             b'KICK': self._kickhandler,
             b'INVITE': self._invitehandler,
-            b'sendfile': self._sendfilehandler,
-            b'annoy': self._annoyhandler,
+            b'SENDFILE': self._sendfilehandler,
+            b'ANNOY': self._annoyhandler,
             b'QUIT': self._quithandler,
             #CAP LS
             b'USERHOST': self._userhosthandler,
-            b'whois': self._whoishandler,
+            b'WHOIS': self._whoishandler,
         }
 
         if cmdid in handlers:
