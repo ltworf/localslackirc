@@ -198,28 +198,29 @@ class Client:
         await self.s.drain()
 
     async def _joinhandler(self, cmd: bytes) -> None:
-        _, channel_name_b = cmd.split(b' ', 1)
+        _, channel_names_b = cmd.split(b' ', 1)
 
-        if channel_name_b in self.parted_channels:
-            self.parted_channels.remove(channel_name_b)
+        for channel_name_b in channel_names_b.split(b','):
+            if channel_name_b in self.parted_channels:
+                self.parted_channels.remove(channel_name_b)
 
-        channel_name = channel_name_b[1:].decode()
-        try:
-            slchan = await self.sl_client.get_channel_by_name(channel_name)
-        except Exception:
-            await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find channel: {channel_name}')
-            return
-
-        if not slchan.is_member:
+            channel_name = channel_name_b[1:].decode()
             try:
-                await self.sl_client.join(slchan)
+                slchan = await self.sl_client.get_channel_by_name(channel_name)
             except Exception:
-                await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to join server channel: {channel_name}')
+                await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find channel: {channel_name}')
+                continue
 
-        try:
-            await self._send_chan_info(channel_name_b, slchan)
-        except Exception:
-            await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to join channel: {channel_name}')
+            if not slchan.is_member:
+                try:
+                    await self.sl_client.join(slchan)
+                except Exception:
+                    await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to join server channel: {channel_name}')
+
+            try:
+                await self._send_chan_info(channel_name_b, slchan)
+            except Exception:
+                await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to join channel: {channel_name}')
 
     async def _send_chan_info(self, channel_name: bytes, slchan: slack.Channel|slack.MessageThread):
         if not self.settings.nouserlist:
