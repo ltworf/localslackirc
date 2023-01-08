@@ -855,16 +855,10 @@ class Server:
     async def send_message_edit(self, sl_ev: slack.MessageEdit) -> None:
         if not sl_ev.is_changed:
             return
-        try:
-            yelldest = '#' + (await self.sl_client.get_channel(sl_ev.channel)).name
-        except KeyError:
-            yelldest = ''
-        source = (await self.sl_client.get_user(sl_ev.previous.user)).name
-        previous = await self.parse_slack_message(sl_ev.previous.text, source, yelldest)
-        current = await self.parse_slack_message(sl_ev.current.text, source, yelldest)
 
         diffmsg = slack.Message(
-            text=seddiff(previous, current),
+            subtype = sl_ev.current.subtype,
+            text=seddiff(sl_ev.previous.text, sl_ev.current.text),
             channel=sl_ev.channel,
             user=sl_ev.previous.user,
             thread_ts=sl_ev.previous.thread_ts
@@ -872,7 +866,18 @@ class Server:
 
         await self.send_message(diffmsg)
 
-    async def send_message(self, sl_ev: slack.Message|slack.MessageDelete|slack.MessageBot|slack.ActionMessage, prefix: str = ''):
+    async def send_message_delete(self, sl_ev: slack.MessageDelete) -> None:
+        msg = slack.Message(
+            subtype = sl_ev.previous.subtype,
+            text=f'[deleted] {sl_ev.previous.text}',
+            channel=sl_ev.channel,
+            user=sl_ev.previous.user,
+            thread_ts=sl_ev.previous.thread_ts
+        )
+
+        await self.send_message(msg)
+
+    async def send_message(self, sl_ev: slack.Message|slack.MessageBot, prefix: str = ''):
         """
         Sends a message to the irc client
         """
@@ -881,9 +886,16 @@ class Server:
         else:
             source = 'bot'
 
+        text = sl_ev.text
+
         try:
             yelldest = dest = '#' + (await self.sl_client.get_channel(sl_ev.channel)).name
         except KeyError:
+            im = await self.sl_client.get_im(sl_ev.channel)
+            if im and im.user != sl_ev.user:
+                source = (await self.sl_client.get_user(im.user)).name
+                text = f'I say: {text}'
+
             dest = self.client.nickname
             yelldest = ''
         except slack.ResponseException as e:
@@ -893,8 +905,6 @@ class Server:
         if dest in self.ignored_channels:
             # Ignoring messages, channel was left on IRC
             return
-
-        text = sl_ev.text
 
         if sl_ev.files:
             for f in sl_ev.files:
@@ -924,7 +934,7 @@ class Server:
         for i in lines.split('\n'):
             if not i:
                 continue
-            if isinstance(sl_ev, slack.ActionMessage):
+            if sl_ev.is_action:
                 i = '\x01ACTION ' + i + '\x01'
 
             await self.sendcmd(f'{source}!{source}@{self.hostname}', 'PRIVMSG', dest, i)
@@ -966,12 +976,10 @@ class Server:
             self.held_events.append(sl_ev)
             return
 
-        if isinstance(sl_ev, slack.MessageDelete):
-            await self.send_message(sl_ev, '[deleted] ')
-        elif isinstance(sl_ev, slack.Message):
+        if isinstance(sl_ev, slack.Message):
             await self.send_message(sl_ev)
-        elif isinstance(sl_ev, slack.ActionMessage):
-            await self.send_message(sl_ev)
+        elif isinstance(sl_ev, slack.MessageDelete):
+            await self.send_message_delete(sl_ev)
         elif isinstance(sl_ev, slack.MessageEdit):
             await self.send_message_edit(sl_ev)
         elif isinstance(sl_ev, slack.MessageBot):
