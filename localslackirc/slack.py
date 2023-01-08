@@ -136,18 +136,20 @@ class Message:
     channel: str  # The channel id
     user: str  # The user id
     text: str
+    subtype: str = None
     thread_ts: Optional[str] = None
     files: list[File] = field(default_factory=list)
+
+    @property
+    def is_action(self):
+        return self.subtype == 'me_message'
 
 
 class NoChanMessage(NamedTuple):
     user: str
     text: str
     thread_ts: Optional[str] = None
-
-
-class ActionMessage(Message):
-    pass
+    subtype: str = None
 
 
 @dataclass
@@ -160,7 +162,7 @@ class GroupJoined:
 class MessageEdit:
     type: Literal['message']
     subtype: Literal['message_changed']
-    channel: str
+    channel: str  # The channel id
     previous: NoChanMessage = field(metadata={'name': 'previous_message'})
     current: NoChanMessage = field(metadata={'name': 'message'})
 
@@ -173,21 +175,8 @@ class MessageEdit:
 class MessageDelete:
     type: Literal['message']
     subtype: Literal['message_deleted']
-    channel: str
-    previous_message: NoChanMessage
-    files: list[File] = field(default_factory=list)
-
-    @property
-    def thread_ts(self) -> Optional[str]:
-        return self.previous_message.thread_ts
-
-    @property
-    def user(self) -> str:
-        return self.previous_message.user
-
-    @property
-    def text(self) -> str:
-        return self.previous_message.text
+    channel: str  # The channel id
+    previous: NoChanMessage = field(metadata={'name': 'previous_message'})
 
 
 class UserTyping(NamedTuple):
@@ -328,7 +317,6 @@ SlackEvent = (
     MessageDelete|
     MessageEdit|
     Message|
-    ActionMessage|
     MessageBot|
     Join|
     Leave|
@@ -921,14 +909,15 @@ class Slack:
                 continue
 
             logging.debug(event)
-            loadable_events = TopicChange|MessageBot|MessageEdit|MessageDelete|GroupJoined|Join|Leave|UserTyping
             try:
-                ev: Optional[loadable_events] = self.tload(
+                ev: Optional[SlackEvent] = self.tload(
                     event,
-                    loadable_events  # type: ignore
+                    SlackEvent  # type: ignore
                 )
             except Exception:
                 ev = None
+
+            logging.debug(ev)
 
             if isinstance(ev, (Join, Leave)) and ev.channel in self._get_members_cache:
                 if isinstance(ev, Join):
@@ -939,34 +928,14 @@ class Slack:
             if ev:
                 return ev
 
-            subt = event.get('subtype')
-
-            try:
-                if t == 'message' and (not subt or subt == 'me_message'):
-                    msg = self.tload(event, Message)
-
-                    # In private chats, pretend that my own messages
-                    # sent from another client actually come from
-                    # the other user, and prepend them with "I say: "
-                    im = await self.get_im(msg.channel)
-                    if im and im.user != msg.user:
-                        msg = Message(user=im.user, text='I say: ' + msg.text, channel=im.id, thread_ts=msg.thread_ts)
-                    if subt == 'me_message':
-                        return ActionMessage(*msg)  # type: ignore
-                    else:
-                        return msg
-                elif t == 'message' and subt == 'slackbot_response':
-                    return self.tload(event, Message)
-                elif t == 'user_change':
-                    # Changes in the user, drop it from cache
-                    u = self.tload(event['user'], User)
-                    if u.id in self._usercache:
-                        del self._usercache[u.id]
+            if t == 'user_change':
+                # Changes in the user, drop it from cache
+                u = self.tload(event['user'], User)
+                if u.id in self._usercache:
+                    del self._usercache[u.id]
                         #FIXME don't know if it is wise, maybe it gets lost forever del self._usermapcache[u.name]
                     #TODO make an event for this
                 else:
                     logging.info(event)
-            except Exception as e:
-                logging.exception(e)
             self._triage_sent_by_self()
         return None
