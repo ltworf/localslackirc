@@ -551,6 +551,8 @@ class Server:
         try:
             await self.sl_client.send_file(dest, filename, thread_ts)
             await self.sendcmd(self, 'NOTICE', self.client.nickname, 'Upload of %s completed' % filename)
+        except FileNotFoundError as e:
+            await self.sendreply(Replies.ERR_FILEERROR, str(e))
         except slack.ResponseException as e:
             await self.sendreply(Replies.ERR_FILEERROR, f'Unable to send file {e}')
 
