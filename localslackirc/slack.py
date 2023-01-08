@@ -361,7 +361,7 @@ class Slack:
             self._status = self.tload(json.loads(previous_status), SlackStatus)
 
     def close(self):
-        del self.client
+        self.client.close()
 
     def tload(self, data: Any, type_: Type[T]) -> T:
         return self.loader.load(data, type_)
