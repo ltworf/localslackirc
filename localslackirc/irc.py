@@ -611,22 +611,24 @@ class Server:
         try:
             user = await self.sl_client.get_user_by_name(nickname)
         except KeyError:
-            return await self.sendreply(Replies.ERR_NOSUCHNICK, f'Unknown user {nickname}')
+            return await self.sendreply(Replies.ERR_NOSUCHNICK, nickname, 'No such nick')
 
         await self.sendreply(Replies.RPL_WHOISUSER, nickname, user.id, self.hostname, '*', user.real_name)
-        if user.is_bot:
-            await self.sendreply(Replies.RPL_WHOISBOT, nickname, 'is a bot')
-        if user.is_app_user:
-            await self.sendreply(Replies.RPL_WHOISBOT, nickname, 'is an App')
+
+        # Profile information
+        if user.profile.title:
+            await self.sendreply(Replies.RPL_WHOISOPERATOR, nickname, user.profile.title)
         if user.profile.email:
-            await self.sendreply(Replies.RPL_WHOISACCOUNT, nickname, user.profile.email, 'email address')
+            await self.sendreply(Replies.RPL_WHOISACCOUNT, nickname, user.profile.email, 'email')
+        if user.profile.phone:
+            await self.sendreply(Replies.RPL_WHOISACCOUNT, nickname, user.profile.phone.replace(' ', ''), 'phone')
         if user.profile.image_original:
-            await self.sendreply(Replies.RPL_WHOISACCOUNT, nickname, user.profile.image_original, 'avatar url')
+            await self.sendreply(Replies.RPL_WHOISACCOUNT, nickname, user.profile.image_original, 'avatar')
 
         # Display common channels
         channels = []
-        for chan in (await self.sl_client.channels()).values():
-            if user.id in await self.sl_client.get_members(chan):
+        for chan in (await self.sl_client.channels(refresh=False)).values():
+            if user.id in await self.sl_client.get_members(chan, refresh=False):
                 channels.append(f'#{chan.name}')
         if channels:
             await self.sendreply(Replies.RPL_WHOISCHANNELS, nickname, ' '.join(channels))
@@ -646,9 +648,13 @@ class Server:
             await self.sendreply(Replies.RPL_WHOISOPERATOR, nickname, 'is a Workspace Owner')
         elif user.is_admin:
             await self.sendreply(Replies.RPL_WHOISOPERATOR, nickname, 'is a Workspace Admin')
+
         if user.has_2fa:
             await self.sendreply(Replies.RPL_WHOISSECURE, nickname, 'is using 2FA')
+
+        # Not really idle time, but last user edit
         await self.sendreply(Replies.RPL_WHOISIDLE, nickname, int(time.time() - user.updated), 'seconds idle')
+
         await self.sendreply(Replies.RPL_ENDOFWHOIS, nickname, 'End of /WHOIS list.')
 
     @registered_command
