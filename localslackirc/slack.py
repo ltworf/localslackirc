@@ -203,6 +203,8 @@ class Profile(NamedTuple):
     is_restricted: bool = False
     is_ultra_restricted: bool = False
     image_original: str = ''
+    title: str = ''
+    phone: str = ''
 
 
 @dataclass
