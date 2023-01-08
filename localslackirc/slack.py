@@ -743,6 +743,9 @@ class Slack:
         raise ResponseException(response.error)
 
     async def get_user_by_name(self, name: str) -> User:
+        if name not in self._usermapcache:
+            await self.prefetch_users()
+
         return self._usermapcache[name]
 
     async def prefetch_users(self) -> None:
