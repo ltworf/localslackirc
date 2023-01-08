@@ -69,6 +69,7 @@ class Replies(Enum):
     RPL_ENDOFNAMES = 366
     RPL_ENDOFBANLIST = 368
 
+    ERR_UNKNOWNERROR = 400
     ERR_NOSUCHNICK = 401
     ERR_NOSUCHCHANNEL = 403
     ERR_INVALIDCAPCMD = 410
@@ -252,7 +253,13 @@ class Server:
         except AttributeError:
             return await self.sendreply(Replies.ERR_UNKNOWNCOMMAND, cmd, 'Unknown command')
         else:
-            return await func([cmd] + args)
+            try:
+                return await func([cmd] + args)
+            except IrcDisconnectError:
+                raise
+            except Exception as e:
+                logging.exception(e)
+                await self.sendreply(Replies.ERR_UNKNOWNERROR, cmd, f'Error: {e}')
 
     async def sendcmd(self, sender, cmd, *args):
         args_text = ''
