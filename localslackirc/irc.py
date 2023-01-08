@@ -604,6 +604,15 @@ class Server:
             await self.sendreply(Replies.RPL_WHOISACCOUNT, nickname, user.profile.email, 'email address')
         if user.profile.image_original:
             await self.sendreply(Replies.RPL_WHOISACCOUNT, nickname, user.profile.image_original, 'avatar url')
+
+        # Display common channels
+        channels = []
+        for chan in (await self.sl_client.channels()).values():
+            if user.id in await self.sl_client.get_members(chan):
+                channels.append(f'#{chan.name}')
+        if channels:
+            await self.sendreply(Replies.RPL_WHOISCHANNELS, nickname, ' '.join(channels))
+
         await self.sendreply(Replies.RPL_WHOISSERVER, nickname, self.hostname, self.sl_client.login_info.team.name)
         if await self.sl_client.is_user_away(user):
             await self.sendreply(Replies.RPL_AWAY, nickname, 'Away')
