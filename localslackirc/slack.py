@@ -579,7 +579,7 @@ class Slack:
         if not response.ok:
             raise ResponseException(response.error)
 
-    async def get_members(self, channel: str|Channel) -> set[str]:
+    async def get_members(self, channel: str|Channel, refresh: bool = None) -> set[str]:
         """
         Returns the list (as a set) of users in a channel.
 
@@ -588,6 +588,9 @@ class Slack:
         are performed, and the same data is returned.
 
         When events happen, the cache needs to be updated or cleared.
+
+        If refresh is True, force the cache to be updated
+        If refresh is False, the cache is never updated
         """
         if isinstance(channel, Channel):
             id_ = channel.id
@@ -596,7 +599,7 @@ class Slack:
 
         cached = self._get_members_cache.get(id_, set())
         cursor = self._get_members_cache_cursor.get(id_)
-        if cursor == '':
+        if (cursor == '' and not refresh is None) or refresh is False:
             # The cursor is fully iterated
             return cached
         kwargs = {}
