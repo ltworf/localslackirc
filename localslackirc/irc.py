@@ -524,8 +524,7 @@ class Server:
         try:
             user_id = (await self.sl_client.get_user_by_name(user)).id
         except KeyError:
-            await self.sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find user: {user}')
-            return
+            return await self.sendreply(Replies.ERR_NOSUCHNICK, user, 'No such nick')
 
         self.annoy_users[user_id] = int(time.time()) + (duration * 60)
         await self.sendcmd(self, 'NOTICE', self.client.nickname, f'Will annoy {user} for {duration} minutes')
@@ -545,8 +544,7 @@ class Server:
                 else:
                     dest = (await self.sl_client.get_user_by_name(channel_name)).id
             except KeyError:
-                await self.sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find destination: {channel_name}')
-                return
+                return await self.sendreply(Replies.ERR_NOSUCHCHANNEL, channel_name, 'No such nick/channel')
 
         try:
             await self.sl_client.send_file(dest, filename, thread_ts)
@@ -576,13 +574,12 @@ class Server:
     @parse_args('channel_name', 'topic', minargs=1)
     async def cmd_topic(self, channel_name: str, topic: str = None) -> None:
         if not channel_name.startswith('#'):
-            await self.sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unknown channel: {channel_name}')
+            return await self.sendreply(Replies.ERR_NOSUCHCHANNEL, channel_name, 'No such channel')
 
         try:
             channel = await self.sl_client.get_channel_by_name(channel_name[1:])
         except KeyError:
-            await self.sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unknown channel: {channel_name}')
-            return
+            return await self.sendreply(Replies.ERR_NOSUCHCHANNEL, channel_name, 'No such channel')
 
         if not topic:
             topic = (await self.parse_slack_message(channel.real_topic, '', channel_name)).replace('\n', ' | ')
@@ -663,12 +660,12 @@ class Server:
         try:
             channel = await self.sl_client.get_channel_by_name(channel_name[1:])
         except KeyError:
-            return await self.sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unknown channel: {channel_name}')
+            return await self.sendreply(Replies.ERR_NOSUCHCHANNEL, channel_name, 'No such channel')
 
         try:
             user = await self.sl_client.get_user_by_name(nickname)
         except KeyError:
-            return await self.sendreply(Replies.ERR_NOSUCHNICK, f'Unknown user: {nickname}')
+            return await self.sendreply(Replies.ERR_NOSUCHNICK, nickname, 'No such nick')
 
         try:
             await self.sl_client.kick(channel, user)
@@ -698,12 +695,12 @@ class Server:
         try:
             channel = await self.sl_client.get_channel_by_name(channel_name[1:])
         except KeyError:
-            return await self.sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unknown channel: {channel_name}')
+            return await self.sendreply(Replies.ERR_NOSUCHCHANNEL, channel_name, 'No such channel')
 
         try:
             user = await self.sl_client.get_user_by_name(nickname)
         except KeyError:
-            return await self.sendreply(Replies.ERR_NOSUCHNICK, f'Unknown user: {nickname}')
+            return await self.sendreply(Replies.ERR_NOSUCHNICK, nickname, 'No such nick')
 
         try:
             await self.sl_client.invite(channel, user)
