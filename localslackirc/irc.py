@@ -475,8 +475,8 @@ class Server:
                 await self.sl_client.send_message_to_user(dest_object, message, action)
             except slack.ResponseException as e:
                 await self.sendreply(Replies.ERR_NOSUCHNICK, dest, f'Unable to send message: {e}')
-            if await self.sl_client.is_user_away(dest_object):
-                await self.sendreply(Replies.RPL_AWAY, dest, 'Away')
+            if not dest_object.is_bot and await self.sl_client.is_user_away(dest_object):
+                await self.sendreply(Replies.RPL_AWAY, dest, dest_object.profile.status_text or 'Away')
         else:
             try:
                 await self.sl_client.send_message(dest_object, message, action)
