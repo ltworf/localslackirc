@@ -19,7 +19,7 @@
 import asyncio
 import datetime
 from enum import Enum
-from pathlib import Path
+import logging
 import re
 import signal
 import socket
@@ -176,9 +176,8 @@ class Client:
                     continue
 
                 channel_name = '#%s' % sl_chan.name_normalized
-                channel_name_b = channel_name.encode('ascii')
-                if channel_name_b in self.parted_channels:
-                    log(f'Not joining {channel_name} on IRC, marked as parted')
+                if channel_name in self.ignored_channels:
+                    logging.info(f'Not joining {channel_name} on IRC, marked as ignored')
                     continue
                 await self._send_chan_info(channel_name_b, sl_chan)
         else:
@@ -991,13 +990,9 @@ def main() -> None:
                 to_irc_task,
             )
         finally:
-            log('Closing connections')
-            sl_client.close()
-            if status_file:
-                log(f'Writing status to {status_file}')
-                status_file.write_bytes(sl_client.get_status())
-            writer.close()
-            log('Cancelling running tasks')
+            logging.info('Closing connections')
+            self.writer.close()
+            logging.info('Cancelling running tasks')
             from_irc_task.cancel()
             to_irc_task.cancel()
 
@@ -1010,9 +1005,10 @@ def main() -> None:
 
         while True:
             try:
-                await irc_listener()
-            except IrcDisconnectError:
-                log('IRC disconnected')
+                cmd = await reader.readline()
+            except Exception as e:
+                logging.exception(e)
+                raise IrcDisconnectError() from e
 
     asyncio.run(restart_listener_loop())
 

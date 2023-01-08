@@ -20,6 +20,7 @@ import asyncio
 import datetime
 from dataclasses import dataclass, field
 import json
+import logging
 from time import time
 from typing import Literal, Optional, Any, NamedTuple, Sequence, Type, TypeVar
 
@@ -369,7 +370,7 @@ class Slack:
         """
         Set the login_info field
         """
-        log('Login in slack')
+        logging.info('Login in slack')
         self.login_info = await self.client.login(15)
 
     async def get_history(self, channel: Channel|IM|str, ts: str, cursor: Optional[NextCursor]=None, limit: int=1000, inclusive: bool=False) -> History:
@@ -386,9 +387,9 @@ class Slack:
     async def _thread_history(self, channel: str, thread_id: str) -> list[HistoryMessage|HistoryBotMessage]:
         r: list[HistoryMessage|HistoryBotMessage] = []
         cursor = None
-        log('Thread history', channel, thread_id)
+        logging.info('Thread history %s %s', channel, thread_id)
         while True:
-            log('Cursor')
+            logging.info('Cursor')
             p = await self.client.api_call(
                 'conversations.replies',
                 channel=channel,
@@ -398,16 +399,16 @@ class Slack:
             )
             try:
                 response = self.tload(p, History)
-            except Exception as e:
-                    log('Failed to parse', e)
-                    log(p)
-                    break
+            except Exception:
+                logging.exception('Failed to parse')
+                logging.error(p)
+                break
             r += [i for i in response.messages if i.ts != i.thread_ts]
             if response.has_more and response.response_metadata:
                 cursor = response.response_metadata.next_cursor
             else:
                 break
-        log('Thread fetched')
+        logging.info('Thread fetched')
         r[0].thread_ts = None
         return r
 
@@ -416,19 +417,19 @@ class Slack:
         Obtain the history from the last known event and
         inject fake events as if the messages are coming now.
         '''
-        log('Fetching history...')
+        logging.info('Fetching history...')
 
         if self._status.last_timestamp == 0:
-            log('No last known timestamp. Unable to fetch history')
+            logging.info('No last known timestamp. Unable to fetch history')
             return
 
         last_timestamp = self._status.last_timestamp
         FOUR_DAYS = 60 * 60 * 24 * 4
         if time() - last_timestamp > FOUR_DAYS:
-            log('Last timestamp is too old. Defaulting to 4 days.')
+            logging.info('Last timestamp is too old. Defaulting to 4 days.')
             last_timestamp = time() - FOUR_DAYS
         dt = datetime.datetime.fromtimestamp(last_timestamp)
-        log(f'Last known timestamp {dt}')
+        logging.info('Last known timestamp %s', dt)
 
         chats: Sequence[IM|Channel] = []
         chats += await self.channels() + await self.get_ims()  # type: ignore
@@ -437,17 +438,17 @@ class Slack:
                 if not channel.is_member:
                     continue
 
-                log(f'Downloading logs from channel {channel.name_normalized}')
+                logging.info('Downloading logs from channel %s', channel.name_normalized)
             else:
-                log(f'Downloading logs from IM {channel.user}')
+                logging.info('Downloading logs from IM %s', channel.user)
 
             cursor = None
             while True: # Loop to iterate the cursor
-                log('Calling cursor')
+                logging.info('Calling cursor')
                 try:
                     response = await self.get_history(channel, str(last_timestamp))
-                except Exception as e:
-                    log('Failed to parse', e)
+                except Exception:
+                    logging.exception('Failed to parse')
                     break
                 msg_list = list(response.messages)
                 while msg_list:
@@ -857,10 +858,10 @@ class Slack:
             events = await self.client.rtm_read()
         except Exception:
             events = []
-            log('Connecting to slack...')
+            logging.info('Connecting to slack...')
             self.login_info = await self.client.rtm_connect(5)
             await self._history()
-            log('Connected to slack')
+            logging.info('Connected to slack')
             return None
 
         while self._wsblock: # Retry until the semaphore is free
@@ -880,7 +881,7 @@ class Slack:
             if t in USELESS_EVENTS:
                 continue
 
-            debug(event)
+            logging.debug(event)
             loadable_events = TopicChange|MessageBot|MessageEdit|MessageDelete|GroupJoined|Join|Leave|UserTyping
             try:
                 ev: Optional[loadable_events] = self.tload(
@@ -925,8 +926,8 @@ class Slack:
                         #FIXME don't know if it is wise, maybe it gets lost forever del self._usermapcache[u.name]
                     #TODO make an event for this
                 else:
-                    log(event)
+                    logging.info(event)
             except Exception as e:
-                log('Exception: %s' % e)
+                logging.exception(e)
             self._triage_sent_by_self()
         return None
