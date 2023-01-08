@@ -621,16 +621,17 @@ class Slack:
         self._get_members_cache_cursor[id_] = r.get('response_metadata', {}).get('next_cursor')
         return self._get_members_cache[id_]
 
-    async def channels(self, refresh: bool = False) -> dict[str, Channel]:
+    async def channels(self, refresh: bool = None) -> dict[str, Channel]:
         """
         Returns the list of slack channels
 
-        if refresh is set, the local cache is cleared
+        if refresh is True, the local cache is cleared
+        if refresh is False, the cache is not refreshed, even if empty
         """
-        if refresh:
+        if refresh is True:
             self._channelscache.clear()
 
-        if self._channelscache:
+        if self._channelscache or refresh is False:
             return self._channelscache
 
         cursor = None
