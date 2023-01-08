@@ -68,10 +68,12 @@ class Replies(Enum):
     RPL_NAMREPLY = 353
     RPL_ENDOFNAMES = 366
     RPL_ENDOFBANLIST = 368
+    RPL_ENDOFWHOWAS = 369
 
     ERR_UNKNOWNERROR = 400
     ERR_NOSUCHNICK = 401
     ERR_NOSUCHCHANNEL = 403
+    ERR_WASNOSUCHNICK = 406
     ERR_INVALIDCAPCMD = 410
     ERR_NOTEXTTOSEND = 412
     ERR_UNKNOWNCOMMAND = 421
@@ -590,6 +592,12 @@ class Server:
             await self.sl_client.topic(channel, topic)
         except slack.ResponseException as e:
             await self.sendreply(Replies.ERR_UNKNOWNCOMMAND, f'Unable to set topic to {topic}: {e}')
+
+    @registered_command
+    @parse_args('nickname')
+    async def cmd_whowas(self, nickname: str) -> None:
+        await self.sendreply(Replies.ERR_WASNOSUCHNICK, nickname, 'There was no such nickname')
+        await self.sendreply(Replies.RPL_ENDOFWHOWAS, nickname, 'End of WHOWAS')
 
     @registered_command
     @parse_args('nickname')
