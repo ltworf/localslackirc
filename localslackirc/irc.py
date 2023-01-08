@@ -167,15 +167,92 @@ class Server:
         self.mentions_regex_cache: dict[str, Optional[re.Pattern]] = {}  # Cache for the regexp to perform mentions. Key is channel id
         self.annoy_users: dict[str, int] = {} # Users to annoy pretending to type when they type
 
-    @parse_args('nickname')
-    async def cmd_nick(self, nickname):
-        if not self.client.is_registered:
-            self.client.nickname = nickname
+    async def listener(self, ip, port) -> None:
+        loop = asyncio.get_running_loop()
 
-            if self.client.username and self.client.nickname:
-                await self.registered()
-        elif nickname != self.sl_client.login_info.self.name:
-            await self.sendreply(Replies.ERR_ERRONEUSNICKNAME, nickname, 'Incorrect nickname, use %s' % self.sl_client.login_info.self.name)
+        serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        serversocket.bind((ip, port))
+        serversocket.listen(1)
+        serversocket.setblocking(False)
+
+        s, _ = await loop.sock_accept(serversocket)
+        serversocket.close()
+        self.reader, self.writer = await asyncio.open_connection(sock=s)
+
+        try:
+            await self.sl_client.login()
+        except SlackConnectionError as e:
+            logging.error('Unable to connect to slack: %s', e)
+            await self.sendcmd(None, 'ERROR', f'Unable to connect to slack: {e}')
+            self.writer.close()
+            return
+
+        self.hostname = '%s.slack.com' % self.sl_client.login_info.team.domain
+
+        self.client = Client()
+        self.client.hostname = self.hostname
+
+        try:
+            from_irc_task = asyncio.create_task(self.from_irc(self.reader))
+            from_slack_task = asyncio.create_task(self.from_slack())
+
+            await asyncio.gather(
+                from_irc_task,
+                from_slack_task,
+            )
+        except SlackConnectionError as e:
+            await self.sendcmd(None, 'ERROR', f'Connection error with slack: {e}')
+        finally:
+            logging.info('Closing connections')
+            self.writer.close()
+            logging.info('Cancelling running tasks')
+            from_irc_task.cancel()
+            from_slack_task.cancel()
+            self.client = None
+
+    async def from_irc(self, reader):
+        while True:
+            try:
+                cmd = await reader.readline()
+            except Exception as e:
+                logging.exception(e)
+                raise IrcDisconnectError() from e
+
+            if self.reader.at_eof():
+                raise IrcDisconnectError()
+
+            await self.irc_command(cmd.strip().decode('utf8'))
+
+    async def from_slack(self):
+        while True:
+            ev = await self.sl_client.event()
+            if ev:
+                logging.debug(ev)
+                await self.slack_event(ev)
+
+    async def irc_command(self, line):
+        logging.debug('R - ' + line)
+
+        if not line:
+            return
+
+        cmd, _, text = line.partition(' ')
+
+        args = []
+        while text and not text.startswith(':'):
+            arg, _, text = text.partition(' ')
+            args.append(arg)
+
+        if text.startswith(':'):
+            args.append(text[1:])
+
+        try:
+            func = getattr(self, 'cmd_%s' % cmd.lower())
+        except AttributeError:
+            return await self.sendreply(Replies.ERR_UNKNOWNCOMMAND, cmd, 'Unknown command')
+        else:
+            return await func([cmd] + args)
 
     async def sendcmd(self, sender, cmd, *args):
         args_text = ''
@@ -222,6 +299,16 @@ class Server:
 
         if self.client.username and self.client.nickname:
             await self.registered()
+
+    @parse_args('nickname')
+    async def cmd_nick(self, nickname):
+        if not self.client.is_registered:
+            self.client.nickname = nickname
+
+            if self.client.username and self.client.nickname:
+                await self.registered()
+        elif nickname != self.sl_client.login_info.self.name:
+            await self.sendreply(Replies.ERR_ERRONEUSNICKNAME, nickname, 'Incorrect nickname, use %s' % self.sl_client.login_info.self.name)
 
     async def registered(self):
         self.client.is_registered = True
@@ -271,62 +358,77 @@ class Server:
             await self.slack_event(ev)
         self.held_events = []
 
+    @parse_args('message', minargs=0)
+    async def cmd_quit(self, message: str = None) -> None:
+        raise IrcDisconnectError()
+
     @registered_command
     @parse_args('token', minargs=0)
     async def cmd_ping(self, token: str = '') -> None:
         await self.sendcmd(self, 'PONG', self.hostname, token)
 
-    @registered_command
-    @parse_args('channels')
-    async def cmd_join(self, channels: str) -> None:
-        for channel_name in channels.split(','):
-            if channel_name in self.ignored_channels:
-                self.ignored_channels.remove(channel_name)
+    @parse_args('cmd')
+    async def cmd_cap(self, cmd):
+        if cmd == 'LS':
+            return await self.sendcmd(self, 'CAP', '*', 'LS', '')
+        if cmd == 'END':
+            return
 
-            try:
-                slchan = await self.sl_client.get_channel_by_name(channel_name[1:])
-            except KeyError:
-                await self.sendreply(Replies.ERR_NOSUCHCHANNEL, channel_name, 'No such channel')
-                continue
+        await self.sendreply(Replies.ERR_INVALIDCAPCMD, '*', cmd, 'Invalid CAP subcommand')
 
-            if not slchan.is_member:
-                try:
-                    await self.sl_client.join(slchan)
-                except slack.ResponseException as e:
-                    await self.sendreply(Replies.ERR_NOSUCHCHANNEL, channel_name, f'Unable to join server channel: {e}')
+    async def get_regexp(self, dest: slack.User|slack.Channel) -> Optional[re.Pattern]:
+        #del self.mentions_regex_cache[sl_ev.channel]
+        # No nick substitutions for private chats
+        if isinstance(dest, slack.User):
+            return None
 
-            await self.join_channel(channel_name, slchan)
+        dest_id = dest.id
+        # Return from cache
+        if dest_id in self.mentions_regex_cache:
+            return self.mentions_regex_cache[dest_id]
 
-    async def join_channel(self, channel_name: str, slchan: slack.Channel|slack.MessageThread):
-        if not self.settings.nouserlist:
-            l = await self.sl_client.get_members(slchan.id)
+        usernames = []
+        for j in await self.sl_client.get_members(dest):
+            u = await self.sl_client.get_user(j)
+            usernames.append(u.name)
 
-            userlist: list[str] = []
-            for i in l:
-                try:
-                    u = await self.sl_client.get_user(i)
-                except KeyError:
-                    continue
-                if u.deleted:
-                    # Disabled user, skip it
-                    continue
-                name = u.name
-                prefix = '@' if u.is_admin else ''
-                userlist.append(prefix + name)
+        if len(usernames) == 0:
+            self.mentions_regex_cache[dest_id] = None
+            return None
 
-            users = ' '.join(userlist)
+        # Extremely inefficient code to generate mentions
+        # Just doing them client-side on the receiving end is too mainstream
+        regexs = (r'((://\S*){0,1}\b%s\b)' % username for username in usernames)
+        regex = re.compile('|'.join(regexs))
+        self.mentions_regex_cache[dest_id] = regex
+        return regex
 
-        try:
-            yelldest = '#' + (await self.sl_client.get_channel(slchan.id)).name
-        except KeyError:
-            yelldest = ''
+    async def addmagic(self, msg: str, dest: slack.User|slack.Channel) -> str:
+        """
+        Adds magic codes and various things to
+        outgoing messages
+        """
+        for i in msgparsing.SLACK_SUBSTITUTIONS:
+            msg = msg.replace(i[1], i[0])
 
-        topic = (await self.parse_slack_message(slchan.real_topic, '', yelldest)).replace('\n', ' | ')
-        await self.sendcmd(self.client, 'JOIN', channel_name)
-        await self.sendcmd(self, 'MODE', channel_name, '+')
-        await self.sendreply(Replies.RPL_TOPIC, channel_name, topic)
-        await self.sendreply(Replies.RPL_NAMREPLY, '=', channel_name, '' if self.settings.nouserlist else users)
-        await self.sendreply(Replies.RPL_ENDOFNAMES, channel_name, 'End of NAMES list')
+        msg = msg.replace('@here', '<!here>')
+        msg = msg.replace('@channel', '<!channel>')
+        msg = msg.replace('@everyone', '<!everyone>')
+
+        regex = await self.get_regexp(dest)
+        if regex is None:
+            return msg
+
+        matches = list(re.finditer(regex, msg))
+        matches.reverse() # I want to replace from end to start or the positions get broken
+        for m in matches:
+            username = m.string[m.start():m.end()]
+            if username.startswith('://'):
+                continue # Match inside a url
+
+            msg = msg[0:m.start()] + '<@%s>' % (await self.sl_client.get_user_by_name(username)).id + msg[m.end():]
+
+        return msg
 
     @registered_command
     @parse_args('dest', 'msg')
@@ -532,10 +634,6 @@ class Server:
         except slack.ResponseException as e:
             await self.sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Error: %s' % e)
 
-    @parse_args('message', minargs=0)
-    async def cmd_quit(self, message: str = None) -> None:
-        raise IrcDisconnectError()
-
     @registered_command
     async def cmd_userhost(self, args: list[str]) -> None:
         nicknames = args[1:]
@@ -596,59 +694,57 @@ class Server:
                     await self.sendreply(Replies.RPL_WHOREPLY, name, user.name, self.hostname, self.hostname, user.name, 'H', '0 %s' % user.real_name)
         await self.sendreply(Replies.RPL_ENDOFWHO, name, 'End of WHO list')
 
-    async def get_regexp(self, dest: slack.User|slack.Channel) -> Optional[re.Pattern]:
-        #del self.mentions_regex_cache[sl_ev.channel]
-        # No nick substitutions for private chats
-        if isinstance(dest, slack.User):
-            return None
+    @registered_command
+    @parse_args('channels')
+    async def cmd_join(self, channels: str) -> None:
+        for channel_name in channels.split(','):
+            if channel_name in self.ignored_channels:
+                self.ignored_channels.remove(channel_name)
 
-        dest_id = dest.id
-        # Return from cache
-        if dest_id in self.mentions_regex_cache:
-            return self.mentions_regex_cache[dest_id]
+            try:
+                slchan = await self.sl_client.get_channel_by_name(channel_name[1:])
+            except KeyError:
+                await self.sendreply(Replies.ERR_NOSUCHCHANNEL, channel_name, 'No such channel')
+                continue
 
-        usernames = []
-        for j in await self.sl_client.get_members(dest):
-            u = await self.sl_client.get_user(j)
-            usernames.append(u.name)
+            if not slchan.is_member:
+                try:
+                    await self.sl_client.join(slchan)
+                except slack.ResponseException as e:
+                    await self.sendreply(Replies.ERR_NOSUCHCHANNEL, channel_name, f'Unable to join server channel: {e}')
 
-        if len(usernames) == 0:
-            self.mentions_regex_cache[dest_id] = None
-            return None
+            await self.join_channel(channel_name, slchan)
 
-        # Extremely inefficient code to generate mentions
-        # Just doing them client-side on the receiving end is too mainstream
-        regexs = (r'((://\S*){0,1}\b%s\b)' % username for username in usernames)
-        regex = re.compile('|'.join(regexs))
-        self.mentions_regex_cache[dest_id] = regex
-        return regex
+    async def join_channel(self, channel_name: str, slchan: slack.Channel|slack.MessageThread):
+        if not self.settings.nouserlist:
+            l = await self.sl_client.get_members(slchan.id)
 
-    async def addmagic(self, msg: str, dest: slack.User|slack.Channel) -> str:
-        """
-        Adds magic codes and various things to
-        outgoing messages
-        """
-        for i in msgparsing.SLACK_SUBSTITUTIONS:
-            msg = msg.replace(i[1], i[0])
+            userlist: list[str] = []
+            for i in l:
+                try:
+                    u = await self.sl_client.get_user(i)
+                except KeyError:
+                    continue
+                if u.deleted:
+                    # Disabled user, skip it
+                    continue
+                name = u.name
+                prefix = '@' if u.is_admin else ''
+                userlist.append(prefix + name)
 
-        msg = msg.replace('@here', '<!here>')
-        msg = msg.replace('@channel', '<!channel>')
-        msg = msg.replace('@everyone', '<!everyone>')
+            users = ' '.join(userlist)
 
-        regex = await self.get_regexp(dest)
-        if regex is None:
-            return msg
+        try:
+            yelldest = '#' + (await self.sl_client.get_channel(slchan.id)).name
+        except KeyError:
+            yelldest = ''
 
-        matches = list(re.finditer(regex, msg))
-        matches.reverse() # I want to replace from end to start or the positions get broken
-        for m in matches:
-            username = m.string[m.start():m.end()]
-            if username.startswith('://'):
-                continue # Match inside a url
-
-            msg = msg[0:m.start()] + '<@%s>' % (await self.sl_client.get_user_by_name(username)).id + msg[m.end():]
-
-        return msg
+        topic = (await self.parse_slack_message(slchan.real_topic, '', yelldest)).replace('\n', ' | ')
+        await self.sendcmd(self.client, 'JOIN', channel_name)
+        await self.sendcmd(self, 'MODE', channel_name, '+')
+        await self.sendreply(Replies.RPL_TOPIC, channel_name, topic)
+        await self.sendreply(Replies.RPL_NAMREPLY, '=', channel_name, '' if self.settings.nouserlist else users)
+        await self.sendreply(Replies.RPL_ENDOFNAMES, channel_name, 'End of NAMES list')
 
     async def parse_slack_message(self, i: str, source: str, destination: str) -> str:
         """
@@ -815,6 +911,15 @@ class Server:
         else:
             await self.sendcmd(user, 'PART', channel)
 
+    async def topic_changed(self, sl_ev: slack.TopicChange) -> None:
+        user = await self.sl_client.get_user(sl_ev.user)
+        channel = '#' + (await self.sl_client.get_channel(sl_ev.channel, refresh=True)).name
+
+        if channel in self.ignored_channels:
+            return
+
+        await self.sendcmd(user, 'TOPIC', channel, sl_ev.topic)
+
     async def slack_event(self, sl_ev: slack.SlackEvent) -> None:
         if not self.client.is_registered:
             self.held_events.append(sl_ev)
@@ -847,108 +952,3 @@ class Server:
                 await self.sendcmd(self, 'NOTICE', self.client.nickname, f'No longer annoying {(await self.sl_client.get_user(sl_ev.user)).name}')
                 return
             await self.sl_client.typing(sl_ev.channel)
-
-    async def irc_command(self, line):
-        logging.debug('R - ' + line)
-
-        if not line:
-            return
-
-        cmd, _, text = line.partition(' ')
-
-        args = []
-        while text and not text.startswith(':'):
-            arg, _, text = text.partition(' ')
-            args.append(arg)
-
-        if text.startswith(':'):
-            args.append(text[1:])
-
-        try:
-            func = getattr(self, 'cmd_%s' % cmd.lower())
-        except AttributeError:
-            return await self.sendreply(Replies.ERR_UNKNOWNCOMMAND, cmd, 'Unknown command')
-        else:
-            return await func([cmd] + args)
-
-    async def listener(self, ip, port) -> None:
-        loop = asyncio.get_running_loop()
-
-        serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        serversocket.bind((ip, port))
-        serversocket.listen(1)
-        serversocket.setblocking(False)
-
-        s, _ = await loop.sock_accept(serversocket)
-        serversocket.close()
-        self.reader, self.writer = await asyncio.open_connection(sock=s)
-
-        try:
-            await self.sl_client.login()
-        except SlackConnectionError as e:
-            logging.error('Unable to connect to slack: %s', e)
-            await self.sendcmd(None, 'ERROR', f'Unable to connect to slack: {e}')
-            self.writer.close()
-            return
-
-        self.hostname = '%s.slack.com' % self.sl_client.login_info.team.domain
-
-        self.client = Client()
-        self.client.hostname = self.hostname
-
-        try:
-            from_irc_task = asyncio.create_task(self.from_irc(self.reader))
-            from_slack_task = asyncio.create_task(self.from_slack())
-
-            await asyncio.gather(
-                from_irc_task,
-                from_slack_task,
-            )
-        except SlackConnectionError as e:
-            await self.sendcmd(None, 'ERROR', f'Connection error with slack: {e}')
-        finally:
-            logging.info('Closing connections')
-            self.writer.close()
-            logging.info('Cancelling running tasks')
-            from_irc_task.cancel()
-            from_slack_task.cancel()
-            self.client = None
-
-    async def from_irc(self, reader):
-        while True:
-            try:
-                cmd = await reader.readline()
-            except Exception as e:
-                logging.exception(e)
-                raise IrcDisconnectError() from e
-
-            if self.reader.at_eof():
-                raise IrcDisconnectError()
-
-            await self.irc_command(cmd.strip().decode('utf8'))
-
-    async def from_slack(self):
-        while True:
-            ev = await self.sl_client.event()
-            if ev:
-                logging.debug(ev)
-                await self.slack_event(ev)
-
-    @parse_args('cmd')
-    async def cmd_cap(self, cmd):
-        if cmd == 'LS':
-            return await self.sendcmd(self, 'CAP', '*', 'LS', '')
-        if cmd == 'END':
-            return
-
-        await self.sendreply(Replies.ERR_INVALIDCAPCMD, '*', cmd, 'Invalid CAP subcommand')
-
-    async def topic_changed(self, sl_ev: slack.TopicChange) -> None:
-        user = await self.sl_client.get_user(sl_ev.user)
-        channel = '#' + (await self.sl_client.get_channel(sl_ev.channel, refresh=True)).name
-
-        if channel in self.ignored_channels:
-            return
-
-        await self.sendcmd(user, 'TOPIC', channel, sl_ev.topic)
