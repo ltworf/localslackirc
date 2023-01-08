@@ -64,6 +64,7 @@ class Replies(Enum):
     RPL_NOTOPIC = 331
     RPL_TOPIC = 332
     RPL_WHOISBOT = 335 # or 336 or 617
+    RPL_WHOISTEXT = 335
     RPL_WHOREPLY = 352
     RPL_NAMREPLY = 353
     RPL_ENDOFNAMES = 366
@@ -629,8 +630,16 @@ class Server:
             await self.sendreply(Replies.RPL_WHOISCHANNELS, nickname, ' '.join(channels))
 
         await self.sendreply(Replies.RPL_WHOISSERVER, nickname, self.hostname, self.sl_client.login_info.team.name)
-        if await self.sl_client.is_user_away(user):
-            await self.sendreply(Replies.RPL_AWAY, nickname, 'Away')
+
+        # Do not display 'Away' status for bots and apps
+        if user.is_bot:
+            await self.sendreply(Replies.RPL_WHOISBOT, nickname, 'is a bot')
+        elif user.is_app_user:
+            await self.sendreply(Replies.RPL_WHOISBOT, nickname, 'is an App')
+        elif await self.sl_client.is_user_away(user) or user.profile.status_text:
+            await self.sendreply(Replies.RPL_AWAY, nickname, user.profile.status_text or 'Away')
+
+        # Privileges
         if user.is_owner:
             await self.sendreply(Replies.RPL_WHOISOPERATOR, nickname, 'is a Workspace Owner')
         elif user.is_admin:
