@@ -49,6 +49,12 @@ USELESS_EVENTS = frozenset((
     'file_shared',
     'desktop_notification',
     'mobile_in_app_notification',
+    'draft_sent',
+    'thread_marked',
+    'update_thread_state',
+    'bot_added',
+    'im_marked',
+    'pref_change',
     'goodbye', # Server is disconnecting us
 ))
 
@@ -145,6 +151,16 @@ class Message:
     @property
     def is_action(self):
         return self.subtype == 'me_message'
+
+
+@dataclass(frozen=True)
+class MessageReplied:
+    """
+    We don't care about this message, but as the type is 'message', we need to
+    handle it.
+    """
+    type: Literal['message']
+    subtype: Literal['message_replied']
 
 
 class NoChanMessage(NamedTuple):
@@ -263,6 +279,12 @@ class User(NamedTuple):
         return self.profile.real_name
 
 
+@dataclass
+class UserChange(NamedTuple):
+    type: Literal['user_change']
+    user: User
+
+
 class Presence(NamedTuple):
     presence: str
 
@@ -346,7 +368,9 @@ SlackEvent = (
     Join|
     Leave|
     GroupJoined|
-    UserTyping
+    UserTyping|
+    MessageReplied|
+    UserChange
 )
 
 
@@ -921,12 +945,13 @@ class Slack:
 
         await self._send_message(channel_id, msg, action, None)
 
-    async def event(self) -> Optional[SlackEvent]:
+    async def events(self) -> Optional[SlackEvent]:
         """
         This returns the events from the slack websocket
         """
         if self._internalevents:
-            return self._internalevents.pop()
+            yield self._internalevents.pop()
+            return
 
         try:
             events = await self.client.rtm_read()
@@ -936,7 +961,7 @@ class Slack:
             self.login_info = await self.client.rtm_connect(5)
             await self._history()
             logging.info('Connected to slack')
-            return None
+            return
 
         while self._wsblock: # Retry until the semaphore is free
             await asyncio.sleep(0.01)
@@ -966,23 +991,20 @@ class Slack:
 
             logging.debug(ev)
 
+            self._triage_sent_by_self()
+
             if isinstance(ev, (Join, Leave)) and ev.channel in self._get_members_cache:
                 if isinstance(ev, Join):
                     self._get_members_cache[ev.channel].add(ev.user)
                 else:
                     self._get_members_cache[ev.channel].discard(ev.user)
 
-            if ev:
-                return ev
-
-            if t == 'user_change':
-                # Changes in the user, drop it from cache
-                u = self.tload(event['user'], User)
-                if u.id in self._usercache:
-                    del self._usercache[u.id]
+            if isinstance(ev, UserChange):
+                if ev.user.id in self._usercache:
+                    del self._usercache[ev.user.id]
                         #FIXME don't know if it is wise, maybe it gets lost forever del self._usermapcache[u.name]
                     #TODO make an event for this
                 else:
                     logging.info(event)
-            self._triage_sent_by_self()
-        return None
+
+            yield ev
