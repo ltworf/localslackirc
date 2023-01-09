@@ -139,6 +139,7 @@ class Message:
     subtype: str = None
     thread_ts: Optional[str] = None
     files: list[File] = field(default_factory=list)
+    username: str = None
 
     @property
     def is_action(self):
@@ -146,10 +147,11 @@ class Message:
 
 
 class NoChanMessage(NamedTuple):
-    user: str
     text: str
+    user: str = None
     thread_ts: Optional[str] = None
     subtype: str = None
+    username: str = None
 
 
 @dataclass
@@ -165,6 +167,7 @@ class MessageEdit:
     channel: str  # The channel id
     previous: NoChanMessage = field(metadata={'name': 'previous_message'})
     current: NoChanMessage = field(metadata={'name': 'message'})
+    username: str = None
 
     @property
     def is_changed(self) -> bool:
@@ -177,6 +180,7 @@ class MessageDelete:
     subtype: Literal['message_deleted']
     channel: str  # The channel id
     previous: NoChanMessage = field(metadata={'name': 'previous_message'})
+    username: str = None
 
 
 class UserTyping(NamedTuple):
@@ -199,18 +203,37 @@ class Profile(NamedTuple):
 @dataclass
 class MessageBot:
     type: Literal['message']
-    subtype: Literal['bot_message']
     _text: str = field(metadata={'name': 'text'})
-    username: str
     channel: str
-    bot_id: Optional[str] = None
+    bot_id: str
+    _username: str = field(metadata={'name': 'username'}, default=None)
+    subtype: str = 'bot_message' #Literal['bot_message'] = None
+    blocks: list[dict[str, Any]] = field(default_factory=list)
     attachments: list[dict[str, Any]] = field(default_factory=list)
+    bot_profile: dict[str, Any] = field(default_factory=dict)
     thread_ts: Optional[str] = None
     files: list[File] = field(default_factory=list)
 
     @property
+    def is_action(self):
+        return False
+
+    @property
+    def username(self):
+        username = self._username or self.bot_profile.get('name', 'bot')
+        return username.replace(' ', '_')
+
+    @property
     def text(self):
         r = [self._text]
+        for block in self.blocks:
+            if 'text' in block:
+                for line in block['text']['text'].split('\n'):
+                    r.append(f"| {line}")
+            for element in block.get('elements', ()):
+                if element['type'] == 'text':
+                    for line in element['text'].split('\n'):
+                        r.append(f"| {line}")
         for i in self.attachments:
             t = ""
             if 'text' in i:
@@ -279,6 +302,7 @@ class HistoryBotMessage:
     ts: float = 0
     files: list[File] = field(default_factory=list)
     thread_ts: Optional[str] = None
+    blocks: list[dict[str, Any]] = field(default_factory=list)
     attachments: list[dict[str, Any]] = field(default_factory=list)
 
 
@@ -491,10 +515,12 @@ class Slack:
                         ))
                     elif isinstance(msg, HistoryBotMessage):
                         self._internalevents.append(MessageBot(
-                            type='message', subtype='bot_message',
+                            type='message',
+                            subtype='bot_message',
                             _text=msg.text,
                             attachments=msg.attachments,
-                            username=msg.username,
+                            blocks=msg.blocks,
+                            _username=msg.username,
                             channel=channel.id,
                             bot_id=msg.bot_id,
                             thread_ts=msg.thread_ts,
