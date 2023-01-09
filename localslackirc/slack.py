@@ -25,6 +25,7 @@ from time import time
 from typing import Literal, Optional, Any, NamedTuple, Sequence, Type, TypeVar
 
 from typedload import dataloader, dump
+from typedload.exceptions import TypedloadValueError
 
 from .slackclient import SlackClient
 from .slackclient.client import LoginInfo
@@ -391,7 +392,12 @@ class Slack:
         self.client.close()
 
     def tload(self, data: Any, type_: Type[T]) -> T:
-        return self.loader.load(data, type_)
+        try:
+            return self.loader.load(data, type_)
+        except TypedloadValueError:
+            logging.error('Unable to parse', exc_info=True)
+            logging.error(data)
+            raise
 
     async def login(self) -> None:
         """
@@ -440,9 +446,7 @@ class Slack:
 
             try:
                 response = self.tload(p, History)
-            except Exception:
-                logging.exception('Failed to parse')
-                logging.error(p)
+            except TypedloadValueError:
                 break
 
             r += [i for i in response.messages if i.ts != i.thread_ts]
@@ -489,8 +493,7 @@ class Slack:
                 logging.info('Calling cursor')
                 try:
                     response = await self.get_history(channel, str(last_timestamp))
-                except Exception:
-                    logging.exception('Failed to parse')
+                except TypedloadValueError:
                     break
                 msg_list = list(response.messages)
                 while msg_list:
@@ -958,8 +961,8 @@ class Slack:
                     event,
                     SlackEvent  # type: ignore
                 )
-            except Exception:
-                ev = None
+            except TypedloadValueError:
+                continue
 
             logging.debug(ev)
 
