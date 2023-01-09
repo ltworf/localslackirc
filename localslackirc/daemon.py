@@ -53,6 +53,28 @@ def su() -> None:
     os.seteuid(userdata.pw_uid)
 
 
+class ColoredFormatter(logging.Formatter):
+    RESET_SEQ = "\033[0m"
+    COLOR_SEQ = "%s%%s" + RESET_SEQ
+
+    COLORS = {
+        'DEBUG': COLOR_SEQ % "\033[0;36m",
+        'INFO': COLOR_SEQ % "\033[32m",
+        'WARNING': COLOR_SEQ % "\033[1;33m",
+        'ERROR': COLOR_SEQ % "\033[1;31m",
+        'CRITICAL': COLOR_SEQ % ("\033[1;33m\033[1;41m"),
+        'DEBUG_FILTERS': COLOR_SEQ % "\033[0;35m",
+    }
+
+    def format(self, record):
+        levelname = record.levelname
+
+        msg = super().format(record)
+        if levelname in self.COLORS:
+            msg = self.COLORS[levelname] % msg
+        return msg
+
+
 class Daemon:
     irc_server = None
     sl_client = None
@@ -66,6 +88,22 @@ class Daemon:
             loop.run_until_complete(cls().main())
         except KeyboardInterrupt:
             return
+
+    @classmethod
+    def create_default_logger(cls):
+        # stderr logger
+        log_format = '%(asctime)s:%(levelname)s:%(name)s' \
+                     ':%(filename)s:%(lineno)d:%(funcName)s %(message)s'
+        handler = logging.StreamHandler(sys.stderr)
+        if sys.platform != 'win32' and sys.stderr.isatty():
+            handler.setFormatter(ColoredFormatter(log_format))
+        return handler
+
+    def setup_loggers(self, level):
+        logging.root.handlers = []
+
+        logging.root.setLevel(level)
+        logging.root.addHandler(self.create_default_logger())
 
     async def main(self):
         parser = argparse.ArgumentParser()
@@ -112,7 +150,7 @@ class Daemon:
 
         args = parser.parse_args()
 
-        logging.basicConfig(level=logging.DEBUG if bool(environ.get('DEBUG', args.debug)) else logging.INFO)
+        self.setup_loggers(level=logging.DEBUG if bool(environ.get('DEBUG', args.debug)) else logging.INFO)
 
         status_file_str: Optional[str] = environ.get('STATUS_FILE', args.status_file)
         status_file = None
