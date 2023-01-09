@@ -230,8 +230,7 @@ class Server:
 
     async def from_slack(self):
         while True:
-            ev = await self.sl_client.event()
-            if ev:
+            async for ev in self.sl_client.events():
                 logging.debug(ev)
                 await self.slack_event(ev)
 
