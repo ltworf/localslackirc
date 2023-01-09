@@ -762,184 +762,10 @@ class Client:
             await self.sl_client.typing(sl_ev.channel)
 
 
-    async def command(self, cmd: bytes) -> None:
-        if b' ' in cmd:
-            cmdid, _ = cmd.split(b' ', 1)
-        else:
-            cmdid = cmd
+        if not line:
+            return
 
-        # commands are case insensitive
-        cmdid = cmdid.upper()
-
-        handlers = {
-            b'NICK': self._nickhandler,
-            b'USER': self._userhandler,
-            b'PING': self._pinghandler,
-            b'JOIN': self._joinhandler,
-            b'PRIVMSG': self._privmsghandler,
-            b'LIST': self._listhandler,
-            b'WHO': self._whohandler,
-            b'MODE': self._modehandler,
-            b'PART': self._parthandler,
-            b'AWAY': self._awayhandler,
-            b'TOPIC': self._topichandler,
-            b'KICK': self._kickhandler,
-            b'INVITE': self._invitehandler,
-            b'SENDFILE': self._sendfilehandler,
-            b'ANNOY': self._annoyhandler,
-            b'QUIT': self._quithandler,
-            #CAP LS
-            b'USERHOST': self._userhosthandler,
-            b'WHOIS': self._whoishandler,
-        }
-
-        if cmdid in handlers:
-            await handlers[cmdid](cmd)
-        else:
-            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Unknown command', [cmdid])
-            log('Unknown command: ', cmd)
-
-
-def su() -> None:
-    """
-    switch user. Useful when starting localslackirc
-    as a service as root user.
-    """
-    if sys.platform.startswith('win'):
-        return
-
-    # Nothing to do, already not root
-    if os.getuid() != 0:
-        return
-
-    username = environ.get('PROCESS_OWNER', 'nobody')
-    userdata = pwd.getpwnam(username)
-    os.setgid(userdata.pw_gid)
-    os.setegid(userdata.pw_gid)
-    os.setuid(userdata.pw_uid)
-    os.seteuid(userdata.pw_uid)
-
-
-def main() -> None:
-    su()
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-v', '--version', action='version', version=f'''localslackirc {VERSION}''')
-    parser.add_argument('-p', '--port', type=int, action='store', dest='port',
-                                default=9007, required=False,
-                                help='set port number. Defaults to 9007')
-    parser.add_argument('-i', '--ip', type=str, action='store', dest='ip',
-                                default='127.0.0.1', required=False,
-                                help='set ip address')
-    parser.add_argument('-t', '--tokenfile', type=str, action='store', dest='tokenfile',
-                                default=expanduser('~')+'/.localslackirc',
-                                required=False,
-                                help='set the token file')
-    parser.add_argument('-c', '--cookiefile', type=str, action='store', dest='cookiefile',
-                                default=None,
-                                required=False,
-                                help='set the cookie file (for slack only, for xoxc tokens)')
-    parser.add_argument('-u', '--nouserlist', action='store_true',
-                                dest='nouserlist', required=False,
-                                help='don\'t display userlist')
-    parser.add_argument('-j', '--autojoin', action='store_true',
-                                dest='autojoin', required=False,
-                                help="Automatically join all remote channels")
-    parser.add_argument('-o', '--override', action='store_true',
-                                dest='overridelocalip', required=False,
-                                help='allow non 127. addresses, this is potentially dangerous')
-    parser.add_argument('-f', '--status-file', type=str, action='store', dest='status_file', required=False, default=None,
-                                help='Path to the file to keep the internal status.')
-    parser.add_argument('-d', '--debug', action='store_true', dest='debug', required=False, default=False,
-                                help='Enables debugging logs.')
-    parser.add_argument('--log-suffix', type=str, action='store', dest='log_suffix', default='',
-                                help='Set a suffix for the syslog identifier')
-    parser.add_argument('--ignored-channels', type=str, action='store', dest='ignored_channels', default='',
-                                help='Comma separated list of channels to not join when autojoin is enabled')
-    parser.add_argument('--downloads-directory', type=str, action='store', dest='downloads_directory', default='/tmp',
-                                help='Where to create files for automatic downloads')
-    parser.add_argument('--formatted-max-lines', type=int, action='store', dest='formatted_max_lines', default=0,
-                                help='Maximum amount of lines in a formatted text to send to the client rather than store in a file.\n'
-                                'Setting to 0 (the default) will send everything to the client')
-    parser.add_argument('--silenced-yellers', type=str, action='store', dest='silenced_yellers', default='',
-                                help='Comma separated list of nicknames that won\'t generate notifications when using @channel and @here')
-
-    args = parser.parse_args()
-
-    openlog(environ.get('LOG_SUFFIX', args.log_suffix))
-    set_debug(environ.get('DEBUG', args.debug))
-
-    status_file_str: Optional[str] = environ.get('STATUS_FILE', args.status_file)
-    status_file = None
-    if status_file_str is not None:
-        log('Status file at:', status_file_str)
-        status_file = Path(status_file_str)
-
-    ip: str = environ.get('IP_ADDRESS', args.ip)
-    overridelocalip: bool = environ['OVERRIDE_LOCAL_IP'].lower() == 'true' if 'OVERRIDE_LOCAL_IP' in environ else args.overridelocalip
-
-    # Exit if their chosden ip isn't local. User can override with -o if they so dare
-    if not ip.startswith('127') and not overridelocalip:
-        exit('supplied ip isn\'t local\nlocalslackirc has no encryption or ' \
-                'authentication, it\'s recommended to only allow local connections\n' \
-                'you can override this with -o')
-
-    port = int(environ.get('PORT', args.port))
-
-    autojoin: bool = environ['AUTOJOIN'].lower() == 'true' if 'AUTOJOIN' in environ else args.autojoin
-    nouserlist: bool = environ['NOUSERLIST'].lower() == 'true' if 'NOUSERLIST' in environ else args.nouserlist
-
-    # Splitting ignored channels
-    ignored_channels_str = environ.get('IGNORED_CHANNELS', args.ignored_channels)
-    if autojoin and len(ignored_channels_str):
-        ignored_channels: Set[bytes] = {
-            (b'' if i.startswith('#') else b'#') + i.encode('ascii')
-            for i in ignored_channels_str.split(',')
-        }
-    else:
-        ignored_channels = set()
-
-    if 'DOWNLOADS_DIRECTORY' in environ:
-        downloads_directory = Path(environ['DOWNLOADS_DIRECTORY'])
-    else:
-        downloads_directory = Path(args.downloads_directory)
-
-    try:
-        formatted_max_lines = int(environ.get('FORMATTED_MAX_LINES', args.formatted_max_lines))
-    except:
-        exit('FORMATTED_MAX_LINES is not a valid int')
-
-    yellers_str = environ.get('SILENCED_YELLERS', args.silenced_yellers)
-    if yellers_str:
-        silenced_yellers = {i.strip().encode('utf8') for i in yellers_str.split(',')}
-    else:
-        silenced_yellers = set()
-
-
-    if 'TOKEN' in environ:
-        token = environ['TOKEN']
-    else:
-        try:
-            with open(args.tokenfile) as f:
-                token = f.readline().strip()
-        except IsADirectoryError:
-            exit(f'Not a file {args.tokenfile}')
-        except (FileNotFoundError, PermissionError):
-            exit(f'Unable to open the token file {args.tokenfile}')
-
-    if 'COOKIE' in environ:
-        cookie: Optional[str] = environ['COOKIE']
-    else:
-        try:
-            if args.cookiefile:
-                with open(args.cookiefile) as f:
-                    cookie = f.readline().strip()
-            else:
-                cookie = None
-        except (FileNotFoundError, PermissionError):
-            exit(f'Unable to open the cookie file {args.cookiefile}')
-        except IsADirectoryError:
-            exit(f'Not a file {args.cookiefile}')
+        cmd, _, text = line.partition(' ')
 
     if token.startswith('xoxc-') and not cookie:
         exit('The cookie is needed for this kind of slack token')
@@ -948,7 +774,7 @@ def main() -> None:
 
     # Parameters are dealt with
 
-    async def irc_listener() -> None:
+    async def listener(self, ip, port) -> None:
         loop = asyncio.get_running_loop()
 
         serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -959,50 +785,40 @@ def main() -> None:
 
         s, _ = await loop.sock_accept(serversocket)
         serversocket.close()
-        reader, writer = await asyncio.open_connection(sock=s)
-
-        previous_status = None
-        if status_file is not None and status_file.exists():
-            previous_status = status_file.read_bytes()
-        sl_client = slack.Slack(token, cookie, previous_status)
-        await sl_client.login()
-
-        clientsettings = ClientSettings(
-            nouserlist=nouserlist,
-            autojoin=autojoin,
-            provider=provider,
-            ignored_channels=ignored_channels,
-            downloads_directory=downloads_directory,
-            formatted_max_lines=formatted_max_lines,
-            silenced_yellers=silenced_yellers,
-        )
-        verify = clientsettings.verify()
-        if verify is not None:
-            exit(verify)
-        ircclient = Client(writer, sl_client, clientsettings)
+        self.reader, self.writer = await asyncio.open_connection(sock=s)
 
         try:
-            from_irc_task = asyncio.create_task(from_irc(reader, ircclient))
-            to_irc_task = asyncio.create_task(to_irc(sl_client, ircclient))
+            await self.sl_client.login()
+        except SlackConnectionError as e:
+            logging.error('Unable to connect to slack: %s', e)
+            await self.sendcmd(None, 'ERROR', f'Unable to connect to slack: {e}')
+            self.writer.close()
+            return
+
+        self.hostname = '%s.slack.com' % self.sl_client.login_info.team.domain
+
+        self.client = Client()
+        self.client.hostname = self.hostname
+
+        try:
+            from_irc_task = asyncio.create_task(self.from_irc(self.reader))
+            from_slack_task = asyncio.create_task(self.from_slack())
 
             await asyncio.gather(
                 from_irc_task,
-                to_irc_task,
+                from_slack_task,
             )
+        except SlackConnectionError as e:
+            await self.sendcmd(None, 'ERROR', f'Connection error with slack: {e}')
         finally:
             logging.info('Closing connections')
             self.writer.close()
             logging.info('Cancelling running tasks')
             from_irc_task.cancel()
-            to_irc_task.cancel()
+            from_slack_task.cancel()
+            self.client = None
 
-    async def restart_listener_loop():
-        loop = asyncio.get_running_loop()
-
-        loop.add_signal_handler(signal.SIGHUP, term_f)
-        loop.add_signal_handler(signal.SIGTERM, term_f)
-        loop.add_signal_handler(signal.SIGINT, term_f)
-
+    async def from_irc(self, reader):
         while True:
             try:
                 cmd = await reader.readline()
@@ -1010,8 +826,10 @@ def main() -> None:
                 logging.exception(e)
                 raise IrcDisconnectError() from e
 
-    asyncio.run(restart_listener_loop())
+            if self.reader.at_eof():
+                raise IrcDisconnectError()
 
+            await self.irc_command(cmd.strip().decode('utf8'))
 
 async def from_irc(reader, ircclient: Client):
     while True:
