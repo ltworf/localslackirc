@@ -858,7 +858,8 @@ class Server:
             text=seddiff(sl_ev.previous.text, sl_ev.current.text),
             channel=sl_ev.channel,
             user=sl_ev.previous.user,
-            thread_ts=sl_ev.previous.thread_ts
+            thread_ts=sl_ev.previous.thread_ts,
+            username=sl_ev.username
         )
 
         await self.send_message(diffmsg)
@@ -869,7 +870,8 @@ class Server:
             text=f'[deleted] {sl_ev.previous.text}',
             channel=sl_ev.channel,
             user=sl_ev.previous.user,
-            thread_ts=sl_ev.previous.thread_ts
+            thread_ts=sl_ev.previous.thread_ts,
+            username=sl_ev.username
         )
 
         await self.send_message(msg)
@@ -878,7 +880,12 @@ class Server:
         """
         Sends a message to the irc client
         """
-        if not isinstance(sl_ev, slack.MessageBot):
+        if sl_ev.subtype in ('channel_join', 'channel_leave'):
+            return
+
+        if sl_ev.username:
+            source = sl_ev.username
+        elif sl_ev.user:
             source = (await self.sl_client.get_user(sl_ev.user)).name
         else:
             source = 'bot'
