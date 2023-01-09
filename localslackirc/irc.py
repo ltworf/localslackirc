@@ -974,7 +974,7 @@ class Server:
         if channel in self.ignored_channels:
             return
 
-        await self.sendcmd(user, 'TOPIC', channel, sl_ev.topic)
+        await self.sendcmd(user, 'TOPIC', channel, sl_ev.topic.replace('\n', ' | '))
 
     async def slack_event(self, sl_ev: slack.SlackEvent) -> None:
         if not self.client.is_registered:
