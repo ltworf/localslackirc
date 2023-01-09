@@ -922,8 +922,9 @@ class Server:
 
             if self.settings.thread_replies:
                 messages = await self.sl_client.get_thread_history(sl_ev.channel, sl_ev.thread_ts)
-                latest_message = await self.parse_slack_message(messages[-2].text, source, yelldest)
-                lines = f'> {latest_message}\n{lines}'
+                if len(messages) > 1:
+                    latest_message = await self.parse_slack_message(messages[-2].text, source, yelldest)
+                    lines = '\n'.join([f'> {line}' for line in latest_message.split('\n')] + [lines])
             else:
                 dest = '#' + thread.name
 

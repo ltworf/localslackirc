@@ -433,12 +433,18 @@ class Slack:
                 limit=1000,
                 cursor=cursor,
             )
+            response = self.tload(p, Response)
+            if not response.ok:
+                logging.debug(f'Unable to find thread {thread_id}: {response.error}')
+                return []
+
             try:
                 response = self.tload(p, History)
             except Exception:
                 logging.exception('Failed to parse')
                 logging.error(p)
                 break
+
             r += [i for i in response.messages if i.ts != i.thread_ts]
             if response.has_more and response.response_metadata:
                 cursor = response.response_metadata.next_cursor
@@ -718,17 +724,22 @@ class Slack:
         # Get head message
         history = await self.get_history(original_channel, thread_ts, None, 1, True)
 
-        msg = history.messages.pop()
-        user = (await self.get_user(msg.user)).name if isinstance(msg, HistoryMessage) else 'bot'
-
-        # Top message is a file
-        if msg.text == '' and msg.files:
-            f = msg.files[0]
-            original_txt = f'{f.title} {f.mimetype} {f.url_private}'
+        try:
+            msg = history.messages.pop()
+        except IndexError:
+            t = Topic(f'{channel}: Deleted thread')
         else:
-            original_txt = msg.text.strip().replace('\n', ' | ')
+            user = (await self.get_user(msg.user)).name if isinstance(msg, HistoryMessage) else 'bot'
 
-        t = Topic(f'{user} in {channel}: {original_txt}')
+            # Top message is a file
+            if msg.text == '' and msg.files:
+                f = msg.files[0]
+                original_txt = f'{f.title} {f.mimetype} {f.url_private}'
+            else:
+                original_txt = msg.text.strip().replace('\n', ' | ')
+
+            t = Topic(f'{user} in {channel}: {original_txt}')
+
         return MessageThread(
             id=original_channel,
             name_normalized=f't-{channel}-{thread_ts}',
