@@ -17,18 +17,17 @@
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
 import asyncio
-import datetime
 from dataclasses import dataclass, field
+import datetime
 import json
 import logging
 from time import time
 from typing import Literal, Optional, Any, NamedTuple, Sequence, Type, TypeVar
 
-from typedload import dataloader
+from typedload import dataloader, dump
 
-from slackclient import SlackClient
-from slackclient.client import LoginInfo
-from log import log, debug
+from .slackclient import SlackClient
+from .slackclient.client import LoginInfo
 
 
 T = TypeVar('T')
@@ -203,6 +202,7 @@ class Profile(NamedTuple):
     status_text: str = ''
     is_restricted: bool = False
     is_ultra_restricted: bool = False
+    image_original: str = ''
 
 
 @dataclass
@@ -235,12 +235,21 @@ class User(NamedTuple):
     id: str
     name: str
     profile: Profile
+    updated: int
+    is_owner: bool = False
     is_admin: bool = False
+    is_bot: bool = False
+    is_app_user: bool = False
+    has_2fa: bool = False
     deleted: bool = False
 
     @property
     def real_name(self) -> str:
         return self.profile.real_name
+
+
+class Presence(NamedTuple):
+    presence: str
 
 
 class IM(NamedTuple):
@@ -263,7 +272,7 @@ class Leave(NamedTuple):
 @dataclass
 class TopicChange:
     type: Literal['message']
-    subtype: Literal['group_topic']
+    subtype: Literal['channel_topic']
     topic: str
     channel: str
     user: str
@@ -308,6 +317,10 @@ class Conversations(NamedTuple):
     response_metadata: Optional[NextCursor] = None
 
 
+class Conversation(NamedTuple):
+    channel: Channel
+
+
 SlackEvent = (
     TopicChange|
     MessageDelete|
@@ -332,7 +345,7 @@ class SlackStatus:
     last_timestamp: float = 0.0
 
 class Slack:
-    def __init__(self, token: str, cookie: Optional[str], previous_status: Optional[bytes]) -> None:
+    def __init__(self, token: str, cookie: Optional[str], previous_status: Optional[str]) -> None:
         """
         A slack client object.
 
@@ -346,7 +359,7 @@ class Slack:
         self._usermapcache: dict[str, User] = {}
         self._usermapcache_keys: list[str]
         self._imcache: dict[str, str] = {}
-        self._channelscache: list[Channel] = []
+        self._channelscache: dict[str, Channel] = {}
         self._get_members_cache: dict[str, set[str]] = {}
         self._get_members_cache_cursor: dict[str, Optional[str]] = {}
         self._internalevents: list[SlackEvent] = []
@@ -384,7 +397,16 @@ class Slack:
         )
         return self.tload(p, History)
 
-    async def _thread_history(self, channel: str, thread_id: str) -> list[HistoryMessage|HistoryBotMessage]:
+    async def count_regular_users(self):
+        return len([u for u in self._usercache.values() if not u.is_bot])
+
+    async def count_bots(self):
+        return len([u for u in self._usercache.values() if u.is_bot])
+
+    async def count_admins(self):
+        return len([u for u in self._usercache.values() if u.is_admin])
+
+    async def get_thread_history(self, channel: str, thread_id: str) -> list[HistoryMessage|HistoryBotMessage]:
         r: list[HistoryMessage|HistoryBotMessage] = []
         cursor = None
         logging.info('Thread history %s %s', channel, thread_id)
@@ -432,7 +454,7 @@ class Slack:
         logging.info('Last known timestamp %s', dt)
 
         chats: Sequence[IM|Channel] = []
-        chats += await self.channels() + await self.get_ims()  # type: ignore
+        chats += list((await self.channels()).values()) + await self.get_ims()  # type: ignore
         for channel in chats:
             if isinstance(channel, Channel):
                 if not channel.is_member:
@@ -463,7 +485,7 @@ class Slack:
 
                     # History for the thread
                     if msg.thread_ts and float(msg.thread_ts) == msg.ts:
-                        l = await self._thread_history(channel.id, msg.thread_ts)
+                        l = await self.get_thread_history(channel.id, msg.thread_ts)
                         l.reverse()
                         msg_list = l + msg_list
                         continue
@@ -500,9 +522,21 @@ class Slack:
         '''
         A status string that will be passed back when this is started again
         '''
-        from typedload import dump
-        return json.dumps(dump(self._status), ensure_ascii=True).encode('ascii')
+        return json.dumps(dump(self._status), ensure_ascii=True)
 
+    async def is_user_away(self, user: User|str) -> bool:
+        if isinstance(user, User):
+            user_id = user.id
+        else:
+            user_id = user
+
+        r = await self.client.api_call('users.getPresence', user=user_id)
+        response = self.tload(r, Response)
+        if not response.ok:
+            raise ResponseException(response.error)
+
+        presence = self.tload(r, Presence)
+        return presence.presence == 'away'
 
     async def away(self, is_away: bool) -> None:
         """
@@ -594,7 +628,7 @@ class Slack:
         self._get_members_cache_cursor[id_] = r.get('response_metadata', {}).get('next_cursor')
         return self._get_members_cache[id_]
 
-    async def channels(self, refresh: bool = False) -> list[Channel]:
+    async def channels(self, refresh: bool = False) -> dict[str, Channel]:
         """
         Returns the list of slack channels
 
@@ -619,7 +653,8 @@ class Slack:
 
             if response.ok:
                 conv = self.tload(r, Conversations)
-                self._channelscache += conv.channels
+                for chan in conv.channels:
+                    self._channelscache[chan.id] = chan
                 # For this API, slack sends an empty string as next cursor, just to show off their programming "skillz"
                 if not conv.response_metadata or not conv.response_metadata.next_cursor:
                     break
@@ -628,17 +663,16 @@ class Slack:
                 raise ResponseException(response.error)
         return self._channelscache
 
-    async def get_channel(self, id_: str) -> Channel:
+    async def get_channel(self, id_: str, refresh: bool = False) -> Channel:
         """
         Returns a channel object from a slack channel id
 
         raises KeyError if it doesn't exist.
         """
-        for i in range(2):
-            for c in await self.channels(refresh=bool(i)):
-                if c.id == id_:
-                    return c
-        raise KeyError()
+        if refresh or not id_ in self._channelscache:
+            await self.channels(refresh=True)
+
+        return self._channelscache[id_]
 
     async def get_channel_by_name(self, name: str) -> Channel:
         """
@@ -647,16 +681,19 @@ class Slack:
         raises KeyError if it doesn't exist.
         """
         for i in range(2):
-            for c in await self.channels(refresh=bool(i)):
+            for c in (await self.channels(refresh=bool(i))).values():
                 if c.name == name:
                     return c
         raise KeyError()
 
-    async def get_thread(self, thread_ts: str, original_channel: str) -> MessageThread:
+    async def get_thread(self, thread_ts: str, original_channel: str, source: str) -> MessageThread:
         """
         Creates a fake channel class for a chat thread
         """
-        channel = (await self.get_channel(original_channel)).name_normalized
+        try:
+            channel = (await self.get_channel(original_channel)).name_normalized
+        except KeyError:
+            channel = source
 
         # Get head message
         history = await self.get_history(original_channel, thread_ts, None, 1, True)
@@ -690,7 +727,7 @@ class Slack:
         for im in await self.get_ims():
             self._imcache[im.user] = im.id
             if im.id == im_id:
-                return im;
+                return im
         return None
 
     async def get_ims(self) -> list[IM]:
@@ -724,7 +761,7 @@ class Slack:
             for user in self.tload(r['members'], list[User]):
                 self._usercache[user.id] = user
                 self._usermapcache[user.name] = user
-            self._usermapcache_keys = list()
+            self._usermapcache_keys = []
 
     async def get_user(self, id_: str) -> User:
         """
@@ -741,11 +778,11 @@ class Slack:
             u = self.tload(r['user'], User)
             self._usercache[id_] = u
             if u.name not in self._usermapcache:
-                self._usermapcache_keys = list()
+                self._usermapcache_keys = []
             self._usermapcache[u.name] = u
             return u
-        else:
-            raise KeyError(response)
+
+        raise KeyError(response)
 
     async def send_file(self, channel_id: str, filename: str, thread_ts: Optional[str]) -> None:
         """
