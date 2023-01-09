@@ -258,7 +258,7 @@ class Server:
         else:
             try:
                 return await func([cmd] + args)
-            except IrcDisconnectError:
+            except (IrcDisconnectError, ConnectionResetError):
                 raise
             except Exception as e:
                 logging.exception(e)
