@@ -63,7 +63,7 @@ USELESS_EVENTS = frozenset((
     'channel_sections_channels_upserted',
     'im_open',
     'im_close',
-    'goodbye', # Server is disconnecting us
+    'goodbye',  # Server is disconnecting us
 ))
 
 
@@ -144,6 +144,7 @@ class Channel:
         else:
             t = self.purpose.value
         return t
+
 
 @dataclass(frozen=True)
 class MessageThread(Channel):
@@ -282,7 +283,7 @@ class MessageBot:
     channel: str
     bot_id: str
     _username: str = field(metadata={'name': 'username'}, default=None)
-    subtype: str = 'bot_message' #Literal['bot_message'] = None
+    subtype: str = 'bot_message'  # Literal['bot_message'] = None
     blocks: list[dict[str, Any]] = field(default_factory=list)
     attachments: list[dict[str, Any]] = field(default_factory=list)
     bot_profile: dict[str, Any] = field(default_factory=dict)
@@ -403,7 +404,7 @@ class NextCursor(NamedTuple):
 
 class History(NamedTuple):
     ok: Literal[True]
-    messages: list[HistoryMessage|HistoryBotMessage]
+    messages: list[HistoryMessage | HistoryBotMessage]
     has_more: bool
     response_metadata: Optional[NextCursor] = None
 
@@ -418,21 +419,21 @@ class Conversation(NamedTuple):
 
 
 SlackEvent = (
-    TopicChange|
-    MessageDelete|
-    MessageEdit|
-    Message|
-    MessageBot|
-    Join|
-    Leave|
-    GroupJoined|
-    ChannelJoined|
-    MPIMJoined|
-    GroupLeft|
-    ChannelLeft|
-    MPIMLeft|
-    UserTyping|
-    MessageReplied|
+    TopicChange |
+    MessageDelete |
+    MessageEdit |
+    Message |
+    MessageBot |
+    Join |
+    Leave |
+    GroupJoined |
+    ChannelJoined |
+    MPIMJoined |
+    GroupLeft |
+    ChannelLeft |
+    MPIMLeft |
+    UserTyping |
+    MessageReplied |
     UserChange
 )
 
@@ -445,6 +446,7 @@ class SlackStatus:
     save the status on disk.
     """
     last_timestamp: float = 0.0
+
 
 class Slack:
     def __init__(self, token: str, cookie: Optional[str], previous_status: Optional[str]) -> None:
@@ -466,7 +468,7 @@ class Slack:
         self._get_members_cache_cursor: dict[str, Optional[str]] = {}
         self._internalevents: list[SlackEvent] = []
         self._sent_by_self: set[float] = set()
-        self._wsblock: int = 0 # Semaphore to block the socket and avoid events being received before their API call ended.
+        self._wsblock: int = 0  # Semaphore to block the socket and avoid events being received before their API call ended.
         self.login_info: Optional[LoginInfo] = None
         self.loader = dataloader.Loader()
 
@@ -493,7 +495,14 @@ class Slack:
         logging.info('Login in slack')
         self.login_info = await self.client.login(15)
 
-    async def get_history(self, channel: Channel|IM|str, ts: str, cursor: Optional[NextCursor]=None, limit: int=1000, inclusive: bool=False) -> History:
+    async def get_history(
+        self,
+        channel: Channel | IM | str,
+        ts: str,
+        cursor: Optional[NextCursor] = None,
+        limit: int = 1000,
+        inclusive: bool = False
+    ) -> History:
         p = await self.client.api_call(
             'conversations.history',
             channel=channel if isinstance(channel, str) else channel.id,
@@ -513,8 +522,8 @@ class Slack:
     async def count_admins(self):
         return len([u for u in self._usercache.values() if u.is_admin])
 
-    async def get_thread_history(self, channel: str, thread_id: str) -> list[HistoryMessage|HistoryBotMessage]:
-        r: list[HistoryMessage|HistoryBotMessage] = []
+    async def get_thread_history(self, channel: str, thread_id: str) -> list[HistoryMessage | HistoryBotMessage]:
+        r: list[HistoryMessage | HistoryBotMessage] = []
         cursor = None
         logging.info('Thread history %s %s', channel, thread_id)
         while True:
@@ -564,7 +573,7 @@ class Slack:
         dt = datetime.datetime.fromtimestamp(last_timestamp)
         logging.info('Last known timestamp %s', dt)
 
-        chats: Sequence[IM|Channel] = []
+        chats: Sequence[IM | Channel] = []
         chats += list((await self.channels()).values()) + await self.get_ims()  # type: ignore
         for channel in chats:
             if isinstance(channel, Channel):
@@ -576,7 +585,7 @@ class Slack:
                 logging.info('Downloading logs from IM %s', channel.user)
 
             cursor = None
-            while True: # Loop to iterate the cursor
+            while True:  # Loop to iterate the cursor
                 logging.info('Calling cursor')
                 try:
                     response = await self.get_history(channel, str(last_timestamp))
@@ -595,9 +604,9 @@ class Slack:
 
                     # History for the thread
                     if msg.thread_ts and float(msg.thread_ts) == msg.ts:
-                        l = await self.get_thread_history(channel.id, msg.thread_ts)
-                        l.reverse()
-                        msg_list = l + msg_list
+                        history = await self.get_thread_history(channel.id, msg.thread_ts)
+                        history.reverse()
+                        msg_list = history + msg_list
                         continue
 
                     # Inject the events
@@ -636,7 +645,7 @@ class Slack:
         '''
         return json.dumps(dump(self._status), ensure_ascii=True)
 
-    async def is_user_away(self, user: User|str) -> bool:
+    async def is_user_away(self, user: User | str) -> bool:
         if isinstance(user, User):
             user_id = user.id
         else:
@@ -660,7 +669,7 @@ class Slack:
         if not response.ok:
             raise ResponseException(response.error)
 
-    async def typing(self, channel: Channel|str) -> None:
+    async def typing(self, channel: Channel | str) -> None:
         """
         Sends a typing event to slack
         """
@@ -688,7 +697,7 @@ class Slack:
         if not response.ok:
             raise ResponseException(response.error)
 
-    async def invite(self, channel: Channel, user: User|list[User]) -> None:
+    async def invite(self, channel: Channel, user: User | list[User]) -> None:
         if isinstance(user, User):
             ids = user.id
         else:
@@ -701,7 +710,7 @@ class Slack:
         if not response.ok:
             raise ResponseException(response.error)
 
-    async def get_members(self, channel: str|Channel, refresh: bool = None) -> set[str]:
+    async def get_members(self, channel: str | Channel, refresh: bool = None) -> set[str]:
         """
         Returns the list (as a set) of users in a channel.
 
@@ -721,7 +730,7 @@ class Slack:
 
         cached = self._get_members_cache.get(id_, set())
         cursor = self._get_members_cache_cursor.get(id_)
-        if (cursor == '' and not refresh is None) or refresh is False:
+        if (cursor == '' and refresh is not None) or refresh is False:
             # The cursor is fully iterated
             return cached
         kwargs = {}
@@ -763,7 +772,7 @@ class Slack:
                 cursor=cursor,
                 exclude_archived=True,
                 types='public_channel,private_channel,mpim',
-                limit=1000, # In vain hope that slack would not ignore this
+                limit=1000,  # In vain hope that slack would not ignore this
             )
             response = self.tload(r, Response)
 
@@ -785,7 +794,7 @@ class Slack:
 
         raises KeyError if it doesn't exist.
         """
-        if refresh or not id_ in self._channelscache:
+        if refresh or id_ not in self._channelscache:
             await self.channels(refresh=True)
 
         return self._channelscache[id_]
@@ -936,7 +945,7 @@ class Slack:
         for i in r:
             self._sent_by_self.remove(i)
 
-    async def send_message(self, channel: Channel|MessageThread, msg: str, action: bool) -> None:
+    async def send_message(self, channel: Channel | MessageThread, msg: str, action: bool) -> None:
         thread_ts = channel.thread_ts if isinstance(channel, MessageThread) else None
         return await self._send_message(channel.id, msg, action, thread_ts)
 
@@ -1026,7 +1035,7 @@ class Slack:
             logging.info('Connected to slack')
             return
 
-        while self._wsblock: # Retry until the semaphore is free
+        while self._wsblock:  # Retry until the semaphore is free
             await asyncio.sleep(0.01)
 
         for event in events:
@@ -1065,8 +1074,8 @@ class Slack:
             if isinstance(ev, UserChange):
                 if ev.user.id in self._usercache:
                     del self._usercache[ev.user.id]
-                        #FIXME don't know if it is wise, maybe it gets lost forever del self._usermapcache[u.name]
-                    #TODO make an event for this
+                    # FIXME don't know if it is wise, maybe it gets lost forever del self._usermapcache[u.name]
+                    # TODO make an event for this
                 else:
                     logging.info(event)
 

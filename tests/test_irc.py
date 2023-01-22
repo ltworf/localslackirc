@@ -18,6 +18,7 @@
 from unittest import IsolatedAsyncioTestCase, mock
 from localslackirc.irc import Server, Client
 
+
 class TestIRC(IsolatedAsyncioTestCase):
     def setUp(self):
         slack_client = mock.AsyncMock()
@@ -32,7 +33,7 @@ class TestAnnoyanceAvoidance(TestIRC):
         self.server.client.nickname = 'aldo'
 
         # Mention generated
-        msg = await self.server.parse_slack_message("<!here> watch this!", 'rose.adams','#asd')
+        msg = await self.server.parse_slack_message("<!here> watch this!", 'rose.adams', '#asd')
         assert msg == 'yelling [aldo]: watch this!'
 
         # Add rose.adams to silenced yellers

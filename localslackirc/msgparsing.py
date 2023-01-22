@@ -22,7 +22,7 @@ from typing import Iterable, NamedTuple, Optional
 try:
     from emoji import emojize  # type: ignore
 except ModuleNotFoundError:
-    def emojize(string:str, *args, **kwargs) -> str:  # type: ignore
+    def emojize(string: str, *args, **kwargs) -> str:  # type: ignore
         return string
 
 
@@ -60,15 +60,15 @@ def preblocks(msg: str) -> Iterable[tuple[str, bool]]:
 
         yield msg[0:p], pre
         pre = not pre
-        msg = msg[p+3:]
+        msg = msg[p + 3:]
     yield msg, pre
 
 
 class Itemkind(Enum):
-    YELL = 0  # HERE, EVERYONE and such
-    MENTION = 1 # @user
-    CHANNEL = 2 # #channel
-    OTHER = 3 # Everything else
+    YELL = 0   # HERE, EVERYONE and such
+    MENTION = 1  # @user
+    CHANNEL = 2  # #channel
+    OTHER = 3  # Everything else
 
 
 class PreBlock(NamedTuple):
@@ -111,7 +111,6 @@ class SpecialItem(NamedTuple):
         if sep == -1:
             sep = len(self.txt) - 1
 
-
         if self.kind != Itemkind.OTHER:
             return self.txt[2:sep]
         return self.txt[1:sep]
@@ -126,10 +125,10 @@ class SpecialItem(NamedTuple):
 
         if sep == -1:
             return None
-        return self.txt[sep+1:-1]
+        return self.txt[sep + 1:-1]
 
 
-def split_tokens(msg: str) -> Iterable[SpecialItem|str]:
+def split_tokens(msg: str) -> Iterable[SpecialItem | str]:
     """
     yields separately the normal text and the special slack
     <stuff> items
@@ -140,10 +139,10 @@ def split_tokens(msg: str) -> Iterable[SpecialItem|str]:
         except ValueError:
             break
 
-        if begin != 0: # There is stuff before
+        if begin != 0:  # There is stuff before
             yield msg[0:begin]
             msg = msg[begin:]
-        else: # Tag at the beginning
+        else:  # Tag at the beginning
             end = msg.index('>')
             block = msg[0:end + 1]
             msg = msg[end + 1:]
@@ -172,18 +171,19 @@ def convertpre(msg: str) -> str:
 
         if t.kind != Itemkind.OTHER:
             raise ValueError(f'Unexpected slack item in preformatted block {t}')
-        elif t.human: # For some very strange reason slack converts text like "asd.com" into links
+
+        if t.human:  # For some very strange reason slack converts text like "asd.com" into links
             r.append(t.human)
         else:
             r.append(t.val)
 
-    l = ''.join(r)
+    text = ''.join(r)
     for s in SLACK_SUBSTITUTIONS:
-        l = l.replace(s[0], s[1])
-    return l
+        text = text.replace(s[0], s[1])
+    return text
 
 
-def tokenize(msg: str) -> Iterable[PreBlock|SpecialItem|str]:
+def tokenize(msg: str) -> Iterable[PreBlock | SpecialItem | str]:
     """
     Yields the various possible tokens
 
@@ -202,5 +202,4 @@ def tokenize(msg: str) -> Iterable[PreBlock|SpecialItem|str]:
                     # Usual substitutions
                     for s in SLACK_SUBSTITUTIONS:
                         t = t.replace(s[0], s[1])  # type: ignore
-                yield  t
-
+                yield t

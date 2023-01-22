@@ -111,51 +111,50 @@ class Daemon:
             handler.setLevel(logging.INFO)
             logging.root.addHandler(handler)
 
-
     async def main(self):
         parser = argparse.ArgumentParser()
         parser.add_argument('-v', '--version', action='version', version=f'''localslackirc {__version__}''')
         parser.add_argument('-p', '--port', type=int, action='store', dest='port',
-                                    default=9007, required=False,
-                                    help='set port number. Defaults to 9007')
+                            default=9007, required=False,
+                            help='set port number. Defaults to 9007')
         parser.add_argument('-i', '--ip', type=str, action='store', dest='ip',
-                                    default='127.0.0.1', required=False,
-                                    help='set ip address')
+                            default='127.0.0.1', required=False,
+                            help='set ip address')
         parser.add_argument('-t', '--tokenfile', type=str, action='store', dest='tokenfile',
-                                    default=expanduser('~')+'/.localslackirc',
-                                    required=False,
-                                    help='set the token file')
+                            default=expanduser('~') + '/.localslackirc',
+                            required=False,
+                            help='set the token file')
         parser.add_argument('-c', '--cookiefile', type=str, action='store', dest='cookiefile',
-                                    default=None,
-                                    required=False,
-                                    help='set the cookie file (for slack only, for xoxc tokens)')
+                            default=None,
+                            required=False,
+                            help='set the cookie file (for slack only, for xoxc tokens)')
         parser.add_argument('-u', '--nouserlist', action='store_true',
-                                    dest='nouserlist', required=False,
-                                    help='don\'t display userlist')
+                            dest='nouserlist', required=False,
+                            help='don\'t display userlist')
         parser.add_argument('-j', '--autojoin', action='store_true',
-                                    dest='autojoin', required=False,
-                                    help="Automatically join all remote channels")
+                            dest='autojoin', required=False,
+                            help="Automatically join all remote channels")
         parser.add_argument('-r', '--thread-replies', action='store_true',
-                                    dest='thread_replies', required=False,
-                                    help="Receive thread messages in main channel instead of a custom thread channel (you'll not be able to answer in threads)")
+                            dest='thread_replies', required=False,
+                            help="Receive thread messages in main channel instead of a custom thread channel (you'll not be able to answer in threads)")
         parser.add_argument('-o', '--override', action='store_true',
-                                    dest='overridelocalip', required=False,
-                                    help='allow non 127. addresses, this is potentially dangerous')
+                            dest='overridelocalip', required=False,
+                            help='allow non 127. addresses, this is potentially dangerous')
         parser.add_argument('-f', '--status-file', type=str, action='store', dest='status_file', required=False, default=None,
-                                    help='Path to the file to keep the internal status.')
+                            help='Path to the file to keep the internal status.')
         parser.add_argument('-s', '--syslog', action='store_true', dest='syslog', required=False, default=False,
-                                    help='Log into syslog.')
+                            help='Log into syslog.')
         parser.add_argument('-d', '--debug', action='store_true', dest='debug', required=False, default=False,
-                                    help='Enables debugging logs.')
+                            help='Enables debugging logs.')
         parser.add_argument('--ignored-channels', type=str, action='store', dest='ignored_channels', default='',
-                                    help='Comma separated list of channels to not join when autojoin is enabled')
+                            help='Comma separated list of channels to not join when autojoin is enabled')
         parser.add_argument('--downloads-directory', type=str, action='store', dest='downloads_directory', default='/tmp',
-                                    help='Where to create files for automatic downloads')
+                            help='Where to create files for automatic downloads')
         parser.add_argument('--formatted-max-lines', type=int, action='store', dest='formatted_max_lines', default=0,
-                                    help='Maximum amount of lines in a formatted text to send to the client rather than store in a file.\n'
-                                    'Setting to 0 (the default) will send everything to the client')
+                            help='Maximum amount of lines in a formatted text to send to the client rather than store in a file.\n'
+                            'Setting to 0 (the default) will send everything to the client')
         parser.add_argument('--silenced-yellers', type=str, action='store', dest='silenced_yellers', default='',
-                                    help='Comma separated list of nicknames that won\'t generate notifications when using @channel and @here')
+                            help='Comma separated list of nicknames that won\'t generate notifications when using @channel and @here')
 
         args = parser.parse_args()
 
@@ -175,9 +174,9 @@ class Daemon:
 
         # Exit if their chosden ip isn't local. User can override with -o if they so dare
         if not ip.startswith('127') and not overridelocalip:
-            exit('supplied ip isn\'t local\nlocalslackirc has no encryption or ' \
-                    'authentication, it\'s recommended to only allow local connections\n' \
-                    'you can override this with -o')
+            sys.exit('supplied ip isn\'t local\nlocalslackirc has no encryption or '
+                     'authentication, it\'s recommended to only allow local connections\n'
+                     'you can override this with -o')
 
         port = int(environ.get('PORT', args.port))
 
@@ -203,7 +202,7 @@ class Daemon:
         try:
             formatted_max_lines = int(environ.get('FORMATTED_MAX_LINES', args.formatted_max_lines))
         except ValueError:
-            exit('FORMATTED_MAX_LINES is not a valid int')
+            sys.exit('FORMATTED_MAX_LINES is not a valid int')
 
         yellers_str = environ.get('SILENCED_YELLERS', args.silenced_yellers)
         if yellers_str:
@@ -218,9 +217,9 @@ class Daemon:
                 with open(args.tokenfile, 'r', encoding='utf8') as f:
                     token = f.readline().strip()
             except IsADirectoryError:
-                exit(f'Not a file {args.tokenfile}')
+                sys.exit(f'Not a file {args.tokenfile}')
             except (FileNotFoundError, PermissionError):
-                exit(f'Unable to open the token file {args.tokenfile}')
+                sys.exit(f'Unable to open the token file {args.tokenfile}')
 
         if 'COOKIE' in environ:
             cookie: Optional[str] = environ['COOKIE']
@@ -232,12 +231,12 @@ class Daemon:
                 else:
                     cookie = None
             except (FileNotFoundError, PermissionError):
-                exit(f'Unable to open the cookie file {args.cookiefile}')
+                sys.exit(f'Unable to open the cookie file {args.cookiefile}')
             except IsADirectoryError:
-                exit(f'Not a file {args.cookiefile}')
+                sys.exit(f'Not a file {args.cookiefile}')
 
         if token.startswith('xoxc-') and not cookie:
-            exit('The cookie is needed for this kind of slack token')
+            sys.exit('The cookie is needed for this kind of slack token')
 
         previous_status = None
         if status_file is not None and status_file.exists():
@@ -255,7 +254,7 @@ class Daemon:
         )
         verify = serversettings.verify()
         if verify is not None:
-            exit(verify)
+            sys.exit(verify)
 
         self.irc_server = Server(self.sl_client, serversettings)
 

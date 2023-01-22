@@ -25,6 +25,7 @@ import socket
 from pathlib import Path
 import time
 from typing import Set, Optional, NamedTuple
+import tempfile
 
 from localslackirc import msgparsing
 from localslackirc import __version__
@@ -63,7 +64,7 @@ class Replies(Enum):
     RPL_WHOISACCOUNT = 330
     RPL_NOTOPIC = 331
     RPL_TOPIC = 332
-    RPL_WHOISBOT = 335 # or 336 or 617
+    RPL_WHOISBOT = 335  # or 336 or 617
     RPL_WHOISTEXT = 335
     RPL_WHOREPLY = 352
     RPL_NAMREPLY = 353
@@ -124,12 +125,13 @@ def registered_command(func):
 def parse_args(*args, minargs=None):
     if minargs is None:
         minargs = len(args)
+
     def decorator(func):
         async def inner(self, params):
             kwargs = {}
             for i, arg in enumerate(args):
                 try:
-                    kwargs[arg] = params[i+1]
+                    kwargs[arg] = params[i + 1]
                 except IndexError:
                     if i >= minargs:
                         break
@@ -168,10 +170,12 @@ class Server:
         self.settings = settings
         self.sl_client = sl_client
         self.sl_id = None
-        self.usersent = False # Used to hold all events until the IRC client sends the initial USER message
         self.held_events: list[slack.SlackEvent] = []
         self.mentions_regex_cache: dict[str, Optional[re.Pattern]] = {}  # Cache for the regexp to perform mentions. Key is channel id
-        self.annoy_users: dict[str, int] = {} # Users to annoy pretending to type when they type
+        self.annoy_users: dict[str, int] = {}  # Users to annoy pretending to type when they type
+
+        self.reader = None
+        self.writer = None
 
     async def listener(self, ip, port) -> None:
         loop = asyncio.get_running_loop()
@@ -194,7 +198,7 @@ class Server:
             self.writer.close()
             return
 
-        self.hostname = '%s.slack.com' % self.sl_client.login_info.team.domain
+        self.hostname = f'{self.sl_client.login_info.team.domain}.slack.com'
         self.sl_id = self.sl_client.login_info.self.id
 
         self.client = Client()
@@ -238,7 +242,7 @@ class Server:
                 await self.slack_event(ev)
 
     async def irc_command(self, line):
-        logging.debug('R - ' + line)
+        logging.debug('R - %s', line)
 
         if not line:
             return
@@ -254,7 +258,7 @@ class Server:
             args.append(text[1:])
 
         try:
-            func = getattr(self, 'cmd_%s' % cmd.lower())
+            func = getattr(self, f'cmd_{cmd.lower()}')
         except AttributeError:
             return await self.sendreply(Replies.ERR_UNKNOWNCOMMAND, cmd, 'Unknown command')
         else:
@@ -262,14 +266,14 @@ class Server:
                 return await func([cmd] + args)
             except (IrcDisconnectError, ConnectionResetError):
                 raise
-            except Exception as e:
+            except Exception as e:  # NOQA
                 logging.exception(e)
                 await self.sendreply(Replies.ERR_UNKNOWNERROR, cmd, f'Error: {e}')
 
     async def sendcmd(self, sender, cmd, *args):
         args_text = ''
         for arg in args[:-1]:
-            args_text += ' %s' % arg
+            args_text += f' {arg}'
 
         if args:
             args_text += ' '
@@ -290,7 +294,7 @@ class Server:
         if sender_text is not None:
             line = f':{sender_text} '
         line += f'{cmd}{args_text}'
-        logging.debug('S - ' + line)
+        logging.debug('S - %s', line)
         self.writer.write(line.encode('utf8') + b'\r\n')
         await self.writer.drain()
 
@@ -306,7 +310,7 @@ class Server:
             # ignore a new USER command.
             return
 
-        self.client.username = self.sl_id # use the slack ID instead of IRC client one
+        self.client.username = self.sl_id  # use the slack ID instead of IRC client one
         self.client.realname = realname
 
         if self.client.username and self.client.nickname:
@@ -364,7 +368,6 @@ class Server:
                 self.ignored_channels.add(sl_chan.irc_name)
 
         # Eventual channel joining done, sending the held events
-        self._usersent = True
         for ev in self.held_events:
             await self.slack_event(ev)
         self.held_events = []
@@ -387,8 +390,8 @@ class Server:
 
         await self.sendreply(Replies.ERR_INVALIDCAPCMD, '*', cmd, 'Invalid CAP subcommand')
 
-    async def get_regexp(self, dest: slack.User|slack.Channel) -> Optional[re.Pattern]:
-        #del self.mentions_regex_cache[sl_ev.channel]
+    async def get_regexp(self, dest: slack.User | slack.Channel) -> Optional[re.Pattern]:
+        # del self.mentions_regex_cache[sl_ev.channel]
         # No nick substitutions for private chats
         if isinstance(dest, slack.User):
             return None
@@ -414,7 +417,7 @@ class Server:
         self.mentions_regex_cache[dest_id] = regex
         return regex
 
-    async def addmagic(self, msg: str, dest: slack.User|slack.Channel) -> str:
+    async def addmagic(self, msg: str, dest: slack.User | slack.Channel) -> str:
         """
         Adds magic codes and various things to
         outgoing messages
@@ -431,11 +434,11 @@ class Server:
             return msg
 
         matches = list(re.finditer(regex, msg))
-        matches.reverse() # I want to replace from end to start or the positions get broken
+        matches.reverse()  # I want to replace from end to start or the positions get broken
         for m in matches:
             username = m.string[m.start():m.end()]
             if username.startswith('://'):
-                continue # Match inside a url
+                continue  # Match inside a url
 
             msg = msg[0:m.start()] + '<@%s>' % (await self.sl_client.get_user_by_name(username)).id + msg[m.end():]
 
@@ -457,7 +460,7 @@ class Server:
             action = False
 
         if dest in self.known_threads:
-            dest_object: slack.User|slack.Channel|slack.MessageThread = self.known_threads[dest]
+            dest_object: slack.User | slack.Channel | slack.MessageThread = self.known_threads[dest]
         elif dest.startswith('#'):
             try:
                 dest_object = await self.sl_client.get_channel_by_name(dest[1:])
@@ -517,7 +520,7 @@ class Server:
             if duration:
                 duration = abs(int(duration))
             else:
-                duration = 10 # 10 minutes default
+                duration = 10  # 10 minutes default
         except ValueError:
             await self.sendreply(Replies.ERR_NEEDMOREPARAMS, 'Syntax: /annoy user [duration]')
             return
@@ -558,7 +561,7 @@ class Server:
     @registered_command
     @parse_args('channel_name', 'message', minargs=1)
     async def cmd_part(self, channel_name: str, message: str = '') -> None:
-        if not channel_name in self.joined_channels:
+        if channel_name not in self.joined_channels:
             return await self.sendreply(Replies.ERR_NOTONCHANNEL, channel_name, "You're not on that channel")
 
         self.ignored_channels.add(channel_name)
@@ -758,17 +761,17 @@ class Server:
 
             await self.join_channel(slchan)
 
-    async def join_channel(self, slchan: slack.Channel|slack.MessageThread):
+    async def join_channel(self, slchan: slack.Channel | slack.MessageThread):
         channel_name = slchan.irc_name
 
         if channel_name in self.joined_channels:
             return
 
         if not self.settings.nouserlist:
-            l = await self.sl_client.get_members(slchan.id)
+            members = await self.sl_client.get_members(slchan.id)
 
             userlist: list[str] = []
-            for i in l:
+            for i in members:
                 try:
                     u = await self.sl_client.get_user(i)
                 except KeyError:
@@ -834,12 +837,11 @@ class Server:
         refn = 1
 
         for t in msgparsing.tokenize(i):
-            if isinstance(t, str): # A normal nice string
+            if isinstance(t, str):  # A normal nice string
                 r += t
-            elif isinstance(t, msgparsing.PreBlock): # Preformatted block
+            elif isinstance(t, msgparsing.PreBlock):  # Preformatted block
                 # Store long formatted text into txt files
                 if self.settings.formatted_max_lines and t.lines > self.settings.formatted_max_lines:
-                    import tempfile
                     with tempfile.NamedTemporaryFile(
                             mode='wt',
                             dir=self.settings.downloads_directory,
@@ -848,16 +850,16 @@ class Server:
                             delete=False) as tmpfile:
                         tmpfile.write(t.txt)
                         r += f'\n === PREFORMATTED TEXT AT file://{tmpfile.name}\n'
-                else: # Do not store to file
+                else:  # Do not store to file
                     r += f'```{t.txt}```'
             elif isinstance(t, msgparsing.SpecialItem):
-                if t.kind == msgparsing.Itemkind.MENTION: # User mention
+                if t.kind == msgparsing.Itemkind.MENTION:  # User mention
                     r += (await self.sl_client.get_user(t.val)).name
-                elif t.kind == msgparsing.Itemkind.CHANNEL: # Channel mention
+                elif t.kind == msgparsing.Itemkind.CHANNEL:  # Channel mention
                     r += (await self.sl_client.get_channel(t.val)).irc_name
-                elif t.kind == msgparsing.Itemkind.YELL: # Channel shouting
+                elif t.kind == msgparsing.Itemkind.YELL:  # Channel shouting
                     if (source not in self.settings.silenced_yellers) and (destination not in self.settings.silenced_yellers):
-                         yell = ' [%s]:' % self.client.nickname
+                        yell = ' [%s]:' % self.client.nickname
                     else:
                         yell = ':'
                     if t.val == 'here':
@@ -866,7 +868,7 @@ class Server:
                         r += 'YELLING LOUDER' + yell
                     else:
                         r += 'DEAFENING YELL' + yell
-                else: # Link
+                else:  # Link
                     label = t.human
                     if label is None:
                         r += t.val
@@ -884,7 +886,7 @@ class Server:
             return
 
         diffmsg = slack.Message(
-            subtype = sl_ev.current.subtype,
+            subtype=sl_ev.current.subtype,
             text=seddiff(sl_ev.previous.text, sl_ev.current.text),
             channel=sl_ev.channel,
             user=sl_ev.previous.user,
@@ -896,7 +898,7 @@ class Server:
 
     async def send_message_delete(self, sl_ev: slack.MessageDelete) -> None:
         msg = slack.Message(
-            subtype = sl_ev.previous.subtype,
+            subtype=sl_ev.previous.subtype,
             text=f'[deleted] {sl_ev.previous.text}',
             channel=sl_ev.channel,
             user=sl_ev.previous.user,
@@ -906,7 +908,7 @@ class Server:
 
         await self.send_message(msg)
 
-    async def send_message(self, sl_ev: slack.Message|slack.MessageBot, prefix: str = ''):
+    async def send_message(self, sl_ev: slack.Message | slack.MessageBot, prefix: str = ''):
         """
         Sends a message to the irc client
         """
@@ -979,13 +981,13 @@ class Server:
 
             await self.sendcmd(f'{source}!{source}@{self.hostname}', 'PRIVMSG', dest, i)
 
-    async def member_joined_or_left(self, sl_ev: slack.Join|slack.Leave, joined: bool) -> None:
+    async def member_joined_or_left(self, sl_ev: slack.Join | slack.Leave, joined: bool) -> None:
         """
         Handle join events from slack, by sending a JOIN notification
         to IRC.
         """
 
-        #Invalidate cache since the users in the channel changed
+        # Invalidate cache since the users in the channel changed
         if sl_ev.channel in self.mentions_regex_cache:
             del self.mentions_regex_cache[sl_ev.channel]
 

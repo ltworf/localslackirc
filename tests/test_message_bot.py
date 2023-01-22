@@ -46,8 +46,7 @@ class TestMessageBot(unittest.TestCase):
         })
         msg = load(event, MessageBot)
         assert (
-            msg.text
-            == "This is a message with attachments\n| First attachment\n| Second attachment"
+            msg.text == "This is a message with attachments\n| First attachment\n| Second attachment"
         )
 
     def test_attachment_with_fallback(self):
@@ -60,8 +59,7 @@ class TestMessageBot(unittest.TestCase):
         })
         msg = load(event, MessageBot)
         assert (
-            msg.text
-            == "This is a message with attachments\n| First attachment\n| Second attachment"
+            msg.text == "This is a message with attachments\n| First attachment\n| Second attachment"
         )
 
     def test_multiline_attachment_text(self):
