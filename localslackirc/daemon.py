@@ -130,7 +130,7 @@ class Daemon:
                                     help="Automatically join all remote channels")
         parser.add_argument('-r', '--thread-replies', action='store_true',
                                     dest='thread_replies', required=False,
-                                    help="Automatically join all remote channels (you'll not be able to answer in threads)")
+                                    help="Receive thread messages in main channel instead of a custom thread channel (you'll not be able to answer in threads)")
         parser.add_argument('-o', '--override', action='store_true',
                                     dest='overridelocalip', required=False,
                                     help='allow non 127. addresses, this is potentially dangerous')
