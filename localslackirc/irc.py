@@ -486,7 +486,7 @@ class Server:
     async def cmd_list(self, _) -> None:
         for c in (await self.sl_client.channels(refresh=True)).values():
             topic = (await self.parse_slack_message(c.real_topic, '', '')).replace('\n', ' | ')
-            await self.sendreply(Replies.RPL_LIST, '#' + c.name, str(c.num_members), topic)
+            await self.sendreply(Replies.RPL_LIST, c.irc_name, str(c.num_members), topic)
 
         await self.sendreply(Replies.RPL_LISTEND, 'End of LIST')
 
@@ -750,9 +750,14 @@ class Server:
                 except slack.ResponseException as e:
                     await self.sendreply(Replies.ERR_NOSUCHCHANNEL, channel_name, f'Unable to join server channel: {e}')
 
-            await self.join_channel(channel_name, slchan)
+            await self.join_channel(slchan)
 
-    async def join_channel(self, channel_name: str, slchan: slack.Channel|slack.MessageThread):
+    async def join_channel(self, slchan: slack.Channel|slack.MessageThread):
+        channel_name = slchan.irc_name
+
+        if channel_name in self.joined_channels:
+            return
+
         if not self.settings.nouserlist:
             l = await self.sl_client.get_members(slchan.id)
 
@@ -823,7 +828,7 @@ class Server:
                 if t.kind == msgparsing.Itemkind.MENTION: # User mention
                     r += (await self.sl_client.get_user(t.val)).name
                 elif t.kind == msgparsing.Itemkind.CHANNEL: # Channel mention
-                    r += '#' + (await self.sl_client.get_channel(t.val)).name_normalized
+                    r += (await self.sl_client.get_channel(t.val)).irc_name
                 elif t.kind == msgparsing.Itemkind.YELL: # Channel shouting
                     if (source not in self.settings.silenced_yellers) and (destination not in self.settings.silenced_yellers):
                          yell = ' [%s]:' % self.client.nickname
@@ -892,7 +897,7 @@ class Server:
         text = sl_ev.text
 
         try:
-            yelldest = dest = '#' + (await self.sl_client.get_channel(sl_ev.channel)).name
+            channel = await self.sl_client.get_channel(sl_ev.channel)
         except KeyError:
             im = await self.sl_client.get_im(sl_ev.channel)
             if im and im.user != sl_ev.user:
@@ -925,14 +930,14 @@ class Server:
                     latest_message = await self.parse_slack_message(messages[-2].text, source, yelldest)
                     lines = '\n'.join([f'> {line}' for line in latest_message.split('\n')] + [lines])
             else:
-                dest = '#' + thread.name
+                dest = thread.irc_name
 
                 if dest in self.ignored_channels:
                     return
 
                 # Join thread channel if needed
                 if dest not in self.known_threads:
-                    await self.join_channel(dest, thread)
+                    await self.join_channel(thread)
                     self.known_threads[dest] = thread
 
         for i in lines.split('\n'):
@@ -968,7 +973,7 @@ class Server:
 
     async def topic_changed(self, sl_ev: slack.TopicChange) -> None:
         user = await self.sl_client.get_user(sl_ev.user)
-        channel = '#' + (await self.sl_client.get_channel(sl_ev.channel, refresh=True)).name
+        channel = (await self.sl_client.get_channel(sl_ev.channel, refresh=True)).irc_name
 
         if channel in self.ignored_channels:
             return

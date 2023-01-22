@@ -126,6 +126,10 @@ class Channel:
         return self.name_normalized
 
     @property
+    def irc_name(self):
+        return '#' + self.name
+
+    @property
     def real_topic(self) -> str:
         if self.topic.value:
             t = self.topic.value
