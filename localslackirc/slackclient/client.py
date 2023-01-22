@@ -29,7 +29,7 @@ from typedload import load
 import websockets
 from websockets.client import connect as wsconnect
 
-from .exceptions import *
+from .exceptions import SlackConnectionError, SlackLoginError
 from .http import Request
 
 
@@ -129,7 +129,6 @@ class SlackClient:
         r = await self.login()
         self._websocket = await wsconnect(r.url, close_timeout=0.2)
         return r
-
 
     async def api_call(self, method: str, timeout: float = 0.0, **kwargs) -> Dict[str, Any]:
         """

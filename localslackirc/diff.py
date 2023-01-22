@@ -56,14 +56,16 @@ def seddiff(a: str, b: str) -> str:
         try:
             if l1[prefix] != l2[prefix]:
                 break
-        except:
+        except IndexError:
             break
+
     for postfix in count(1):
         try:
             if l1[-postfix] != l2[-postfix]:
                 break
-        except Exception:
+        except IndexError:
             break
+
     postfix -= 1
 
     if prefix and postfix and len(l1) != len(l2):

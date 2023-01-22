@@ -19,7 +19,7 @@
 import asyncio
 import gzip
 import json
-from typing import Dict, Optional, NamedTuple, Tuple, Any
+from typing import Dict, NamedTuple, Tuple, Any
 from uuid import uuid1
 from urllib import parse
 
@@ -105,7 +105,7 @@ class Request:
         It can be an already cached one or a new one.
         """
         task = asyncio.tasks.current_task()
-        assert task is not None # Mypy doesn't notice this is in an async
+        assert task is not None  # Mypy doesn't notice this is in an async
         key = task.get_name()
 
         r = self._connections.get(key)
@@ -115,7 +115,7 @@ class Request:
             self._connections[key] = r
         return r
 
-    async def post(self, path: str, headers: Dict[str, str], data: Dict[str,  Any], timeout: float=0) -> Response:
+    async def post(self, path: str, headers: Dict[str, str], data: Dict[str, Any], timeout: float = 0) -> Response:
         """
         post a request.
 
@@ -131,13 +131,13 @@ class Request:
         except (BrokenPipeError, ConnectionResetError, asyncio.IncompleteReadError):
             # Clear connection from pool
             task = asyncio.tasks.current_task()
-            assert task is not None # Mypy doesn't notice this is in an async
+            assert task is not None  # Mypy doesn't notice this is in an async
             key = task.get_name()
             r, w = self._connections.pop(key)
             w.close()
             return await self._post(path, headers, data, timeout)
 
-    async def _post(self, path: str, headers: Dict[str, str], data: Dict[str,  Any], timeout: float=0) -> Response:
+    async def _post(self, path: str, headers: Dict[str, str], data: Dict[str, Any], timeout: float = 0) -> Response:
         # Prepare request
         req = f'POST {self.path + path} HTTP/1.1\r\n'
         req += f'Host: {self.hostname}\r\n'

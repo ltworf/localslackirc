@@ -26,7 +26,7 @@ class SlackClientError(Exception):
     Base exception for all errors raised by the SlackClient library
     """
     def __init__(self, msg: str) -> None:
-        super(SlackClientError, self).__init__(msg)
+        super().__init__(msg)
 
     def __str__(self) -> str:
         reply = getattr(self, 'reply', None)
@@ -36,11 +36,11 @@ class SlackClientError(Exception):
 
 class SlackConnectionError(SlackClientError):
     def __init__(self, message='', reply=None) -> None:
-        super(SlackConnectionError, self).__init__(message)
+        super().__init__(message)
         self.reply = reply
 
 
 class SlackLoginError(SlackClientError):
     def __init__(self, message='', reply=None) -> None:
-        super(SlackLoginError, self).__init__(message)
+        super().__init__(message)
         self.reply = reply
