@@ -16,7 +16,7 @@
 
 import unittest
 
-from msgparsing import preblocks, split_tokens, SpecialItem, Itemkind, convertpre, tokenize, PreBlock
+from localslackirc.msgparsing import preblocks, split_tokens, SpecialItem, Itemkind, convertpre, tokenize, PreBlock
 
 
 class TestMsgParsing(unittest.TestCase):

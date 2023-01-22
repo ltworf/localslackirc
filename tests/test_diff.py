@@ -18,7 +18,7 @@
 
 import unittest
 
-from diff import seddiff
+from localslackirc.diff import seddiff
 
 
 class TestDiff(unittest.TestCase):

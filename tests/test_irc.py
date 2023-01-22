@@ -16,53 +16,52 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from unittest import IsolatedAsyncioTestCase, mock
-from irc import Client, Provider
+from localslackirc.irc import Server, Client
 
 class TestIRC(IsolatedAsyncioTestCase):
     def setUp(self):
-        stream_writer = mock.AsyncMock()
         slack_client = mock.AsyncMock()
         settings = mock.MagicMock()
         settings.silenced_yellers = set()
-        settings.provider = Provider.SLACK
-        self.client = Client(stream_writer, slack_client, settings)
+        self.server = Server(slack_client, settings)
+        self.server.client = Client()
 
 
 class TestAnnoyanceAvoidance(TestIRC):
     async def test_yelling_prevention(self):
-        self.client.nick = b'aldo'
+        self.server.client.nickname = 'aldo'
 
         # Mention generated
-        msg = await self.client.parse_message("<!here> watch this!", b'rose.adams',b'#asd')
+        msg = await self.server.parse_slack_message("<!here> watch this!", 'rose.adams','#asd')
         assert msg == 'yelling [aldo]: watch this!'
 
         # Add rose.adams to silenced yellers
-        self.client.settings.silenced_yellers.add(b'rose.adams')
+        self.server.settings.silenced_yellers.add('rose.adams')
 
         # Mention no longer generated
-        msg = await self.client.parse_message("<!here> watch this!", b'rose.adams', b'#asd')
+        msg = await self.server.parse_slack_message("<!here> watch this!", 'rose.adams', '#asd')
         assert msg == 'yelling: watch this!'
 
         # No effect on regular messages
-        msg = await self.client.parse_message("hello world", b'rose.adams', b'#asd')
+        msg = await self.server.parse_slack_message("hello world", 'rose.adams', '#asd')
         assert msg == 'hello world'
 
 
 class TestParseMessage(TestIRC):
     async def test_simple_message(self):
-        msg = await self.client.parse_message("hello world", b'ciccio', b'#asd')
+        msg = await self.server.parse_slack_message("hello world", 'ciccio', '#asd')
         self.assertEqual(msg, "hello world")
 
     async def test_url(self):
-        msg = await self.client.parse_message("See <https://example.com/docs/|the documentation>", b'ciccio', b'#asd')
+        msg = await self.server.parse_slack_message("See <https://example.com/docs/|the documentation>", 'ciccio', '#asd')
         self.assertEqual(msg, "See the documentation¹\n  ¹ https://example.com/docs/")
 
     async def test_url_aggressive_shortening(self):
-        msg = await self.client.parse_message("See <https://example.com/docs/iqjweoijsodijijaoij?oiwje|https://example.com/docs/iqjweoijsodijijaoij>", b'ciccio', b'#asd')
+        msg = await self.server.parse_slack_message("See <https://example.com/docs/iqjweoijsodijijaoij?oiwje|https://example.com/docs/iqjweoijsodijijaoij>", 'ciccio', '#asd')
         self.assertEqual(msg, "See LINK¹\n  ¹ https://example.com/docs/iqjweoijsodijijaoij?oiwje")
 
     async def test_multiple_urls(self):
-        msg = await self.client.parse_message("See <https://example.com/docs/|the documentation>. Try also the <https://example.com/faq/|FAQ>", b'ciccio', b'#asd')
+        msg = await self.server.parse_slack_message("See <https://example.com/docs/|the documentation>. Try also the <https://example.com/faq/|FAQ>", 'ciccio', '#asd')
         self.assertEqual(msg, "See the documentation¹. Try also the FAQ²\n  ¹ https://example.com/docs/\n  ² https://example.com/faq/")
 
     async def test_a_lot_of_urls(self):
@@ -80,13 +79,13 @@ class TestParseMessage(TestIRC):
             "  ⁹ https://example.com/",
             "  ¹⁰ https://example.com/",
         ])
-        msg = await self.client.parse_message(input_msg, b'ciccio', b'#asd')
+        msg = await self.server.parse_slack_message(input_msg, 'ciccio', '#asd')
         self.assertEqual(msg, output)
 
     async def test_url_with_no_label_just_goes_inline(self):
-        msg = await self.client.parse_message("Please look at <https://example.com/>", b'ciccio', b'#asd')
+        msg = await self.server.parse_slack_message("Please look at <https://example.com/>", 'ciccio', '#asd')
         self.assertEqual(msg, "Please look at https://example.com/")
 
     async def test_replace_label_for_urls_with_no_different_text(self):
-        msg = await self.client.parse_message("<https://example.com/|https://example.com/>", b'ciccio', b'#asd')
+        msg = await self.server.parse_slack_message("<https://example.com/|https://example.com/>", 'ciccio', '#asd')
         self.assertEqual(msg, "LINK¹\n  ¹ https://example.com/")
