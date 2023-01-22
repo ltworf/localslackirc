@@ -23,7 +23,7 @@ import subprocess
 
 if os.path.exists("./localslackirc"):
     # inside source directory
-    localslackirc = "./localslackirc"
+    localslackirc = "python -m localslackirc"
 else:
     # test installed program
     localslackirc = "localslackirc"
@@ -32,4 +32,4 @@ else:
 class TestStart(unittest.TestCase):
 
     def test_print_help(self):
-        subprocess.check_call([localslackirc, '--help'], stdout=subprocess.DEVNULL)
+        subprocess.check_call(['python', '-m', 'localslackirc', '--help'], stdout=subprocess.DEVNULL)

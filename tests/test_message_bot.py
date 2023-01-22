@@ -17,7 +17,7 @@
 import unittest
 
 from typedload import load
-from slack import MessageBot
+from localslackirc.slack import MessageBot
 
 template = {
     "type": "message",
