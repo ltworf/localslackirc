@@ -51,10 +51,18 @@ USELESS_EVENTS = frozenset((
     'mobile_in_app_notification',
     'draft_sent',
     'thread_marked',
+    'thread_subscribed',
     'update_thread_state',
     'bot_added',
     'im_marked',
     'pref_change',
+    'team_join',
+    'clear_mention_notification',
+    'thread_unsubscribed',
+    'channel_sections_channels_removed',
+    'channel_sections_channels_upserted',
+    'im_open',
+    'im_close',
     'goodbye', # Server is disconnecting us
 ))
 
@@ -179,6 +187,52 @@ class NoChanMessage(NamedTuple):
 class GroupJoined:
     type: Literal['group_joined']
     channel: Channel
+
+    @property
+    def channel_id(self):
+        return self.channel.id
+
+
+@dataclass
+class ChannelJoined:
+    type: Literal['channel_joined']
+    channel: Channel
+
+    @property
+    def channel_id(self):
+        return self.channel.id
+
+
+@dataclass
+class MPIMJoined:
+    type: Literal['mpim_open']
+    channel_id: str = field(metadata={'name': 'channel'})
+    channel: Channel = None
+
+
+@dataclass
+class GroupLeft:
+    type: Literal['group_left']
+    channel_id: str = field(metadata={'name': 'channel'})
+    actor_id: str = None
+
+
+@dataclass
+class ChannelLeft:
+    # https://api.slack.com/events/channel_left
+    # "The channel_left event is sometimes sent to all connections for a user
+    # when that user leaves a public channel. It is sometimes withheld."
+    # lol.
+    type: Literal['channel_left']
+    channel_id: str = field(metadata={'name': 'channel'})
+    actor_id: str = None
+
+
+@dataclass
+class MPIMLeft:
+    type: Literal['mpim_close']
+    channel_id: str = field(metadata={'name': 'channel'})
+    actor_id: str = None
 
 
 @dataclass
@@ -372,6 +426,11 @@ SlackEvent = (
     Join|
     Leave|
     GroupJoined|
+    ChannelJoined|
+    MPIMJoined|
+    GroupLeft|
+    ChannelLeft|
+    MPIMLeft|
     UserTyping|
     MessageReplied|
     UserChange

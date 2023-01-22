@@ -80,6 +80,7 @@ class Replies(Enum):
     ERR_UNKNOWNCOMMAND = 421
     ERR_FILEERROR = 424
     ERR_ERRONEUSNICKNAME = 432
+    ERR_NOTONCHANNEL = 442
     ERR_NEEDMOREPARAMS = 461
     ERR_UNKNOWNMODE = 472
     ERR_UMODEUNKNOWNFLAG = 501
@@ -148,10 +149,10 @@ def parse_args(*args, minargs=None):
 
 
 class Client:
-    nickname = ''
-    username = ''
-    realname = ''
-    hostname = ''
+    nickname: str = ''
+    username: str = ''
+    realname: str = ''
+    hostname: str = ''
 
     is_registered = False
 
@@ -161,11 +162,12 @@ class Server:
         self.hostname = 'localhost'
         self.client = None
         self.ignored_channels: Set[str] = settings.ignored_channels
-        self.channels = {}
+        self.joined_channels: Set[str] = set()
         self.known_threads: dict[str, slack.MessageThread] = {}
 
         self.settings = settings
         self.sl_client = sl_client
+        self.sl_id = None
         self.usersent = False # Used to hold all events until the IRC client sends the initial USER message
         self.held_events: list[slack.SlackEvent] = []
         self.mentions_regex_cache: dict[str, Optional[re.Pattern]] = {}  # Cache for the regexp to perform mentions. Key is channel id
@@ -193,6 +195,7 @@ class Server:
             return
 
         self.hostname = '%s.slack.com' % self.sl_client.login_info.team.domain
+        self.sl_id = self.sl_client.login_info.self.id
 
         self.client = Client()
         self.client.hostname = self.hostname
@@ -303,7 +306,7 @@ class Server:
             # ignore a new USER command.
             return
 
-        self.client.username = username
+        self.client.username = self.sl_id # use the slack ID instead of IRC client one
         self.client.realname = realname
 
         if self.client.username and self.client.nickname:
@@ -349,17 +352,16 @@ class Server:
                     continue
 
                 if sl_chan.is_mpim and (sl_chan.latest is None or sl_chan.latest.timestamp < mpim_cutoff):
+                    logging.info(f'Ignore {sl_chan.irc_name} as old mpim')
                     continue
 
-                channel_name = '#%s' % sl_chan.name_normalized
-                if channel_name in self.ignored_channels:
-                    logging.info(f'Not joining {channel_name} on IRC, marked as ignored')
+                if sl_chan.irc_name in self.ignored_channels:
+                    logging.info(f'Not joining {sl_chan.irc_name} on IRC, marked as ignored')
                     continue
-                await self.join_channel(channel_name, sl_chan)
+                await self.join_channel(sl_chan)
         else:
             for sl_chan in channels.values():
-                channel_name = '#%s' % sl_chan.name_normalized
-                self.ignored_channels.add(channel_name)
+                self.ignored_channels.add(sl_chan.irc_name)
 
         # Eventual channel joining done, sending the held events
         self._usersent = True
@@ -556,7 +558,11 @@ class Server:
     @registered_command
     @parse_args('channel_name', 'message', minargs=1)
     async def cmd_part(self, channel_name: str, message: str = '') -> None:
+        if not channel_name in self.joined_channels:
+            return await self.sendreply(Replies.ERR_NOTONCHANNEL, channel_name, "You're not on that channel")
+
         self.ignored_channels.add(channel_name)
+        self.joined_channels.remove(channel_name)
         await self.sendcmd(self.client, 'PART', channel_name, message)
 
     @registered_command
@@ -715,7 +721,7 @@ class Server:
             except KeyError:
                 return await self.sendreply(Replies.RPL_ENDOFWHO, name, 'End of WHO list')
 
-            await self.sendreply(Replies.RPL_WHOREPLY, name, user.name, self.hostname, self.hostname, user.name, 'H', '0 %s' % user.real_name)
+            await self.sendreply(Replies.RPL_WHOREPLY, name, user.name, self.hostname, self.hostname, user.name, 'H', f'0 {user.real_name}')
         else:
             try:
                 channel = await self.sl_client.get_channel_by_name(name[1:])
@@ -728,7 +734,7 @@ class Server:
                 except slack.ResponseException:
                     pass
                 else:
-                    await self.sendreply(Replies.RPL_WHOREPLY, name, user.name, self.hostname, self.hostname, user.name, 'H', '0 %s' % user.real_name)
+                    await self.sendreply(Replies.RPL_WHOREPLY, name, user.name, self.hostname, self.hostname, user.name, 'H', f'0 {user.real_name}')
         await self.sendreply(Replies.RPL_ENDOFWHO, name, 'End of WHO list')
 
     @registered_command
@@ -776,17 +782,37 @@ class Server:
 
             users = ' '.join(userlist)
 
-        try:
-            yelldest = '#' + (await self.sl_client.get_channel(slchan.id)).name
-        except KeyError:
-            yelldest = ''
+        topic = (await self.parse_slack_message(slchan.real_topic, '', channel_name)).replace('\n', ' | ')
 
-        topic = (await self.parse_slack_message(slchan.real_topic, '', yelldest)).replace('\n', ' | ')
         await self.sendcmd(self.client, 'JOIN', channel_name)
         await self.sendcmd(self, 'MODE', channel_name, '+')
         await self.sendreply(Replies.RPL_TOPIC, channel_name, topic)
         await self.sendreply(Replies.RPL_NAMREPLY, '=', channel_name, '' if self.settings.nouserlist else users)
         await self.sendreply(Replies.RPL_ENDOFNAMES, channel_name, 'End of NAMES list')
+
+        self.joined_channels.add(channel_name)
+
+    async def leave_channel(self, channel_id: str, actor_id: str):
+        try:
+            channel = (await self.sl_client.get_channel(channel_id)).irc_name
+        except KeyError:
+            logging.warning("Left channel %s but can't find it", channel_id)
+            return
+
+        if channel not in self.joined_channels:
+            return
+
+        self.joined_channels.remove(channel)
+        if actor_id:
+            try:
+                actor = (await self.sl_client.get_user(actor_id))
+            except KeyError:
+                # should not happen
+                pass
+            else:
+                return await self.sendcmd(actor, 'KICK', channel, self.client.nickname)
+
+        await self.sendcmd(self.client, 'PART', channel)
 
     async def parse_slack_message(self, i: str, source: str, destination: str) -> str:
         """
@@ -909,10 +935,15 @@ class Server:
         except slack.ResponseException as e:
             logging.error('Error: %s', str(e))
             return
+        else:
+            yelldest = dest = channel.irc_name
 
-        if dest in self.ignored_channels:
-            # Ignoring messages, channel was left on IRC
-            return
+            if dest in self.ignored_channels:
+                # Ignoring messages, channel was left on IRC
+                return
+
+            if dest not in self.joined_channels:
+                await self.join_channel(channel)
 
         if sl_ev.files:
             for f in sl_ev.files:
@@ -962,7 +993,10 @@ class Server:
         if user.deleted:
             return
 
-        channel = '#' + (await self.sl_client.get_channel(sl_ev.channel)).name
+        if user.id == self.sl_id:
+            return
+
+        channel = (await self.sl_client.get_channel(sl_ev.channel)).irc_name
         if channel in self.ignored_channels:
             return
 
@@ -999,9 +1033,14 @@ class Server:
             await self.member_joined_or_left(sl_ev, False)
         elif isinstance(sl_ev, slack.TopicChange):
             await self.topic_changed(sl_ev)
-        elif isinstance(sl_ev, slack.GroupJoined):
-            channel_name = '#' + sl_ev.channel.name_normalized
-            await self.join_channel(channel_name, sl_ev.channel)
+        elif isinstance(sl_ev, (slack.GroupJoined, slack.ChannelJoined, slack.MPIMJoined)):
+            if not sl_ev.channel:
+                sl_ev.channel = await self.sl_client.get_channel(sl_ev.channel_id)
+            assert sl_ev.channel
+
+            await self.join_channel(sl_ev.channel)
+        elif isinstance(sl_ev, (slack.GroupLeft, slack.ChannelLeft, slack.MPIMLeft)):
+            await self.leave_channel(sl_ev.channel_id, sl_ev.actor_id)
         elif isinstance(sl_ev, slack.UserTyping):
             if sl_ev.user not in self.annoy_users:
                 return
