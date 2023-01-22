@@ -19,6 +19,7 @@
 import argparse
 import asyncio
 import logging
+import logging.handlers
 import os
 from os import environ
 from os.path import expanduser
@@ -26,7 +27,6 @@ from pathlib import Path
 import pwd
 import sys
 from typing import Optional, Set
-
 
 from . import __version__
 from .irc import Server, ServerSettings, IrcDisconnectError
@@ -99,11 +99,18 @@ class Daemon:
             handler.setFormatter(ColoredFormatter(log_format))
         return handler
 
-    def setup_loggers(self, level):
+    def setup_loggers(self, level: int, syslog: bool = False):
         logging.root.handlers = []
 
         logging.root.setLevel(level)
         logging.root.addHandler(self.create_default_logger())
+
+        if syslog:
+            handler = logging.handlers.SysLogHandler(address='/dev/log')
+            handler.setFormatter(logging.Formatter('localslackirc: %(message)s'))
+            handler.setLevel(logging.INFO)
+            logging.root.addHandler(handler)
+
 
     async def main(self):
         parser = argparse.ArgumentParser()
@@ -136,6 +143,8 @@ class Daemon:
                                     help='allow non 127. addresses, this is potentially dangerous')
         parser.add_argument('-f', '--status-file', type=str, action='store', dest='status_file', required=False, default=None,
                                     help='Path to the file to keep the internal status.')
+        parser.add_argument('-s', '--syslog', action='store_true', dest='syslog', required=False, default=False,
+                                    help='Log into syslog.')
         parser.add_argument('-d', '--debug', action='store_true', dest='debug', required=False, default=False,
                                     help='Enables debugging logs.')
         parser.add_argument('--ignored-channels', type=str, action='store', dest='ignored_channels', default='',
@@ -150,7 +159,10 @@ class Daemon:
 
         args = parser.parse_args()
 
-        self.setup_loggers(level=logging.DEBUG if bool(environ.get('DEBUG', args.debug)) else logging.INFO)
+        self.setup_loggers(
+            level=logging.DEBUG if bool(environ.get('DEBUG', args.debug)) else logging.INFO,
+            syslog=bool(environ.get('SYSLOG', args.syslog))
+        )
 
         status_file_str: Optional[str] = environ.get('STATUS_FILE', args.status_file)
         status_file = None
