@@ -45,6 +45,10 @@ class TestDiff(unittest.TestCase):
         assert seddiff('ciae a tutti', 'ciao a tutti') == 's/ciae/ciao/'
         assert seddiff('ciae å tutti', 'ciao a tutti') == 's/ciae å/ciao a/'
 
+    def test_with_ltgt(self):
+        assert seddiff('Optional<IntegerZ>', 'Optional<Integer>') == 's/Optional<IntegerZ>/Optional<Integer>/'
+        assert seddiff('`Optional<IntegerZ>`', '`Optional<Integer>`') == 's/`Optional<IntegerZ>`/`Optional<Integer>`/'
+
     def test_insertion(self):
         assert seddiff('il numero dei fili', 'il numero massimo dei fili') == 's/numero dei/numero massimo dei/'
         assert seddiff('mangio del formaggio e pere', 'mangio del formaggio con le pere') == 's/formaggio e pere/formaggio con le pere/'
