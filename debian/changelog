@@ -1,6 +1,7 @@
 localslackirc (1.18-1) UNRELEASED; urgency=medium
 
   * New upstream release
+  * Can be rebuilt (Closes: #1045470)
 
  -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Sun, 16 Oct 2022 19:26:02 +0200
 
