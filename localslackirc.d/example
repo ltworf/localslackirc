@@ -32,6 +32,9 @@
 # Auto join channels
 AUTOJOIN=true
 
+# Stops rejoining channel on a mention (@here is not considered)
+#NO_REJOIN_ON_MENTION=true
+
 # Networking
 #IP_ADDRESS=127.0.0.1
 # Do not enable this unless you know what you are doing!
