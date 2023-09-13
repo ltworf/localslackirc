@@ -1,10 +1,10 @@
-localslackirc (1.18-1) UNRELEASED; urgency=medium
+localslackirc (1.18-1) unstable; urgency=low
 
   * New upstream release
   * Can be rebuilt (Closes: #1045470)
   * Remove X-Python3-Version: >= 3.10 from control file
 
- -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Sun, 16 Oct 2022 19:26:02 +0200
+ -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Wed, 13 Sep 2023 17:50:39 +0200
 
 localslackirc (1.17-1.1) unstable; urgency=medium
 
