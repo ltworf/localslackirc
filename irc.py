@@ -1,5 +1,5 @@
 # localslackirc
-# Copyright (C) 2018-2022 Salvo "LtWorf" Tomaselli
+# Copyright (C) 2018-2023 Salvo "LtWorf" Tomaselli
 #
 # localslackirc is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@ import msgparsing
 from diff import seddiff
 
 
-VERSION = '1.18'
+VERSION = '1.19'
 
 
 class IrcDisconnectError(Exception): ...
