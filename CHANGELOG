@@ -1,3 +1,5 @@
+1.19
+
 1.18
 * Once leaving a thread, you won't get autojoined every new message
 * Leaving a channel but not a thread leaves the threads working
