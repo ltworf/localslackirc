@@ -83,6 +83,7 @@ MPIM_HIDE_DELAY = datetime.timedelta(days=50)
 class ClientSettings(NamedTuple):
     nouserlist: bool
     autojoin: bool
+    no_rejoin_on_mention: bool
     provider: Provider
     ignored_channels: Set[bytes]
     silenced_yellers: Set[bytes]
@@ -122,6 +123,12 @@ class Client:
         self._held_events: list[slack.SlackEvent] = []
         self._mentions_regex_cache: dict[str, Optional[re.Pattern]] = {}  # Cache for the regexp to perform mentions. Key is channel id
         self._annoy_users: dict[str, int] = {} # Users to annoy pretending to type when they type
+
+    def get_mention_str(self) -> str:
+        '''
+        Returns the string that is present in messages when the user is getting mentioned
+        '''
+        return f'<@{self.sl_client.login_info.self.id if self.sl_client.login_info else ""}>'
 
     async def _nickhandler(self, cmd: bytes) -> None:
         if b' ' not in cmd:
@@ -364,6 +371,8 @@ class Client:
     async def _parthandler(self, cmd: bytes) -> None:
         name = cmd.split(b' ')[1]
         self.parted_channels.add(name)
+        if name in self.known_threads:
+            del self.known_threads[name]
 
     async def _awayhandler(self, cmd: bytes) -> None:
         is_away = b' ' in cmd
@@ -671,6 +680,10 @@ class Client:
             log('Error: ', str(e))
             return
 
+        text = sl_ev.text
+
+        mentioned = (not self.settings.no_rejoin_on_mention) and self.get_mention_str() in text
+
         if sl_ev.thread_ts:
             # Threaded message, rewriting the dest
             thread = await self.sl_client.get_thread(sl_ev.thread_ts, sl_ev.channel)
@@ -678,23 +691,29 @@ class Client:
             dest = b'#' + thread.name.encode('utf8')
 
             if dest in self.parted_channels:
-                # This thread is being ignored
-                return
+                if mentioned:
+                    self.parted_channels.remove(dest)
+                else:
+                    # This thread is being ignored
+                    return
 
             # Join thread channel if needed
             if dest not in self.known_threads:
-                if original_dest in self.parted_channels:
+                if original_dest in self.parted_channels and not mentioned:
                     # Ignoring new threads from a parted channel
                     # but keeping the known ones active
                     return
                 await self._send_chan_info(dest, self.known_threads.get(dest, thread))
                 self.known_threads[dest] = self.known_threads.get(dest, thread)
         elif dest in self.parted_channels:
-            # Ignoring messages, channel was left on IRC
-            # This ignores also threads on those channels
-            return
-
-        text = sl_ev.text
+            if mentioned:
+                # rejoin channel
+                slchan = await self.sl_client.get_channel(sl_ev.channel)
+                await self._send_chan_info(dest, slchan)
+            else:
+                # Ignoring messages, channel was left on IRC
+                # This ignores also threads on those channels
+                return
 
         if sl_ev.files:
             for f in sl_ev.files:
@@ -851,6 +870,8 @@ def main() -> None:
     parser.add_argument('-u', '--nouserlist', action='store_true',
                                 dest='nouserlist', required=False,
                                 help='don\'t display userlist')
+    parser.add_argument('--no-rejoin-on-mention', action='store_true', dest='no_rejoin_on_mention',
+                                help='If set, mentions of the username will not cause the channel to be re-joined')
     parser.add_argument('-j', '--autojoin', action='store_true',
                                 dest='autojoin', required=False,
                                 help="Automatically join all remote channels")
@@ -897,6 +918,7 @@ def main() -> None:
 
     autojoin: bool = environ['AUTOJOIN'].lower() == 'true' if 'AUTOJOIN' in environ else args.autojoin
     nouserlist: bool = environ['NOUSERLIST'].lower() == 'true' if 'NOUSERLIST' in environ else args.nouserlist
+    no_rejoin_on_mention: bool = environ['NO_REJOIN_ON_MENTION'].lower() == 'true' if 'NO_REJOIN_ON_MENTION' in environ else args.no_rejoin_on_mention
 
     # Splitting ignored channels
     ignored_channels_str = environ.get('IGNORED_CHANNELS', args.ignored_channels)
@@ -978,6 +1000,7 @@ def main() -> None:
 
         clientsettings = ClientSettings(
             nouserlist=nouserlist,
+            no_rejoin_on_mention=no_rejoin_on_mention,
             autojoin=autojoin,
             provider=provider,
             ignored_channels=ignored_channels,
