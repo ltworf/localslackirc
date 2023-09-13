@@ -670,21 +670,29 @@ class Client:
         except Exception as e:
             log('Error: ', str(e))
             return
-        if dest in self.parted_channels:
-            # Ignoring messages, channel was left on IRC
-            return
 
         if sl_ev.thread_ts:
-            # Threaded message
+            # Threaded message, rewriting the dest
             thread = await self.sl_client.get_thread(sl_ev.thread_ts, sl_ev.channel)
+            original_dest = dest
             dest = b'#' + thread.name.encode('utf8')
 
+            if dest in self.parted_channels:
+                # This thread is being ignored
+                return
+
             # Join thread channel if needed
-            if dest not in self.known_threads or dest in self.parted_channels:
-                if dest in self.parted_channels:
-                    self.parted_channels.remove(dest)
+            if dest not in self.known_threads:
+                if original_dest in self.parted_channels:
+                    # Ignoring new threads from a parted channel
+                    # but keeping the known ones active
+                    return
                 await self._send_chan_info(dest, self.known_threads.get(dest, thread))
                 self.known_threads[dest] = self.known_threads.get(dest, thread)
+        elif dest in self.parted_channels:
+            # Ignoring messages, channel was left on IRC
+            # This ignores also threads on those channels
+            return
 
         text = sl_ev.text
 
