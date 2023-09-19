@@ -124,7 +124,13 @@ class SlackClient:
             timeout: in seconds
         """
         r = await self.login()
-        self._websocket = await wsconnect(r.url, close_timeout=0.2)
+        headers = {
+            'user-agent': 'localslackirc',
+            'Authorization': f'Bearer {self._token}',
+        }
+        if self._cookie:
+            headers['cookie'] = self._cookie
+        self._websocket = await wsconnect(r.url, close_timeout=0.2, extra_headers=headers)
         return r
 
 
