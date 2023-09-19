@@ -856,7 +856,6 @@ class Slack:
         try:
             events = await self.client.rtm_read()
         except Exception:
-            events = []
             log('Connecting to slack...')
             self.login_info = await self.client.rtm_connect(5)
             await self._history()
