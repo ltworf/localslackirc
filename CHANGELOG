@@ -1,4 +1,5 @@
 1.19
+* Send token and cookie to authenticate to websocket as well
 
 1.18
 * Once leaving a thread, you won't get autojoined every new message
