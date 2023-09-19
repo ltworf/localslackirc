@@ -416,11 +416,11 @@ class Slack:
         Obtain the history from the last known event and
         inject fake events as if the messages are coming now.
         '''
-        log('Fetching history...')
-
         if self._status.last_timestamp == 0:
             log('No last known timestamp. Unable to fetch history')
             return
+
+        log('Fetching history...')
 
         last_timestamp = self._status.last_timestamp
         FOUR_DAYS = 60 * 60 * 24 * 4
@@ -856,7 +856,6 @@ class Slack:
         try:
             events = await self.client.rtm_read()
         except Exception:
-            events = []
             log('Connecting to slack...')
             self.login_info = await self.client.rtm_connect(5)
             await self._history()
