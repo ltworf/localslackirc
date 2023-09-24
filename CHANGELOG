@@ -1,6 +1,7 @@
 1.19
 * Send token and cookie to authenticate to websocket as well
 * Fix crash when slack sends ids of channels that do not exist
+* Automatically create the download directory for the preformatted text
 
 1.18
 * Once leaving a thread, you won't get autojoined every new message
