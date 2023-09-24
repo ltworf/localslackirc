@@ -1,3 +1,5 @@
+2.21
+
 1.20
 * Fix crash when slack sends ids of channels that do not exist
 * Automatically create the download directory for the preformatted text
