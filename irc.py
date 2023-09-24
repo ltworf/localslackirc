@@ -96,7 +96,12 @@ class ClientSettings(NamedTuple):
 
         In that case return None. Otherwise an error string.
         '''
-        if not self.downloads_directory.is_dir():
+        if not self.downloads_directory.exists():
+            try:
+                self.downloads_directory.mkdir(parents=True)
+            except Exception:
+                return f'Unable to create {self.downloads_directory}'
+        elif not self.downloads_directory.is_dir():
             return f'{self.downloads_directory} is not a directory'
         return None
 
