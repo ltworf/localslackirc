@@ -1,4 +1,4 @@
-.TH localslackirc 1 "Sep 13, 2023" "IRC gateway for slack"
+.TH localslackirc 1 "Sep 22, 2023" "IRC gateway for slack"
 .SH NAME
 localslackirc
 \- Creates an IRC server running locally, which acts as a gateway to slack for one user.
@@ -143,9 +143,13 @@ Path to the status file
 .TP
 .B AUTOJOIN
 Alternative to --autojoin
+.br
+Set to "true" to enable.
 .TP
 .B NOUSERLIST
 Alternative to --nouserlist
+.br
+Set to "true" to enable.
 .TP
 .B DEBUG
 Alternative to --debug
@@ -155,6 +159,11 @@ Alternative to --log-suffix
 .TP
 .B IGNORED_CHANNELS
 Alternative to --ignored-channels
+.TP
+.B NO_REJOIN_ON_MENTION
+Alternative to --no-rejoin-on-mention
+.br
+Set to "true" to enable.
 .TP
 .B SILENCED_YELLERS
 Alternative to --silenced-yellers
