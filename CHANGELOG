@@ -1,5 +1,6 @@
 1.19
 * Send token and cookie to authenticate to websocket as well
+* Fix crash when slack sends ids of channels that do not exist
 
 1.18
 * Once leaving a thread, you won't get autojoined every new message

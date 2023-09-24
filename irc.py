@@ -617,7 +617,11 @@ class Client:
                 if t.kind == msgparsing.Itemkind.MENTION: # User mention
                     r += (await self.sl_client.get_user(t.val)).name
                 elif t.kind == msgparsing.Itemkind.CHANNEL: # Channel mention
-                    r += '#' + (await self.sl_client.get_channel(t.val)).name_normalized
+                    try:
+                        r += '#' + (await self.sl_client.get_channel(t.val)).name_normalized
+                    except KeyError:
+                        # Slack might decide to send id of channels that do not exist, yes…
+                        r += '#ERROR_MISSING_CHANNEL'
                 elif t.kind == msgparsing.Itemkind.YELL: # Channel shouting
                     if (source not in self.settings.silenced_yellers) and (destination not in self.settings.silenced_yellers):
                          yell = ' [%s]:' % self.nick.decode('utf8')
