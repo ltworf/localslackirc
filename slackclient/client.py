@@ -117,13 +117,13 @@ class SlackClient:
             raise SlackLoginError(reply=login_data)
         return load(login_data, LoginInfo)
 
-    async def rtm_connect(self, timeout: Optional[int] = None) -> LoginInfo:
+    async def rtm_connect(self, timeout: float = 0.0) -> LoginInfo:
         """
         Connects to the RTM API - https://api.slack.com/rtm
         :Args:
             timeout: in seconds
         """
-        r = await self.login()
+        r = await self.login(timeout=timeout)
         headers = {
             'user-agent': 'localslackirc',
             'Authorization': f'Bearer {self._token}',
