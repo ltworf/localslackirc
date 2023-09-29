@@ -123,7 +123,7 @@ class SlackClient:
         :Args:
             timeout: in seconds
         """
-        r = await self.login()
+        r = await self.login(timeout=timeout)
         headers = {
             'user-agent': 'localslackirc',
             'Authorization': f'Bearer {self._token}',
