@@ -33,6 +33,13 @@ from log import log, debug
 T = TypeVar('T')
 
 USELESS_EVENTS = frozenset((
+    'user_interaction_changed', # undocumented event
+    'clear_mention_notification', # undocumented event
+    'update_global_thread_state', # undocumented event
+    'update_thread_state', # undocumented event
+    'thread_marked', # undocumented event
+    'im_marked',
+    'pref_change',
     'draft_create',
     'draft_delete',
     'accounts_changed',
