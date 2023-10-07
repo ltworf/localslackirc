@@ -6,6 +6,8 @@ a gateway for one user of slack, that can connect to it with whatever IRC
 client they prefer or a bouncer like ZNC and keep using slack from IRC even
 after they shut down their IRC gateway.
 
+[![Donate to LtWorf](docs/donate.svg)](https://liberapay.com/ltworf/donate)
+
 Why? Peace of mind!
 -------------------
 
