@@ -2,7 +2,7 @@ localslackirc (1.11-1) unstable; urgency=medium
 
   Rocket.Chat support was removed.
 
- -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Sun, 05 Jul 2020 11:00:40 +0200
+ -- Salvo 'LtWorf' Tomaselli <ltworf@debian.org>  Sun, 05 Jul 2020 11:00:40 +0200
 
 localslackirc (1.7-1) unstable; urgency=medium
 
@@ -15,4 +15,4 @@ localslackirc (1.7-1) unstable; urgency=medium
   This file acts like a configuration file and defines environment variables
   that are loaded by systemd and passed to localslackirc-
 
- -- Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>  Sun, 01 Mar 2020 12:31:01 +0100
+ -- Salvo 'LtWorf' Tomaselli <ltworf@debian.org>  Sun, 01 Mar 2020 12:31:01 +0100
