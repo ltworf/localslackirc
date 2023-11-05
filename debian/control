@@ -1,7 +1,7 @@
 Source: localslackirc
 Section: net
 Priority: optional
-Maintainer: Salvo 'LtWorf' Tomaselli <tiposchi@tiscali.it>
+Maintainer: Salvo 'LtWorf' Tomaselli <ltworf@debian.org>
 Build-Depends: debhelper (>= 13), python3:any, dh-python, python3-distutils,
  mypy, python3-typedload, python3-websockets, python3-emoji,
  debhelper-compat (= 13)
