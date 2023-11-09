@@ -1038,10 +1038,23 @@ def main() -> None:
             from_irc_task = asyncio.create_task(from_irc(reader, ircclient))
             to_irc_task = asyncio.create_task(to_irc(sl_client, ircclient))
 
-            await asyncio.gather(
-                from_irc_task,
-                to_irc_task,
-            )
+            if control_socket:
+                import control
+                control_task = asyncio.create_task(control.listen(control_socket, ircclient))
+            else:
+                control_task = None
+
+            if control_task:
+                await asyncio.gather(
+                    from_irc_task,
+                    to_irc_task,
+                    control_task,
+                )
+            else:
+                await asyncio.gather(
+                    from_irc_task,
+                    to_irc_task,
+                )
         finally:
             log('Closing connections')
             sl_client.close()
@@ -1052,6 +1065,8 @@ def main() -> None:
             log('Cancelling running tasks')
             from_irc_task.cancel()
             to_irc_task.cancel()
+            if control_task:
+                control_task.cancel()
 
     async def restart_listener_loop():
         loop = asyncio.get_running_loop()
