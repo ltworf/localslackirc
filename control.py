@@ -23,10 +23,18 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from irc import Client as IrcClient
 
+from log import *
 
-async def handle_client(ircclient: "IrcClient", reader, writer) -> None:
+
+async def handle_sendfile(ircclient: "IrcClient", reader, writer) -> None:
     ...
 
+
+async def handle_client(ircclient: "IrcClient", reader, writer) -> None:
+    command = (await reader.readline()).strip()
+
+    if command == b"sendfile":
+        await handle_sendfile(ircclient, reader, writer)
 
 async def listen(socket_path: str, ircclient: "IrcClient") -> None:
     server = await asyncio.start_unix_server(lambda r,w: handle_client(ircclient, r, w), socket_path)
