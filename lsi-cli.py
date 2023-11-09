@@ -17,8 +17,46 @@
 #
 # author Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
 
+import argparse
 import os
 import sys
+import socket
+
+def lsi_send():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-f', '--filename', type=str, action='store', dest='filename',
+                        help='Name to give to the file', default='filename')
+    parser.add_argument('--control-socket', type=str, action='store', dest='control_socket', default=None,
+                        help='Path to the localslackirc unix control socket')
+    parser.add_argument(type=str, action='store', dest='destination',
+                        help='Path to the localslackirc unix control socket')
+
+    args = parser.parse_args()
+
+    control_socket = args.control_socket or find_socket()
+
+    if not control_socket:
+        sys.exit('Please specify the path to the socket')
+
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    s.connect(control_socket)
+
+    assert '\n' not in args.destination
+    assert '\n' not in args.filename
+    s.send(b'sendfile\n')
+    s.send(args.destination.encode('utf8') + b'\n')
+    s.send(args.filename.encode('utf8') + b'\n')
+
+    while chunk := sys.stdin.buffer.read(1024):
+        s.send(chunk)
+    s.shutdown(socket.SHUT_WR)
+
+    response = s.recv(1024).decode('utf8')
+
+    print(response)
+
+    if response != 'ok':
+        sys.exit(1)
 
 
 def main() -> None:
