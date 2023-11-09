@@ -40,15 +40,8 @@ install:
 dist:
 	cd ..; tar -czvvf localslackirc.tar.gz \
 		localslackirc/localslackirc \
-		localslackirc/irc.py \
-		localslackirc/diff.py \
-		localslackirc/log.py \
-		localslackirc/msgparsing.py \
-		localslackirc/slack.py \
-		localslackirc/slackclient/__init__.py \
-		localslackirc/slackclient/http.py \
-		localslackirc/slackclient/client.py \
-		localslackirc/slackclient/exceptions.py \
+		localslackirc/*.py \
+		localslackirc/slackclient/*.py \
 		localslackirc/Makefile \
 		localslackirc/CHANGELOG \
 		localslackirc/LICENSE \
