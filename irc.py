@@ -911,6 +911,8 @@ def main() -> None:
                                 'Setting to 0 (the default) will send everything to the client')
     parser.add_argument('--silenced-yellers', type=str, action='store', dest='silenced_yellers', default='',
                                 help='Comma separated list of nicknames that won\'t generate notifications when using @channel and @here')
+    parser.add_argument('--control-socket', type=str, action='store', dest='control_socket', default=None,
+                                help='Path to where the unix control socket will be')
 
     args = parser.parse_args()
 
@@ -964,6 +966,7 @@ def main() -> None:
     else:
         silenced_yellers = set()
 
+    control_socket = environ.get('CONTROL_SOCKET', args.control_socket)
 
     if 'TOKEN' in environ:
         token = environ['TOKEN']
