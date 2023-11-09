@@ -277,7 +277,9 @@ class Client:
             msg = msg[:-1]
         else:
             action = False
+        await self.send_slack_message(dest, msg, action)
 
+    async def send_slack_message(self, dest: bytes, msg: bytes, action: bool) -> None:
         if dest in self.known_threads:
             dest_object: slack.User|slack.Channel|slack.MessageThread = self.known_threads[dest]
         elif dest.startswith(b'#'):
