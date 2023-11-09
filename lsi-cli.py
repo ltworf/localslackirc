@@ -28,10 +28,16 @@ def lsi_send():
                         help='Name to give to the file', default='filename')
     parser.add_argument('--control-socket', type=str, action='store', dest='control_socket', default=None,
                         help='Path to the localslackirc unix control socket')
+    parser.add_argument('-F', '--file', type=str, action='store', dest='source',
+                        help='Path of the file to send. If not specified stdin is used', default=None)
     parser.add_argument(type=str, action='store', dest='destination',
                         help='Path to the localslackirc unix control socket')
 
+
     args = parser.parse_args()
+
+    if args.source:
+        args.filename = args.source.split('/')[-1]
 
     control_socket = args.control_socket or find_socket()
 
@@ -47,8 +53,13 @@ def lsi_send():
     s.send(args.destination.encode('utf8') + b'\n')
     s.send(args.filename.encode('utf8') + b'\n')
 
-    while chunk := sys.stdin.buffer.read(1024):
-        s.send(chunk)
+    if args.source:
+        with open(args.source, "rb") as f:
+            while chunk := f.read(4096):
+                s.send(chunk)
+    else:
+        while chunk := sys.stdin.buffer.read(1024):
+            s.send(chunk)
     s.shutdown(socket.SHUT_WR)
 
     response = s.recv(1024).decode('utf8')
