@@ -27,8 +27,14 @@ from log import *
 
 
 async def handle_sendfile(ircclient: "IrcClient", reader, writer) -> None:
-    ...
+    dest = (await reader.readline()).strip()
+    filename = (await reader.readline()).strip().decode('utf8')
+    content = await reader.read()
 
+    if await ircclient.send_file(dest, content, filename=filename):
+        writer.write(b"ok")
+    else:
+        writer.write(b"fail")
 
 async def handle_client(ircclient: "IrcClient", reader, writer) -> None:
     command = (await reader.readline()).strip()
