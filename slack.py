@@ -753,17 +753,21 @@ class Slack:
         else:
             raise KeyError(response)
 
-    async def send_file(self, channel_id: str, filename: str, thread_ts: Optional[str]) -> None:
+    async def send_file(self, channel_id: str, filename: str, content: bytes, thread_ts: Optional[str]) -> None:
         """
-        Send a file to a channel or group or whatever
+        Send a file to a channel or group or whatever.
+
+        Otherwise filename is just used to give a name to the file on slack.
         """
-        with open(filename, 'rb') as f:
-            r = await self.client.api_call(
-                'files.upload',
-                channels=channel_id,
-                thread_ts=thread_ts,
-                file=f,
-            )
+        import io
+        f=io.BytesIO(content)
+        f.name = filename
+        r = await self.client.api_call(
+            'files.upload',
+            channels=channel_id,
+            thread_ts=thread_ts,
+            file=f,
+        )
         response = self.tload(r, Response)
         if response.ok:
             return
