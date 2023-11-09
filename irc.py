@@ -341,16 +341,23 @@ class Client:
         self._annoy_users[user_id] = int(time.time()) + (duration * 60)
         await self._sendreply(0, f'Will annoy {user} for {duration} minutes')
 
+
     async def _sendfilehandler(self, cmd: bytes) -> None:
         #/sendfile #destination filename
-        params = cmd.split(b' ', 2)
         try:
-            bchannel_name = params[1]
-            channel_name = params[1].decode('utf8')
+            params = cmd.split(b' ', 2)
             filename = params[2].decode('utf8')
         except IndexError:
             await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Syntax: /sendfile #channel filename')
             return
+
+        with open(filename, 'rb') as f:
+            content = f.read()
+            await self.send_file(params[1], content=content, filename=filename)
+
+
+    async def send_file(self, bchannel_name: bytes, content: bytes, filename: str) -> bool:
+        channel_name = bchannel_name.decode('utf8')
 
         if bchannel_name in self.known_threads:
             dest_channel = self.known_threads[bchannel_name]
@@ -365,13 +372,15 @@ class Client:
                     dest = (await self.sl_client.get_user_by_name(channel_name)).id
             except KeyError:
                 await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find destination: {channel_name}')
-                return
+                return False
 
         try:
-            await self.sl_client.send_file(dest, filename, thread_ts)
-            await self._sendreply(0, 'Upload of %s completed' % filename)
+            await self.sl_client.send_file(dest, content=content, filename=filename, thread_ts=thread_ts)
+            await self._sendreply(0, 'Upload completed')
+            return True
         except Exception as e:
             await self._sendreply(Replies.ERR_FILEERROR, f'Unable to send file {e}')
+            return False
 
     async def _parthandler(self, cmd: bytes) -> None:
         name = cmd.split(b' ')[1]
@@ -902,6 +911,8 @@ def main() -> None:
                                 'Setting to 0 (the default) will send everything to the client')
     parser.add_argument('--silenced-yellers', type=str, action='store', dest='silenced_yellers', default='',
                                 help='Comma separated list of nicknames that won\'t generate notifications when using @channel and @here')
+    parser.add_argument('--control-socket', type=str, action='store', dest='control_socket', default=None,
+                                help='Path to where the unix control socket will be')
 
     args = parser.parse_args()
 
@@ -955,6 +966,7 @@ def main() -> None:
     else:
         silenced_yellers = set()
 
+    control_socket = environ.get('CONTROL_SOCKET', args.control_socket)
 
     if 'TOKEN' in environ:
         token = environ['TOKEN']
@@ -1026,10 +1038,23 @@ def main() -> None:
             from_irc_task = asyncio.create_task(from_irc(reader, ircclient))
             to_irc_task = asyncio.create_task(to_irc(sl_client, ircclient))
 
-            await asyncio.gather(
-                from_irc_task,
-                to_irc_task,
-            )
+            if control_socket:
+                import control
+                control_task = asyncio.create_task(control.listen(control_socket, ircclient))
+            else:
+                control_task = None
+
+            if control_task:
+                await asyncio.gather(
+                    from_irc_task,
+                    to_irc_task,
+                    control_task,
+                )
+            else:
+                await asyncio.gather(
+                    from_irc_task,
+                    to_irc_task,
+                )
         finally:
             log('Closing connections')
             sl_client.close()
@@ -1040,6 +1065,8 @@ def main() -> None:
             log('Cancelling running tasks')
             from_irc_task.cancel()
             to_irc_task.cancel()
+            if control_task:
+                control_task.cancel()
 
     async def restart_listener_loop():
         loop = asyncio.get_running_loop()

@@ -1,5 +1,5 @@
 # localslackirc
-# Copyright (C) 2020 Salvo "LtWorf" Tomaselli
+# Copyright (C) 2020-2023 Salvo "LtWorf" Tomaselli
 #
 # localslackirc is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,7 +30,10 @@ Before=localslackirc.service
 [Service]
 Type=simple
 Restart=always
-ExecStart=/usr/bin/localslackirc --status-file /var/tmp/localslackirc-status-%i --log-suffix %i
+ExecStart=/usr/bin/localslackirc --status-file /var/tmp/localslackirc-status-%i --log-suffix %i --control-socket /run/localslackirc/localslackirc-%i.sock
+# Using the same mode as /tmp so that after changing uid a control socket can still be created
+RuntimeDirectory=localslackirc
+RuntimeDirectoryMode=1777
 # Log
 StandardOutput=journal
 StandardError=journal

@@ -1,0 +1,53 @@
+.TH lsi-send 1 "Nov 9, 2023" "Send files to slack"
+
+.SH NAME
+lsi-send
+\- Connects to a local instance of localslackirc and send a file to a channel
+
+.SH SYNOPSIS
+lsi-send [OPTIONS] DESTINATION < file
+.br
+lsi-send [OPTIONS] -F file DESTINATION
+
+.SH DESCRIPTION
+This command sends files to an instance of localslackirc that is running locally.
+.br
+DESTINATION indicates a channel or user to send the file to.
+.br
+When using the provided .service file and starting localslackirc with systemd, this command should be able to autodetect the location of the socket.
+.br
+In case the same user is running multiple instances, then it is possible that the path to the unix socket must be provides as a parameter.
+.br
+NOTE: the files are entirely loaded in RAM before sending.
+
+.SS Options:
+.TP
+.B -h, --help
+Show the help message and exit.
+
+.TP
+.B -f FILENAME, --filename FILENAME
+The name to give to the filename.
+.br
+It will appear on slack.
+
+.TP
+.B --control-socket CONTROL_SOCKET
+If the path to the socket cannot be auto-detected, this option must be used to indicate the path to connect to the control socket.
+
+.TP
+.B -F SOURCE, --file SOURCE
+When used, instead of reading from stdin, lsi-send will read from the specified file.
+.br
+The --filename option will be ignored in this case, and the real name of the file will be used.
+
+.SH "SEE ALSO"
+.BR localslackirc (1)
+
+
+.SH WEB
+.BR https://github.com/ltworf/localslackirc
+
+.SH AUTHOR
+.nf
+Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
