@@ -1,0 +1,33 @@
+.TH lsi-write 1 "Nov 9, 2023" "Send files to slack"
+
+.SH NAME
+lsi-write
+\- send a message to a slack user or channel.
+
+.SH SYNOPSIS
+lsi-send [OPTIONS] user
+
+.SH DESCRIPTION
+Inspired by the classical write, this works more or less in the same way.
+.br
+It uses the control socket of a localslackirc instance to send messages to a user or channel.
+
+.SS Options:
+.TP
+.B -h, --help
+Show the help message and exit.
+
+.TP
+.B --control-socket CONTROL_SOCKET
+If the path to the socket cannot be auto-detected, this option must be used to indicate the path to connect to the control socket.
+
+.SH "SEE ALSO"
+.BR localslackirc (1), lsi-send (1)
+
+
+.SH WEB
+.BR https://github.com/ltworf/localslackirc
+
+.SH AUTHOR
+.nf
+Salvo "LtWorf" Tomaselli <tiposchi@tiscali.it>
