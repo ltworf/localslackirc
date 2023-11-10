@@ -29,7 +29,7 @@ async def handle_write(ircclient: "IrcClient", reader, writer) -> None:
     dest = (await reader.readline()).strip()
     msg = await reader.read()
 
-    await ircclient.send_slack_message(dest, msg, action=False)
+    await ircclient.send_slack_message(dest, msg, action=False, re_send_to_irc=True)
 
 async def handle_sendfile(ircclient: "IrcClient", reader, writer) -> None:
     dest = (await reader.readline()).strip()

@@ -277,9 +277,9 @@ class Client:
             msg = msg[:-1]
         else:
             action = False
-        await self.send_slack_message(dest, msg, action)
+        await self.send_slack_message(dest, msg, action, False)
 
-    async def send_slack_message(self, dest: bytes, msg: bytes, action: bool) -> None:
+    async def send_slack_message(self, dest: bytes, msg: bytes, action: bool, re_send_to_irc: bool) -> None:
         if dest in self.known_threads:
             dest_object: slack.User|slack.Channel|slack.MessageThread = self.known_threads[dest]
         elif dest.startswith(b'#'):
@@ -302,12 +302,14 @@ class Client:
                 dest_object,
                 message,
                 action,
+                re_send_to_irc,
             )
         else:
             await self.sl_client.send_message(
                 dest_object,
                 message,
                 action,
+                re_send_to_irc
             )
 
     async def _listhandler(self, cmd: bytes) -> None:

@@ -785,13 +785,20 @@ class Slack:
         for i in r:
             self._sent_by_self.remove(i)
 
-    async def send_message(self, channel: Channel|MessageThread, msg: str, action: bool) -> None:
+    async def send_message(self, channel: Channel|MessageThread, msg: str, action: bool, re_send_to_irc: bool) -> None:
         thread_ts = channel.thread_ts if isinstance(channel, MessageThread) else None
-        return await self._send_message(channel.id, msg, action, thread_ts)
+        return await self._send_message(channel.id, msg, action, thread_ts, re_send_to_irc)
 
-    async def _send_message(self, channel_id: str, msg: str, action: bool, thread_ts: Optional[str]) -> None:
+    async def _send_message(self, channel_id: str, msg: str, action: bool, thread_ts: Optional[str], re_send_to_irc: bool) -> None:
         """
         Send a message to a channel or group or whatever
+
+        action must be true for /me messages
+
+        thread_ts must be set to reply in a thread
+
+        re_send_to_irc, if true the message will be forwarded to the IRC client
+        as if it was sent via a different client.
         """
         if action:
             api = 'chat.meMessage'
@@ -813,14 +820,14 @@ class Slack:
                 **kwargs,  # type: ignore
             )
             response = self.tload(r, Response)
-            if response.ok and response.ts:
+            if response.ok and response.ts and not re_send_to_irc:
                 self._sent_by_self.add(response.ts)
                 return
             raise ResponseException(response.error)
         finally:
             self._wsblock -= 1
 
-    async def send_message_to_user(self, user: User, msg: str, action: bool):
+    async def send_message_to_user(self, user: User, msg: str, action: bool, re_send_to_irc: bool):
         """
         Send a message to a user, pass the user id
         """
@@ -855,7 +862,7 @@ class Slack:
 
             self._imcache[user.id] = channel_id
 
-        await self._send_message(channel_id, msg, action, None)
+        await self._send_message(channel_id, msg, action, None, re_send_to_irc)
 
     async def event(self) -> Optional[SlackEvent]:
         """
