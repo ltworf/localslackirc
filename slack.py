@@ -722,7 +722,7 @@ class Slack:
             return None
         for uid, imid in self._imcache.items():
             if im_id == imid:
-                return IM(user=uid, id=imid)
+                return IM(user=uid, id=imid, is_user_deleted=False)
 
         for im in await self.get_ims():
             self._imcache[im.user] = im.id
