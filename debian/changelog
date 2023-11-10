@@ -1,9 +1,9 @@
-localslackirc (1.21-1) UNRELEASED; urgency=medium
+localslackirc (1.21-1) unstable; urgency=medium
 
   * New upstream release
   * Change maintainer field to point to the debian email alias
 
- -- Salvo 'LtWorf' Tomaselli <ltworf@debian.org>  Sun, 24 Sep 2023 19:15:28 +0200
+ -- Salvo 'LtWorf' Tomaselli <ltworf@debian.org>  Fri, 10 Nov 2023 11:22:57 +0100
 
 localslackirc (1.20-1) unstable; urgency=low
 
