@@ -31,7 +31,7 @@ def lsi_send():
     parser.add_argument('-F', '--file', type=str, action='store', dest='source',
                         help='Path of the file to send. If not specified stdin is used', default=None)
     parser.add_argument(type=str, action='store', dest='destination',
-                        help='Path to the localslackirc unix control socket')
+                        help='Destination user or channel')
 
 
     args = parser.parse_args()
