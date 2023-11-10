@@ -180,7 +180,7 @@ class Client:
         if self.settings.autojoin:
             mpim_cutoff = datetime.datetime.utcnow() - MPIM_HIDE_DELAY
 
-            for sl_chan in await self.sl_client.channels():
+            for sl_chan in await self.sl_client.joined_channels():
                 if not sl_chan.is_member:
                     continue
 
@@ -194,7 +194,7 @@ class Client:
                     continue
                 await self._send_chan_info(channel_name_b, sl_chan)
         else:
-            for sl_chan in await self.sl_client.channels():
+            for sl_chan in await self.sl_client.joined_channels():
                 channel_name = '#%s' % sl_chan.name_normalized
                 self.parted_channels.add(channel_name.encode('utf-8'))
 

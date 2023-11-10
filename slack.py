@@ -353,6 +353,7 @@ class Slack:
         self._usermapcache_keys: list[str]
         self._imcache: dict[str, str] = {}
         self._channelscache: list[Channel] = []
+        self._joinedchannelscache: list[Channel] = []
         self._get_members_cache: dict[str, set[str]] = {}
         self._get_members_cache_cursor: dict[str, Optional[str]] = {}
         self._internalevents: list[SlackEvent] = []
@@ -602,20 +603,39 @@ class Slack:
 
     async def channels(self, refresh: bool = False) -> list[Channel]:
         """
-        Returns the list of slack channels
+        Returns the list of all slack channels
+
+        if refresh is set, the local cache is cleared
+
+        This is prone to fail due to being rate limited.
+        """
+        try:
+            return await self._list_channels('conversations.list', refresh, self._channelscache)
+        except Exception:
+            # Best effort, if it failed due to rate limit, just return what
+            # we have got so far and move on.
+            return self._channelscache
+
+    async def joined_channels(self, refresh: bool = False) -> list[Channel]:
+        """
+        Returns the list of joined slack channels
 
         if refresh is set, the local cache is cleared
         """
-        if refresh:
-            self._channelscache.clear()
+        return await self._list_channels('users.conversations', refresh, self._joinedchannelscache)
 
-        if self._channelscache:
-            return self._channelscache
+
+    async def _list_channels(self, method: str, refresh: bool, cacheobj: list[Channel]) -> list[Channel]:
+        if refresh:
+            cacheobj.clear()
+
+        if cacheobj:
+            return cacheobj
 
         cursor = None
         while True:
             r = await self.client.api_call(
-                'conversations.list',
+                method,
                 cursor=cursor,
                 exclude_archived=True,
                 types='public_channel,private_channel,mpim',
@@ -625,14 +645,14 @@ class Slack:
 
             if response.ok:
                 conv = self.tload(r, Conversations)
-                self._channelscache += conv.channels
+                cacheobj += conv.channels
                 # For this API, slack sends an empty string as next cursor, just to show off their programming "skillz"
                 if not conv.response_metadata or not conv.response_metadata.next_cursor:
                     break
                 cursor = conv.response_metadata.next_cursor
             else:
                 raise ResponseException(response.error)
-        return self._channelscache
+        return cacheobj
 
     async def get_channel(self, id_: str) -> Channel:
         """
@@ -640,6 +660,11 @@ class Slack:
 
         raises KeyError if it doesn't exist.
         """
+        for i in range(2):
+            for c in await self.joined_channels(refresh=bool(i)):
+                if c.id == id_:
+                    return c
+        # Failed, we try all the channels
         for i in range(2):
             for c in await self.channels(refresh=bool(i)):
                 if c.id == id_:
@@ -652,6 +677,11 @@ class Slack:
 
         raises KeyError if it doesn't exist.
         """
+        for i in range(2):
+            for c in await self.joined_channels(refresh=bool(i)):
+                if c.name == name:
+                    return c
+        # Failed, we try all the channels
         for i in range(2):
             for c in await self.channels(refresh=bool(i)):
                 if c.name == name:
