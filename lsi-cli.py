@@ -22,6 +22,29 @@ import os
 import sys
 import socket
 
+
+def lsi_write():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--control-socket', type=str, action='store', dest='control_socket', default=None,
+                        help='Path to the localslackirc unix control socket')
+    parser.add_argument(type=str, action='store', dest='destination',
+                        help='Destination user or channel')
+    args = parser.parse_args()
+    control_socket = args.control_socket or find_socket()
+
+    if not control_socket:
+        sys.exit('Please specify the path to the socket')
+
+    while data := sys.stdin.readline():
+        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        s.connect(control_socket)
+
+        s.send(b'write\n')
+        s.send(args.destination.encode('utf8') + b'\n')
+        s.send(data.encode('utf8'))
+        s.shutdown(socket.SHUT_WR)
+
+
 def lsi_send():
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--filename', type=str, action='store', dest='filename',
@@ -31,7 +54,7 @@ def lsi_send():
     parser.add_argument('-F', '--file', type=str, action='store', dest='source',
                         help='Path of the file to send. If not specified stdin is used', default=None)
     parser.add_argument(type=str, action='store', dest='destination',
-                        help='Path to the localslackirc unix control socket')
+                        help='Destination user or channel')
 
 
     args = parser.parse_args()
@@ -72,9 +95,11 @@ def lsi_send():
 
 def main() -> None:
 
-    # match sys.argv[0].split('/')[-1]:
-        # case 'lsi-send':
-    lsi_send()
+    match sys.argv[0].split('/')[-1]:
+        case 'lsi-send':
+            lsi_send()
+        case 'lsi-write':
+            lsi_write()
 
 
 def find_socket() -> None | str:

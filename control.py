@@ -25,6 +25,11 @@ if TYPE_CHECKING:
 
 from log import *
 
+async def handle_write(ircclient: "IrcClient", reader, writer) -> None:
+    dest = (await reader.readline()).strip()
+    msg = await reader.read()
+
+    await ircclient.send_slack_message(dest, msg, action=False, re_send_to_irc=True)
 
 async def handle_sendfile(ircclient: "IrcClient", reader, writer) -> None:
     dest = (await reader.readline()).strip()
@@ -39,8 +44,11 @@ async def handle_sendfile(ircclient: "IrcClient", reader, writer) -> None:
 async def handle_client(ircclient: "IrcClient", reader, writer) -> None:
     command = (await reader.readline()).strip()
 
-    if command == b"sendfile":
-        await handle_sendfile(ircclient, reader, writer)
+    match command:
+        case b"sendfile":
+            await handle_sendfile(ircclient, reader, writer)
+        case b"write":
+            await handle_write(ircclient, reader, writer)
 
 async def listen(socket_path: str, ircclient: "IrcClient") -> None:
     server = await asyncio.start_unix_server(lambda r,w: handle_client(ircclient, r, w), socket_path)

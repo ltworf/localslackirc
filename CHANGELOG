@@ -1,5 +1,6 @@
 1.21
-* Introduce lsi-send to send files from the shell directly
+* Introduce lsi-send to send files from the shell
+* Introduce lsi-write to send messages from the shell
 
 1.20
 * Fix crash when slack sends ids of channels that do not exist
