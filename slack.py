@@ -252,6 +252,7 @@ class User(NamedTuple):
 class IM(NamedTuple):
     id: str
     user: str
+    is_user_deleted: bool
 
 
 class Join(NamedTuple):
@@ -744,7 +745,7 @@ class Slack:
         )
         response = self.tload(r, Response)
         if response.ok:
-            return self.tload(r['channels'], list[IM])
+            return [i for i in self.tload(r['channels'], list[IM]) if not i.is_user_deleted]
         raise ResponseException(response.error)
 
     async def get_user_by_name(self, name: str) -> User:
