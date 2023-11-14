@@ -1,4 +1,10 @@
-localslackirc (1.22-1) UNRELEASED; urgency=medium
+localslackirc (1.23-1) UNRELEASED; urgency=medium
+
+  * New upstream release
+
+ -- Salvo 'LtWorf' Tomaselli <ltworf@debian.org>  Tue, 14 Nov 2023 20:26:31 +0100
+
+localslackirc (1.22-1) unstable; urgency=medium
 
   * New upstream release
 
