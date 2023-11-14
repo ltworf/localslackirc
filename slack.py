@@ -871,25 +871,18 @@ class Slack:
             # channel id is cached
             channel_id = self._imcache[user.id]
         else:
-            # Find the channel id
-            found = False
-            # Iterate over all the existing conversations
-            for i in await self.get_ims():
-                if i.user == user.id:
-                    channel_id = i.id
-                    found = True
-                    break
-            # A conversation does not exist, create one
-            if not found:
-                r = await self.client.api_call(
-                    "im.open",
-                    return_im=True,
-                    user=user.id,
-                )
-                response = self.tload(r, Response)
-                if not response.ok:
-                    raise ResponseException(response.error)
-                channel_id = r['channel']['id']
+            # If the conversation is not in cache, reopen it
+            # It is faster than querying the list of conversations
+            # anyway
+            r = await self.client.api_call(
+                "conversations.open",
+                prevent_creation=False,
+                users=user.id,
+            )
+            response = self.tload(r, Response)
+            if not response.ok:
+                raise ResponseException(response.error)
+            channel_id = r['channel']['id']
 
             self._imcache[user.id] = channel_id
 

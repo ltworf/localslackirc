@@ -67,6 +67,7 @@ class Replies(Enum):
     RPL_ENDOFNAMES = 366
     ERR_NOSUCHNICK = 401
     ERR_NOSUCHCHANNEL = 403
+    ERR_CANNOTSENDTOCHAN = 404
     ERR_UNKNOWNCOMMAND = 421
     ERR_FILEERROR = 424
     ERR_ERRONEUSNICKNAME = 432
@@ -297,20 +298,23 @@ class Client:
 
         message = await self._addmagic(msg.decode('utf8'), dest_object)
 
-        if isinstance(dest_object, slack.User):
-            await self.sl_client.send_message_to_user(
-                dest_object,
-                message,
-                action,
-                re_send_to_irc,
-            )
-        else:
-            await self.sl_client.send_message(
-                dest_object,
-                message,
-                action,
-                re_send_to_irc
-            )
+        try:
+            if isinstance(dest_object, slack.User):
+                await self.sl_client.send_message_to_user(
+                    dest_object,
+                    message,
+                    action,
+                    re_send_to_irc,
+                )
+            else:
+                await self.sl_client.send_message(
+                    dest_object,
+                    message,
+                    action,
+                    re_send_to_irc
+                )
+        except Exception as e:
+            await self._sendreply(Replies.ERR_CANNOTSENDTOCHAN, f'Message sending failed: {e}')
 
     async def _listhandler(self, cmd: bytes) -> None:
         for c in await self.sl_client.channels(refresh=True):
