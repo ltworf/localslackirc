@@ -1,3 +1,9 @@
+1.22
+* Fetch only the list of joined channels if the full list
+  is not needed.
+  Thanks to: Jiri Bohac <jbohac@suse.cz>
+* Ignore chats with deleted users when downloading history
+
 1.21
 * Introduce lsi-send to send files from the shell
 * Introduce lsi-write to send messages from the shell
