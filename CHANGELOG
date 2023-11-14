@@ -3,6 +3,7 @@
   is not needed.
   Thanks to: Jiri Bohac <jbohac@suse.cz>
 * Ignore chats with deleted users when downloading history
+* Remove calls to removed API calls
 
 1.21
 * Introduce lsi-send to send files from the shell
