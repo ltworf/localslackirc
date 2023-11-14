@@ -1,3 +1,5 @@
+1.23
+
 1.22
 * Fetch only the list of joined channels if the full list
   is not needed.
