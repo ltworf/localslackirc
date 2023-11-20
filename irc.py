@@ -172,6 +172,10 @@ class Client:
         await self._sendreply(2, 'Your nickname must be: %s' % self.sl_client.login_info.self.name)
         await self._sendreply(2, f'Version: {VERSION}')
         await self._sendreply(Replies.RPL_LUSERCLIENT, 'There are 1 users and 0 services on 1 server')
+        await self._sendreply(2, '============= Extra IRC commands supported =============')
+        await self._sendreply(2, '/annoy')
+        await self._sendreply(2, '/autoreact')
+        await self._sendreply(2, '/sendfile')
 
         if self.settings.autojoin and not self.settings.nouserlist:
             # We're about to load many users for each chan; instead of requesting each
@@ -325,6 +329,33 @@ class Client:
     async def _modehandler(self, cmd: bytes) -> None:
         params = cmd.split(b' ', 2)
         await self._sendreply(Replies.RPL_CHANNELMODEIS, '', [params[1], '+'])
+
+    async def _autoreacthandler(self, cmd: bytes) -> None:
+        params = cmd.split(b' ')
+        params.pop(0)
+
+        try:
+            username = params.pop(0).decode('utf8')
+            probability = float(params.pop(0))
+
+            if params:
+                reaction = msgparsing.get_emoji_code(params.pop(0).decode('utf8'))
+            else:
+                reaction = 'thumbsup'
+
+            if params:
+                duration = int(params.pop(0))
+            else:
+                duration = 10
+
+            # async def add_autoreact(self, username: str, reaction: str, probability: float, expiration: int) -> None:
+            await self.sl_client.add_autoreact(username, reaction, probability, time.time() + duration * 60 )
+        except Exception as e:
+            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Syntax: /autoreact user probability [reaction] [duration]')
+            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, f'error: {e}')
+            return
+        await self._sendreply(0, f'Will react to {username} for {duration} minutes')
+
 
     async def _annoyhandler(self, cmd: bytes) -> None:
         params = cmd.split(b' ')
@@ -683,7 +714,8 @@ class Client:
             text=seddiff(sl_ev.previous.text, sl_ev.current.text),
             channel=sl_ev.channel,
             user=sl_ev.previous.user,
-            thread_ts=sl_ev.previous.thread_ts
+            thread_ts=sl_ev.previous.thread_ts,
+            ts=sl_ev.previous.ts,
         )
 
         await self._message(diffmsg)
@@ -841,6 +873,7 @@ class Client:
             b'INVITE': self._invitehandler,
             b'SENDFILE': self._sendfilehandler,
             b'ANNOY': self._annoyhandler,
+            b'AUTOREACT': self._autoreacthandler,
             b'QUIT': self._quithandler,
             #CAP LS
             b'USERHOST': self._userhosthandler,

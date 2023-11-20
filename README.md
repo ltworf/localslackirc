@@ -172,6 +172,9 @@ They are mapped as irc channels that get automatically joined when a message is 
 Until a thread has some activity you can't write to it.
 They are only tested for channels, not private groups or chats.
 
+## Reacting to messages
+Since I don't feel like manually wasting time to do it, a very nice `/autoreact` command is available to automate reacting.
+
 ## Instructions for irssi
 
 If you need to refresh your memory about connecting in general, this is a good guide: https://pthree.org/2010/02/02/irssis-channel-network-server-and-connect-what-it-means/

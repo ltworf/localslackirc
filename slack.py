@@ -143,6 +143,7 @@ class Message:
     channel: str  # The channel id
     user: str  # The user id
     text: str
+    ts: float
     thread_ts: Optional[str] = None
     files: list[File] = field(default_factory=list)
 
@@ -150,6 +151,7 @@ class Message:
 class NoChanMessage(NamedTuple):
     user: str
     text: str
+    ts: float
     thread_ts: Optional[str] = None
 
 
@@ -338,6 +340,22 @@ class SlackStatus:
     """
     last_timestamp: float = 0.0
 
+
+class Autoreaction(NamedTuple):
+    user_id: str
+    reaction: str
+    probability: float
+    expiration: float
+
+    @property
+    def expired(self) -> bool:
+        return time() > self.expiration
+
+    def random_reaction(self) -> bool:
+        import random
+        return random.random() < self.probability
+
+
 class Slack:
     def __init__(self, token: str, cookie: Optional[str], previous_status: Optional[bytes]) -> None:
         """
@@ -362,6 +380,7 @@ class Slack:
         self._wsblock: int = 0 # Semaphore to block the socket and avoid events being received before their API call ended.
         self.login_info: Optional[LoginInfo] = None
         self.loader = dataloader.Loader()
+        self._autoreactions: list[Autoreaction] = []
 
         if previous_status is None:
             self._status = SlackStatus()
@@ -484,6 +503,7 @@ class Slack:
                             user=msg.user,
                             thread_ts=msg.thread_ts,
                             files=msg.files,
+                            ts=msg.ts,
                         ))
                     elif isinstance(msg, HistoryBotMessage):
                         self._internalevents.append(MessageBot(
@@ -531,6 +551,53 @@ class Slack:
         else:
             ch_id = channel
         await self.client.wspacket(type='typing', channel=ch_id)
+
+    async def add_reaction(self, msg: Message, reaction: str) -> None:
+        r = await self.client.api_call(
+            'reactions.add',
+            channel=msg.channel,
+            timestamp=msg.ts,
+            name=reaction,
+        )
+        response = self.tload(r, Response)
+        if not response.ok:
+            raise ResponseException(response.error)
+
+    async def add_autoreact(self, username: str, reaction: str, probability: float, expiration: float) -> None:
+
+        if probability > 1 or probability < 0:
+            raise ValueError(f'Probability must be comprised between 0 and 1')
+        user_id = (await self.get_user_by_name(username)).id
+
+        a = Autoreaction(
+            user_id=user_id,
+            reaction=reaction,
+            probability=probability,
+            expiration=expiration,
+        )
+
+        if a.expired:
+            raise ValueError('Expired')
+
+        self._autoreactions.append(a)
+
+    async def _autoreact(self, msg: Message) -> None:
+        for i in self._autoreactions:
+            # Clean up
+            if i.expired:
+                self._autoreactions.remove(i)
+                return
+
+            if i.user_id != msg.user:
+                continue
+
+            if i.random_reaction():
+                try:
+                    await self.add_reaction(msg, i.reaction)
+                except:
+                    # Remove reactions that fail
+                    self._autoreactions.remove(i)
+                    return
 
     async def topic(self, channel: Channel, topic: str) -> None:
         r = await self.client.api_call('conversations.setTopic', channel=channel.id, topic=topic)
@@ -914,10 +981,6 @@ class Slack:
             if ts > self._status.last_timestamp:
                 self._status.last_timestamp = ts
 
-            if ts in self._sent_by_self:
-                self._sent_by_self.remove(ts)
-                continue
-
             if t in USELESS_EVENTS:
                 continue
 
@@ -951,7 +1014,14 @@ class Slack:
                     # the other user, and prepend them with "I say: "
                     im = await self.get_im(msg.channel)
                     if im and im.user != msg.user:
-                        msg = Message(user=im.user, text='I say: ' + msg.text, channel=im.id, thread_ts=msg.thread_ts)
+                        msg = Message(user=im.user, text='I say: ' + msg.text, channel=im.id, thread_ts=msg.thread_ts, ts=msg.ts)
+
+                    await self._autoreact(msg)
+
+                    if ts in self._sent_by_self:
+                        self._sent_by_self.remove(ts)
+                        continue
+
                     if subt == 'me_message':
                         return ActionMessage(*msg)  # type: ignore
                     else:

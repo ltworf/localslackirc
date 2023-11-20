@@ -191,6 +191,18 @@ This means that whenever a typing event is received from that user, on any chann
 .br
 duration is the duration of the annoyance in minutes. It defaults to 10.
 .SS
+.TP
+.B /autoreact user probability [reaction] [duration]
+To automate reacting to messages, this nice feature is available.
+.br
+user is the username of the user that we want to react to.
+.br
+probability is a number between 0 and 1, to decide how much to react.
+.br
+reaction is the reaction to use. The default is "thumbsup".
+.br
+duration indicates when to stop doing it, in minutes. Defaults to 10.
+.SS
 
 .SH "SEE ALSO"
 .BR lsi-send (1), lsi-write (1)

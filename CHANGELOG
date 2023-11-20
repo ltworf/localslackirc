@@ -1,4 +1,6 @@
 1.23
+* Add /autoreact command to automatically put reactions
+  to messages.
 
 1.22
 * Fetch only the list of joined channels if the full list
