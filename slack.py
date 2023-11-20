@@ -143,6 +143,7 @@ class Message:
     channel: str  # The channel id
     user: str  # The user id
     text: str
+    ts: float
     thread_ts: Optional[str] = None
     files: list[File] = field(default_factory=list)
 
@@ -150,6 +151,7 @@ class Message:
 class NoChanMessage(NamedTuple):
     user: str
     text: str
+    ts: float
     thread_ts: Optional[str] = None
 
 
@@ -484,6 +486,7 @@ class Slack:
                             user=msg.user,
                             thread_ts=msg.thread_ts,
                             files=msg.files,
+                            ts=msg.ts,
                         ))
                     elif isinstance(msg, HistoryBotMessage):
                         self._internalevents.append(MessageBot(

@@ -683,7 +683,8 @@ class Client:
             text=seddiff(sl_ev.previous.text, sl_ev.current.text),
             channel=sl_ev.channel,
             user=sl_ev.previous.user,
-            thread_ts=sl_ev.previous.thread_ts
+            thread_ts=sl_ev.previous.thread_ts,
+            ts=sl_ev.previous.ts,
         )
 
         await self._message(diffmsg)
