@@ -535,6 +535,17 @@ class Slack:
             ch_id = channel
         await self.client.wspacket(type='typing', channel=ch_id)
 
+    async def add_reaction(self, msg: Message, reaction: str) -> None:
+        r = await self.client.api_call(
+            'reactions.add',
+            channel=msg.channel,
+            timestamp=msg.ts,
+            name=reaction,
+        )
+        response = self.tload(r, Response)
+        if not response.ok:
+            raise ResponseException(response.error)
+
     async def topic(self, channel: Channel, topic: str) -> None:
         r = await self.client.api_call('conversations.setTopic', channel=channel.id, topic=topic)
         response: Response = self.tload(r, Response)
