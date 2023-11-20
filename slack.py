@@ -592,7 +592,12 @@ class Slack:
                 continue
 
             if i.random_reaction():
-                await self.add_reaction(msg, i.reaction)
+                try:
+                    await self.add_reaction(msg, i.reaction)
+                except:
+                    # Remove reactions that fail
+                    self._autoreactions.remove(i)
+                    return
 
     async def topic(self, channel: Channel, topic: str) -> None:
         r = await self.client.api_call('conversations.setTopic', channel=channel.id, topic=topic)
