@@ -326,6 +326,32 @@ class Client:
         params = cmd.split(b' ', 2)
         await self._sendreply(Replies.RPL_CHANNELMODEIS, '', [params[1], '+'])
 
+    async def _autoreacthandler(self, cmd: bytes) -> None:
+        params = cmd.split(b' ')
+        params.pop(0)
+
+        try:
+            username = params.pop(0).decode('utf8')
+            probability = float(params.pop(0))
+
+            if params:
+                reaction = params.pop(0).decode('utf8')
+            else:
+                reaction = 'thumbsup'
+
+            if params:
+                duration = int(params.pop(0))
+            else:
+                duration = 10
+
+            # async def add_autoreact(self, username: str, reaction: str, probability: float, expiration: int) -> None:
+            await self.sl_client.add_autoreact(username, reaction, probability, time.time() + duration * 60 )
+        except Exception as e:
+            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Syntax: /autoreact user probability [reaction] [duration]')
+            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, f'error: {e}')
+        await self._sendreply(0, f'Will react to {username} for {duration} minutes')
+
+
     async def _annoyhandler(self, cmd: bytes) -> None:
         params = cmd.split(b' ')
         params.pop(0)
@@ -842,6 +868,7 @@ class Client:
             b'INVITE': self._invitehandler,
             b'SENDFILE': self._sendfilehandler,
             b'ANNOY': self._annoyhandler,
+            b'AUTOREACT': self._autoreacthandler,
             b'QUIT': self._quithandler,
             #CAP LS
             b'USERHOST': self._userhosthandler,
