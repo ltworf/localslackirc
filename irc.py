@@ -172,6 +172,10 @@ class Client:
         await self._sendreply(2, 'Your nickname must be: %s' % self.sl_client.login_info.self.name)
         await self._sendreply(2, f'Version: {VERSION}')
         await self._sendreply(Replies.RPL_LUSERCLIENT, 'There are 1 users and 0 services on 1 server')
+        await self._sendreply(2, '============= Extra IRC commands supported =============')
+        await self._sendreply(2, '/annoy')
+        await self._sendreply(2, '/autoreact')
+        await self._sendreply(2, '/sendfile')
 
         if self.settings.autojoin and not self.settings.nouserlist:
             # We're about to load many users for each chan; instead of requesting each
