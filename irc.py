@@ -339,7 +339,7 @@ class Client:
             probability = float(params.pop(0))
 
             if params:
-                reaction = params.pop(0).decode('utf8')
+                reaction = msgparsing.get_emoji_code(params.pop(0).decode('utf8'))
             else:
                 reaction = 'thumbsup'
 

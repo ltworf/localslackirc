@@ -20,9 +20,11 @@ from enum import Enum
 from typing import Iterable, NamedTuple, Optional
 
 try:
-    from emoji import emojize  # type: ignore
+    from emoji import emojize, demojize # type: ignore
 except ModuleNotFoundError:
     def emojize(string:str, *args, **kwargs) -> str:  # type: ignore
+        return string
+    def demojize(string, str, delimiters: tuple[str, str]) -> str:  # type: ignore
         return string
 
 
@@ -38,7 +40,15 @@ __all__ = [
     'Itemkind',
     'PreBlock',
     'SpecialItem',
+    'get_emoji_code',
 ]
+
+
+def get_emoji_code(msg: str) -> str:
+    '''
+    Pass a single emoji and get the code without delimiters.
+    '''
+    return demojize(msg, ('', ''))
 
 
 def preblocks(msg: str) -> Iterable[tuple[str, bool]]:
