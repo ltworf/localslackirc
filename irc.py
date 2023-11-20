@@ -353,6 +353,7 @@ class Client:
         except Exception as e:
             await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Syntax: /autoreact user probability [reaction] [duration]')
             await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, f'error: {e}')
+            return
         await self._sendreply(0, f'Will react to {username} for {duration} minutes')
 
 
