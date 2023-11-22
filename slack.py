@@ -331,16 +331,6 @@ SlackEvent = (
 )
 
 
-@dataclass
-class SlackStatus:
-    """
-    Not related to the slack API.
-    This is a structure used internally by this module to
-    save the status on disk.
-    """
-    last_timestamp: float = 0.0
-
-
 class Autoreaction(NamedTuple):
     user_id: str
     reaction: str
@@ -354,6 +344,17 @@ class Autoreaction(NamedTuple):
     def random_reaction(self) -> bool:
         import random
         return random.random() < self.probability
+
+
+@dataclass
+class SlackStatus:
+    """
+    Not related to the slack API.
+    This is a structure used internally by this module to
+    save the status on disk.
+    """
+    last_timestamp: float = 0.0
+    autoreactions: list[Autoreaction] = field(default_factory=list)
 
 
 class Slack:
@@ -380,7 +381,6 @@ class Slack:
         self._wsblock: int = 0 # Semaphore to block the socket and avoid events being received before their API call ended.
         self.login_info: Optional[LoginInfo] = None
         self.loader = dataloader.Loader()
-        self._autoreactions: list[Autoreaction] = []
 
         if previous_status is None:
             self._status = SlackStatus()
@@ -579,13 +579,13 @@ class Slack:
         if a.expired:
             raise ValueError('Expired')
 
-        self._autoreactions.append(a)
+        self._status.autoreactions.append(a)
 
     async def _autoreact(self, msg: Message) -> None:
-        for i in self._autoreactions:
+        for i in self._status.autoreactions:
             # Clean up
             if i.expired:
-                self._autoreactions.remove(i)
+                self._status.autoreactions.remove(i)
                 return
 
             if i.user_id != msg.user:
@@ -596,7 +596,7 @@ class Slack:
                     await self.add_reaction(msg, i.reaction)
                 except:
                     # Remove reactions that fail
-                    self._autoreactions.remove(i)
+                    self._status.autoreactions.remove(i)
                     return
 
     async def topic(self, channel: Channel, topic: str) -> None:
