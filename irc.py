@@ -128,7 +128,6 @@ class Client:
         self._usersent = False # Used to hold all events until the IRC client sends the initial USER message
         self._held_events: list[slack.SlackEvent] = []
         self._mentions_regex_cache: dict[str, Optional[re.Pattern]] = {}  # Cache for the regexp to perform mentions. Key is channel id
-        self._annoy_users: dict[str, int] = {} # Users to annoy pretending to type when they type
 
     def get_mention_str(self) -> str:
         '''
@@ -174,7 +173,11 @@ class Client:
         await self._sendreply(Replies.RPL_LUSERCLIENT, 'There are 1 users and 0 services on 1 server')
         await self._sendreply(2, '============= Extra IRC commands supported =============')
         await self._sendreply(2, '/annoy')
+        await self._sendreply(2, '/dropannoy')
+        await self._sendreply(2, '/listannoy')
         await self._sendreply(2, '/autoreact')
+        await self._sendreply(2, '/dropautoreact')
+        await self._sendreply(2, '/listautoreact')
         await self._sendreply(2, '/sendfile')
 
         if self.settings.autojoin and not self.settings.nouserlist:
@@ -348,8 +351,11 @@ class Client:
             else:
                 duration = 10
 
+            if duration < 1 and duration != -1:
+                raise ValueError('Duration must be >0 or = -1')
+
             # async def add_autoreact(self, username: str, reaction: str, probability: float, expiration: int) -> None:
-            await self.sl_client.add_autoreact(username, reaction, probability, time.time() + duration * 60 )
+            await self.sl_client.add_autoreact(username, reaction, probability, time.time() + duration * 60 if duration != -1 else -1)
         except Exception as e:
             await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Syntax: /autoreact user probability [reaction] [duration]')
             await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, f'error: {e}')
@@ -364,22 +370,58 @@ class Client:
         try:
             user = params.pop(0).decode('utf8')
             if params:
-                duration = abs(int(params.pop()))
+                duration = int(params.pop())
             else:
                 duration = 10 # 10 minutes default
-        except Exception:
-            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Syntax: /annoy user [duration]')
-            return
 
-        try:
-            user_id = (await self.sl_client.get_user_by_name(user)).id
+            if duration < 1 and duration != -1:
+                raise ValueError("Duration must be positive or -1")
+
+            await self.sl_client.add_annoy(user, time.time() + (duration * 60) if duration > 0 else duration)
+
         except KeyError:
             await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find user: {user}')
             return
-
-        self._annoy_users[user_id] = int(time.time()) + (duration * 60)
+        except Exception:
+            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Syntax: /annoy user [duration]')
+            return
         await self._sendreply(0, f'Will annoy {user} for {duration} minutes')
 
+    async def _dropannoyhandler(self, cmd: bytes) -> None:
+        try:
+            user = cmd.split(b' ', 1)[1].decode('utf8')
+            await self.sl_client.drop_annoy(user)
+
+        except KeyError:
+            await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find user: {user}')
+            return
+        except Exception:
+            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Syntax: /dropannoy user')
+            return
+        await self._sendreply(0, f'No longer annoying {user}')
+
+    async def _dropautoreacthandler(self, cmd: bytes) -> None:
+        try:
+            user = cmd.split(b' ', 1)[1].decode('utf8')
+            await self.sl_client.drop_autoreact(user)
+
+        except KeyError:
+            await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find user: {user}')
+            return
+        except Exception:
+            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Syntax: /dropautoreact user')
+            return
+        await self._sendreply(0, f'No longer reacting to {user}')
+
+    async def _listannoyhandler(self, _: bytes) -> None:
+        for i in await self.sl_client.get_annoy():
+            await self._sendreply(0, f'Annoying {i}')
+
+    async def _listautoreacthandler(self, _: bytes) -> None:
+        for k, v in (await self.sl_client.get_autoreact()).items():
+            await self._sendreply(0, f'Reactions for {k}')
+            for i in v:
+                await self._sendreply(0, str(i))
 
     async def _sendfilehandler(self, cmd: bytes) -> None:
         #/sendfile #destination filename
@@ -838,15 +880,6 @@ class Client:
         elif isinstance(sl_ev, slack.GroupJoined):
             channel_name = '#%s' % sl_ev.channel.name_normalized
             await self._send_chan_info(channel_name.encode('utf-8'), sl_ev.channel)
-        elif isinstance(sl_ev, slack.UserTyping):
-            if sl_ev.user not in self._annoy_users:
-                return
-            if time.time() > self._annoy_users[sl_ev.user]:
-                del self._annoy_users[sl_ev.user]
-                await self._sendreply(0, f'No longer annoying {(await self.sl_client.get_user(sl_ev.user)).name}')
-                return
-            await self.sl_client.typing(sl_ev.channel)
-
 
     async def command(self, cmd: bytes) -> None:
         if b' ' in cmd:
@@ -873,7 +906,11 @@ class Client:
             b'INVITE': self._invitehandler,
             b'SENDFILE': self._sendfilehandler,
             b'ANNOY': self._annoyhandler,
+            b'LISTANNOY': self._listannoyhandler,
+            b'DROPANNOY': self._dropannoyhandler,
             b'AUTOREACT': self._autoreacthandler,
+            b'LISTAUTOREACT': self._listautoreacthandler,
+            b'DROPAUTOREACT': self._dropautoreacthandler,
             b'QUIT': self._quithandler,
             #CAP LS
             b'USERHOST': self._userhosthandler,

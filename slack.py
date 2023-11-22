@@ -331,6 +331,25 @@ SlackEvent = (
 )
 
 
+class Autoreaction(NamedTuple):
+    reaction: str
+    probability: float
+    expiration: float
+
+    @property
+    def expired(self) -> bool:
+        if self.expiration == -1:
+            return False
+        return time() > self.expiration
+
+    def random_reaction(self) -> bool:
+        import random
+        return random.random() < self.probability
+
+    def __str__(self):
+        return f'{self.reaction} at {self.probability * 100}%'
+
+
 @dataclass
 class SlackStatus:
     """
@@ -339,21 +358,8 @@ class SlackStatus:
     save the status on disk.
     """
     last_timestamp: float = 0.0
-
-
-class Autoreaction(NamedTuple):
-    user_id: str
-    reaction: str
-    probability: float
-    expiration: float
-
-    @property
-    def expired(self) -> bool:
-        return time() > self.expiration
-
-    def random_reaction(self) -> bool:
-        import random
-        return random.random() < self.probability
+    autoreactions: dict[str, list[Autoreaction]] = field(default_factory=dict)
+    annoy: dict[str, float] = field(default_factory=dict)
 
 
 class Slack:
@@ -369,7 +375,6 @@ class Slack:
         self.client = SlackClient(token, cookie)
         self._usercache: dict[str, User] = {}
         self._usermapcache: dict[str, User] = {}
-        self._usermapcache_keys: list[str]
         self._imcache: dict[str, str] = {}
         self._channelscache: list[Channel] = []
         self._joinedchannelscache: list[Channel] = []
@@ -380,7 +385,6 @@ class Slack:
         self._wsblock: int = 0 # Semaphore to block the socket and avoid events being received before their API call ended.
         self.login_info: Optional[LoginInfo] = None
         self.loader = dataloader.Loader()
-        self._autoreactions: list[Autoreaction] = []
 
         if previous_status is None:
             self._status = SlackStatus()
@@ -563,6 +567,33 @@ class Slack:
         if not response.ok:
             raise ResponseException(response.error)
 
+    async def add_annoy(self, username, expiration: float) -> None:
+        user_id = (await self.get_user_by_name(username)).id
+        self._status.annoy[user_id] = expiration
+
+    async def drop_annoy(self, username: str) -> None:
+        user_id = (await self.get_user_by_name(username)).id
+        del self._status.annoy[user_id]
+
+    async def drop_autoreact(self, username: str) -> None:
+        user_id = (await self.get_user_by_name(username)).id
+        del self._status.autoreactions[user_id]
+
+    async def get_annoy(self) -> list[str]:
+        r = []
+        for i in self._status.annoy.keys():
+            try:
+                u = await self.get_user(i)
+                r.append(u.name)
+            except KeyError:
+                # The user is gone, expire it
+                self._status.annoy[i] = 1
+        r.sort()
+        return r
+
+    async def get_autoreact(self) -> dict[str, list[Autoreaction]]:
+        return {(await self.get_user(k)).name: v for k, v in self._status.autoreactions.items()}
+
     async def add_autoreact(self, username: str, reaction: str, probability: float, expiration: float) -> None:
 
         if probability > 1 or probability < 0:
@@ -570,7 +601,6 @@ class Slack:
         user_id = (await self.get_user_by_name(username)).id
 
         a = Autoreaction(
-            user_id=user_id,
             reaction=reaction,
             probability=probability,
             expiration=expiration,
@@ -579,24 +609,31 @@ class Slack:
         if a.expired:
             raise ValueError('Expired')
 
-        self._autoreactions.append(a)
+        if user_id not in self._status.autoreactions:
+            self._status.autoreactions[user_id] = []
+        self._status.autoreactions[user_id].append(a)
+
+    async def _annoy(self, typing: UserTyping) -> None:
+        if typing.user not in self._status.annoy:
+            return
+        expiration = self._status.annoy[typing.user]
+        if expiration > 0 and time() > expiration:
+            del self._status.annoy[typing.user]
+        await self.typing(typing.channel)
 
     async def _autoreact(self, msg: Message) -> None:
-        for i in self._autoreactions:
+        for i in (rlist := self._status.autoreactions.get(msg.user, [])):
             # Clean up
             if i.expired:
-                self._autoreactions.remove(i)
+                rlist.remove(i)
                 return
-
-            if i.user_id != msg.user:
-                continue
 
             if i.random_reaction():
                 try:
                     await self.add_reaction(msg, i.reaction)
                 except:
                     # Remove reactions that fail
-                    self._autoreactions.remove(i)
+                    rlist.remove(i)
                     return
 
     async def topic(self, channel: Channel, topic: str) -> None:
@@ -828,7 +865,6 @@ class Slack:
             for user in self.tload(r['members'], list[User]):
                 self._usercache[user.id] = user
                 self._usermapcache[user.name] = user
-            self._usermapcache_keys = list()
 
     async def get_user(self, id_: str) -> User:
         """
@@ -844,8 +880,6 @@ class Slack:
         if response.ok:
             u = self.tload(r['user'], User)
             self._usercache[id_] = u
-            if u.name not in self._usermapcache:
-                self._usermapcache_keys = list()
             self._usermapcache[u.name] = u
             return u
         else:
@@ -999,6 +1033,9 @@ class Slack:
                     self._get_members_cache[ev.channel].add(ev.user)
                 else:
                     self._get_members_cache[ev.channel].discard(ev.user)
+            elif isinstance(ev, UserTyping):
+                await self._annoy(ev)
+                continue
 
             if ev:
                 return ev
