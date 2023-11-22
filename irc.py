@@ -383,6 +383,41 @@ class Client:
             return
         await self._sendreply(0, f'Will annoy {user} for {duration} minutes')
 
+    async def _dropannoyhandler(self, cmd: bytes) -> None:
+        try:
+            user = cmd.split(b' ', 1)[1].decode('utf8')
+            await self.sl_client.drop_annoy(user)
+
+        except KeyError:
+            await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find user: {user}')
+            return
+        except Exception:
+            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Syntax: /dropannoy user')
+            return
+        await self._sendreply(0, f'No longer annoying {user}')
+
+    async def _dropautoreacthandler(self, cmd: bytes) -> None:
+        try:
+            user = cmd.split(b' ', 1)[1].decode('utf8')
+            await self.sl_client.drop_autoreact(user)
+
+        except KeyError:
+            await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find user: {user}')
+            return
+        except Exception:
+            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Syntax: /dropannoy user')
+            return
+        await self._sendreply(0, f'No longer annoying {user}')
+
+    async def _listannoyhandler(self, _: bytes) -> None:
+        for i in await self.sl_client.get_annoy():
+            await self._sendreply(0, f'Annoying {i}')
+
+    async def _listautoreacthandler(self, _: bytes) -> None:
+        for k, v in (await self.sl_client.get_autoreact()).items():
+            await self._sendreply(0, f'Reactions for {k}')
+            for i in v:
+                await self._sendreply(0, str(v))
 
     async def _sendfilehandler(self, cmd: bytes) -> None:
         #/sendfile #destination filename
@@ -867,7 +902,11 @@ class Client:
             b'INVITE': self._invitehandler,
             b'SENDFILE': self._sendfilehandler,
             b'ANNOY': self._annoyhandler,
+            b'LISTANNOY': self._listannoyhandler,
+            b'DROPANNOY': self._dropannoyhandler,
             b'AUTOREACT': self._autoreacthandler,
+            b'LISTAUTOREACT': self._listautoreacthandler,
+            b'DROPAUTOREACT': self._dropautoreacthandler,
             b'QUIT': self._quithandler,
             #CAP LS
             b'USERHOST': self._userhosthandler,

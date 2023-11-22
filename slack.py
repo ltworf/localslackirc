@@ -346,6 +346,9 @@ class Autoreaction(NamedTuple):
         import random
         return random.random() < self.probability
 
+    def __str__(self):
+        return f'{self.reaction} at {self.probability * 100}%'
+
 
 @dataclass
 class SlackStatus:
@@ -569,6 +572,24 @@ class Slack:
         user_id = (await self.get_user_by_name(username)).id
         self._status.annoy[user_id] = expiration
 
+    async def drop_annoy(self, username: str) -> None:
+        user_id = (await self.get_user_by_name(username)).id
+        del self._status.annoy[user_id]
+
+    async def drop_autoreact(self, username: str) -> None:
+        user_id = (await self.get_user_by_name(username)).id
+        del self._status.autoreactions[user_id]
+
+    async def get_annoy(self) -> list[str]:
+        r = []
+        for i in self._status.annoy.keys():
+            u = await self.get_user_by_name(i)
+            r.append(u.name)
+        r.sort()
+        return r
+
+    async def get_autoreact(self) -> dict[str, list[Autoreaction]]:
+        return self._status.autoreactions
 
     async def add_autoreact(self, username: str, reaction: str, probability: float, expiration: float) -> None:
 
