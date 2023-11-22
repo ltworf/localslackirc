@@ -332,7 +332,6 @@ SlackEvent = (
 
 
 class Autoreaction(NamedTuple):
-    user_id: str
     reaction: str
     probability: float
     expiration: float
@@ -356,7 +355,7 @@ class SlackStatus:
     save the status on disk.
     """
     last_timestamp: float = 0.0
-    autoreactions: list[Autoreaction] = field(default_factory=list)
+    autoreactions: dict[str, list[Autoreaction]] = field(default_factory=dict)
 
 
 class Slack:
@@ -572,7 +571,6 @@ class Slack:
         user_id = (await self.get_user_by_name(username)).id
 
         a = Autoreaction(
-            user_id=user_id,
             reaction=reaction,
             probability=probability,
             expiration=expiration,
@@ -581,24 +579,21 @@ class Slack:
         if a.expired:
             raise ValueError('Expired')
 
-        self._status.autoreactions.append(a)
+        self._status.autoreactions.get(user_id, []).append(a)
 
     async def _autoreact(self, msg: Message) -> None:
-        for i in self._status.autoreactions:
+        for i in (rlist := self._status.autoreactions.get(msg.user, [])):
             # Clean up
             if i.expired:
-                self._status.autoreactions.remove(i)
+                rlist.remove(i)
                 return
-
-            if i.user_id != msg.user:
-                continue
 
             if i.random_reaction():
                 try:
                     await self.add_reaction(msg, i.reaction)
                 except:
                     # Remove reactions that fail
-                    self._status.autoreactions.remove(i)
+                    rlist.remove(i)
                     return
 
     async def topic(self, channel: Channel, topic: str) -> None:
