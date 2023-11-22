@@ -409,9 +409,9 @@ class Client:
             await self._sendreply(Replies.ERR_NOSUCHCHANNEL, f'Unable to find user: {user}')
             return
         except Exception:
-            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Syntax: /dropannoy user')
+            await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Syntax: /dropautoreact user')
             return
-        await self._sendreply(0, f'No longer annoying {user}')
+        await self._sendreply(0, f'No longer reacting to {user}')
 
     async def _listannoyhandler(self, _: bytes) -> None:
         for i in await self.sl_client.get_annoy():
