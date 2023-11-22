@@ -173,7 +173,11 @@ class Client:
         await self._sendreply(Replies.RPL_LUSERCLIENT, 'There are 1 users and 0 services on 1 server')
         await self._sendreply(2, '============= Extra IRC commands supported =============')
         await self._sendreply(2, '/annoy')
+        await self._sendreply(2, '/dropannoy')
+        await self._sendreply(2, '/listannoy')
         await self._sendreply(2, '/autoreact')
+        await self._sendreply(2, '/dropautoreact')
+        await self._sendreply(2, '/listautoreact')
         await self._sendreply(2, '/sendfile')
 
         if self.settings.autojoin and not self.settings.nouserlist:

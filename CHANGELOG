@@ -1,4 +1,10 @@
 1.24
+* Add /dropautoreact command
+* Add /listautoreact command
+* Add /listannoy command
+* Add /dropannoy command
+* Store annoy and autoreact in state, so they are preserved
+* Allow unlimited timeout for annoy and autoreact
 
 1.23
 * Add /autoreact command to automatically put reactions
