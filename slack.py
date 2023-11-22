@@ -375,7 +375,6 @@ class Slack:
         self.client = SlackClient(token, cookie)
         self._usercache: dict[str, User] = {}
         self._usermapcache: dict[str, User] = {}
-        self._usermapcache_keys: list[str]
         self._imcache: dict[str, str] = {}
         self._channelscache: list[Channel] = []
         self._joinedchannelscache: list[Channel] = []
@@ -864,7 +863,6 @@ class Slack:
             for user in self.tload(r['members'], list[User]):
                 self._usercache[user.id] = user
                 self._usermapcache[user.name] = user
-            self._usermapcache_keys = list()
 
     async def get_user(self, id_: str) -> User:
         """
@@ -880,8 +878,6 @@ class Slack:
         if response.ok:
             u = self.tload(r['user'], User)
             self._usercache[id_] = u
-            if u.name not in self._usermapcache:
-                self._usermapcache_keys = list()
             self._usermapcache[u.name] = u
             return u
         else:
