@@ -592,7 +592,7 @@ class Slack:
         return r
 
     async def get_autoreact(self) -> dict[str, list[Autoreaction]]:
-        return self._status.autoreactions
+        return {(await self.get_user(k)).name: v for k, v in self._status.autoreactions.items()}
 
     async def add_autoreact(self, username: str, reaction: str, probability: float, expiration: float) -> None:
 
