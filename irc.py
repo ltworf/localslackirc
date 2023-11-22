@@ -421,7 +421,7 @@ class Client:
         for k, v in (await self.sl_client.get_autoreact()).items():
             await self._sendreply(0, f'Reactions for {k}')
             for i in v:
-                await self._sendreply(0, str(v))
+                await self._sendreply(0, str(i))
 
     async def _sendfilehandler(self, cmd: bytes) -> None:
         #/sendfile #destination filename
