@@ -356,6 +356,7 @@ class SlackStatus:
     """
     last_timestamp: float = 0.0
     autoreactions: dict[str, list[Autoreaction]] = field(default_factory=dict)
+    annoy: dict[str, float] = field(default_factory=dict)
 
 
 class Slack:
@@ -564,6 +565,11 @@ class Slack:
         if not response.ok:
             raise ResponseException(response.error)
 
+    async def add_annoy(self, username, expiration: float) -> None:
+        user_id = (await self.get_user_by_name(username)).id
+        self._status.annoy[user_id] = expiration
+
+
     async def add_autoreact(self, username: str, reaction: str, probability: float, expiration: float) -> None:
 
         if probability > 1 or probability < 0:
@@ -580,6 +586,14 @@ class Slack:
             raise ValueError('Expired')
 
         self._status.autoreactions.get(user_id, []).append(a)
+
+    async def _annoy(self, typing: UserTyping) -> None:
+        if typing.user not in self._status.annoy:
+            return
+        expiration = self._status.annoy[typing.user]
+        if expiration > 0 and time() > expiration:
+            del self._status.annoy[typing.user]
+        await self.typing(typing.channel)
 
     async def _autoreact(self, msg: Message) -> None:
         for i in (rlist := self._status.autoreactions.get(msg.user, [])):
@@ -996,6 +1010,9 @@ class Slack:
                     self._get_members_cache[ev.channel].add(ev.user)
                 else:
                     self._get_members_cache[ev.channel].discard(ev.user)
+            elif isinstance(ev, UserTyping):
+                await self._annoy(ev)
+                continue
 
             if ev:
                 return ev
