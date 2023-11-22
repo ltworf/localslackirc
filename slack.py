@@ -339,6 +339,8 @@ class Autoreaction(NamedTuple):
 
     @property
     def expired(self) -> bool:
+        if self.expiration == -1:
+            return False
         return time() > self.expiration
 
     def random_reaction(self) -> bool:

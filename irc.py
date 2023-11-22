@@ -348,8 +348,11 @@ class Client:
             else:
                 duration = 10
 
+            if duration < 1 and duration != -1:
+                raise ValueError('Duration must be >0 or = -1')
+
             # async def add_autoreact(self, username: str, reaction: str, probability: float, expiration: int) -> None:
-            await self.sl_client.add_autoreact(username, reaction, probability, time.time() + duration * 60 )
+            await self.sl_client.add_autoreact(username, reaction, probability, time.time() + duration * 60 if duration != -1 else -1)
         except Exception as e:
             await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Syntax: /autoreact user probability [reaction] [duration]')
             await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, f'error: {e}')
