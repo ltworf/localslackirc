@@ -583,8 +583,12 @@ class Slack:
     async def get_annoy(self) -> list[str]:
         r = []
         for i in self._status.annoy.keys():
-            u = await self.get_user_by_name(i)
-            r.append(u.name)
+            try:
+                u = await self.get_user(i)
+                r.append(u.name)
+            except KeyError:
+                # The user is gone, expire it
+                self._status.annoy[i] = 1
         r.sort()
         return r
 
