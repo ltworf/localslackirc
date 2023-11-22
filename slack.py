@@ -609,7 +609,9 @@ class Slack:
         if a.expired:
             raise ValueError('Expired')
 
-        self._status.autoreactions.get(user_id, []).append(a)
+        if user_id not in self._status.autoreactions:
+            self._status.autoreactions[user_id] = []
+        self._status.autoreactions[user_id].append(a)
 
     async def _annoy(self, typing: UserTyping) -> None:
         if typing.user not in self._status.annoy:
