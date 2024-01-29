@@ -1,5 +1,5 @@
 # localslackirc
-# Copyright (C) 2018-2023 Salvo "LtWorf" Tomaselli
+# Copyright (C) 2018-2024 Salvo "LtWorf" Tomaselli
 #
 # localslackirc is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -432,9 +432,12 @@ class Client:
             await self._sendreply(Replies.ERR_UNKNOWNCOMMAND, 'Syntax: /sendfile #channel filename')
             return
 
-        with open(filename, 'rb') as f:
-            content = f.read()
-            await self.send_file(params[1], content=content, filename=filename)
+        try:
+            with open(filename, 'rb') as f:
+                content = f.read()
+                await self.send_file(params[1], content=content, filename=filename)
+        except Exception as e:
+            await self._sendreply(Replies.ERR_FILEERROR, f'Error: {e}')
 
 
     async def send_file(self, bchannel_name: bytes, content: bytes, filename: str) -> bool:
