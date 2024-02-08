@@ -24,13 +24,14 @@ install:
 	install -m644 slack.py $${DESTDIR:-/}/usr/share/localslackirc/
 	install -m644 irc.py $${DESTDIR:-/}/usr/share/localslackirc/
 	install -m644 control.py $${DESTDIR:-/}/usr/share/localslackirc/
-	install -m755 lsi-cli.py $${DESTDIR:-/}/usr/share/localslackirc/
+	install -m755 lsi-getconf $${DESTDIR:-/}/usr/share/localslackirc/
 	install localslackirc $${DESTDIR:-/}/usr/share/localslackirc/
 	# Install command
 	install -d $${DESTDIR:-/}/usr/bin/
 	ln -s ../share/localslackirc/localslackirc $${DESTDIR:-/}/usr/bin/localslackirc
 	ln -s ../share/localslackirc/lsi-cli.py $${DESTDIR:-/}/usr/bin/lsi-send
 	ln -s ../share/localslackirc/lsi-cli.py $${DESTDIR:-/}/usr/bin/lsi-write
+	install -m755 lsi-cli.py $${DESTDIR:-/}/usr/bin/lsi-getconf
 	# install extras
 	install -m644 -D CHANGELOG $${DESTDIR:-/}/usr/share/doc/localslackirc/CHANGELOG
 	install -m644 -D README.md $${DESTDIR:-/}/usr/share/doc/localslackirc/README.md
@@ -38,6 +39,7 @@ install:
 	install -m644 -D man/localslackirc.1 $${DESTDIR:-/}/usr/share/man/man1/localslackirc.1
 	install -m644 -D man/lsi-send.1 $${DESTDIR:-/}/usr/share/man/man1/lsi-send.1
 	install -m644 -D man/lsi-send.1 $${DESTDIR:-/}/usr/share/man/man1/lsi-write.1
+	install -m644 -D man/lsi-getconf.1 $${DESTDIR:-/}/usr/share/man/man1/lsi-getconf.1
 	install -m644 -D localslackirc.d/example $${DESTDIR:-/}/etc/localslackirc.d/example
 	install -m644 -D systemd/localslackirc@.service $${DESTDIR:-/}/lib/systemd/system/localslackirc@.service
 	install -m644 -D systemd/localslackirc.service $${DESTDIR:-/}/lib/systemd/system/localslackirc.service
