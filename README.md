@@ -173,6 +173,11 @@ They are mapped as irc channels that get automatically joined when a message is 
 Until a thread has some activity you can't write to it.
 They are only tested for channels, not private groups or chats.
 
+## Leaving channels
+Leaving a discussion thread means that you will no longer receive updates within that thread
+Leaving a regular channel means that discussion threads from that channel will no longer appear
+After leaving a channel, a personal mention in that channel will automatically join it again. @here will be ignored.
+
 ## Reacting to messages
 Since I don't feel like manually wasting time to do it, a very nice `/autoreact` command is available to automate reacting.
 
