@@ -162,6 +162,8 @@ to connect to localslackirc with the IRC client.
 ## Sending files
 You can use `/sendfile #destination filepath` to send files. Destination can be a channel or a user.
 
+From the shell you can do `lsi-send -F file '#general'`
+
 ## Annoying people
 You can use `/annoy user` to send typing notifications whenever the specified user sends a typing notification.
 
