@@ -24,6 +24,7 @@ install:
 	install -m644 slack.py $${DESTDIR:-/}/usr/share/localslackirc/
 	install -m644 irc.py $${DESTDIR:-/}/usr/share/localslackirc/
 	install -m644 control.py $${DESTDIR:-/}/usr/share/localslackirc/
+	install -m755 lsi-cli.py $${DESTDIR:-/}/usr/share/localslackirc/
 	install -m755 lsi-getconf $${DESTDIR:-/}/usr/share/localslackirc/
 	install localslackirc $${DESTDIR:-/}/usr/share/localslackirc/
 	# Install command
@@ -31,7 +32,7 @@ install:
 	ln -s ../share/localslackirc/localslackirc $${DESTDIR:-/}/usr/bin/localslackirc
 	ln -s ../share/localslackirc/lsi-cli.py $${DESTDIR:-/}/usr/bin/lsi-send
 	ln -s ../share/localslackirc/lsi-cli.py $${DESTDIR:-/}/usr/bin/lsi-write
-	install -m755 lsi-cli.py $${DESTDIR:-/}/usr/bin/lsi-getconf
+	ln -s ../share/localslackirc/lsi-getconf $${DESTDIR:-/}/usr/bin/lsi-getconf
 	# install extras
 	install -m644 -D CHANGELOG $${DESTDIR:-/}/usr/share/doc/localslackirc/CHANGELOG
 	install -m644 -D README.md $${DESTDIR:-/}/usr/share/doc/localslackirc/README.md
@@ -49,6 +50,7 @@ dist:
 	cd ..; tar -czvvf localslackirc.tar.gz \
 		localslackirc/localslackirc \
 		localslackirc/*.py \
+		localslackirc/lsi-getconf \
 		localslackirc/slackclient/*.py \
 		localslackirc/Makefile \
 		localslackirc/CHANGELOG \
