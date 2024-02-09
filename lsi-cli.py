@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # localslackirc
-# Copyright (C) 2023 Salvo "LtWorf" Tomaselli
+# Copyright (C) 2023-2024 Salvo "LtWorf" Tomaselli
 #
 # localslackirc is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,7 +24,9 @@ import socket
 
 
 def lsi_write():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description='Send a message to a slack user or channel.'
+    )
     parser.add_argument('--control-socket', type=str, action='store', dest='control_socket', default=None,
                         help='Path to the localslackirc unix control socket')
     parser.add_argument(type=str, action='store', dest='destination',
@@ -46,7 +48,9 @@ def lsi_write():
 
 
 def lsi_send():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description='Send a file to a slack user or channel.'
+    )
     parser.add_argument('-f', '--filename', type=str, action='store', dest='filename',
                         help='Name to give to the file', default='filename')
     parser.add_argument('--control-socket', type=str, action='store', dest='control_socket', default=None,

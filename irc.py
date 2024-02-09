@@ -950,7 +950,9 @@ def su() -> None:
 def main() -> None:
     su()
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description='Creates an IRC server running locally, which acts as a gateway to slack for one user.'
+    )
     parser.add_argument('-v', '--version', action='version', version=f'''localslackirc {VERSION}''')
     parser.add_argument('-p', '--port', type=int, action='store', dest='port',
                                 default=9007, required=False,
