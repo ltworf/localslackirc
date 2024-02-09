@@ -1,4 +1,6 @@
 1.26
+* Add experimental command lsi-getconf to read the slack
+  token from the browser
 
 1.25
 * Fix crash when sending a non existing file
