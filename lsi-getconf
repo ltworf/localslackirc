@@ -105,6 +105,9 @@ def main() -> None:
 
     # TODO chromium
 
+    if not cookies and not tokens:
+        sys.exit('Fail: Nothing was found')
+
     print('# ==============')
     if tokens:
         print('# Tokens found:')
