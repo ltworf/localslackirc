@@ -89,7 +89,9 @@ def mozilla(cfgdir: Path) -> tuple[list[str], list[str]]:
     return cookies, tokens
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description='Read the browser database to try to find the cookie and token that are necessary to set up localslackirc.'
+    )
     parser.add_argument('--mozilla-dir', type=Path, action='store', dest='mozilla_dir',
                                 default=MOZILLA_CONF)
     args = parser.parse_args()

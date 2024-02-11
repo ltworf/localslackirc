@@ -100,55 +100,54 @@ Before localslackirc can do anything useful, you need to obtain a token.
 
 Your token should be placed inside the configuration file.
 
-Obtain a token from slack
--------------------------
+Use lsi-getconf
+---------------
 
-* Retrieve a slack token from https://api.slack.com/docs/oauth-test-tokens
+After logging in slack with firefox, run `lsi-getconf`.
 
-Alternatively if this method fails you can get one from Slack's web client
+This tool is experimental. If it fails to work you need to do it manually.
 
-1) Instructions for Chromium and Firefox
+Obtain a token from the browser
+-------------------------------
 
-* In your browser, login to slack and then open the web console.
-* Run this javascript code: `q=JSON.parse(localStorage.localConfig_v2)["teams"]; q[Object.keys(q)[0]]["token"]`
-* Copy the result, without quotes.
-* **Note**: If you are signed in to multiple teams this will not work, run in a private window for the team you want to set up.
+* Open firefox
+* Open slack
+* Login
+* Open developer mode
+* Go to "network" tab
+* Click on "WS", that means websocket
+* Select the connection, right click and copy value > copy with cURL.
+  If there is no connection, refresh the page and it will appear.
 
-Obtain a Slack cookie
----------------------
+It will be something like this:
 
-This step is only needed if your token starts with `xoxc-`. This option is available since release 1.7.
-
-* Run this javascript code:
-
-```js
-q=JSON.parse(localStorage.localConfig_v2)["teams"];
-var authToken=q[Object.keys(q)[0]]["token"];
-
-
-// setup request
-var formData = new FormData();
-formData.append('token', authToken);
-
-// make request
-(async () => {
-  const rawResponse = await fetch('/api/emoji.list', {
-    method: 'POST',
-    body: formData
-  });
-
-  const emojisApi = await rawResponse.json();
-
-  // dump to console
-})();
+```
+curl 'wss://wss-primary.slack.com/?token=xoxc-1111111111-111111111111-1111111111111-11111111111111111&sync_desync=1&start_args=%3Fagent%3Dclient%26org_wide_aware%3Dtrue%26agent_version%111111111111%26eac_cache_ts%3Dtrue' \
+  -H 'User-Agent: Mozilla/5.0' \
+  -H 'Accept: */*' \
+  -H 'Accept-Language: en-US,en;q=0.5' \
+  -H 'Accept-Encoding: gzip, deflate, br' -H 'Sec-WebSocket-Version: 13' \
+  -H 'Origin: https://app.slack.com' \
+  -H 'Sec-WebSocket-Extensions: permessage-deflate' \
+  -H 'Sec-WebSocket-Key: 111111111111111111111111' \
+  -H 'DNT: 1' \
+  -H 'Connection: keep-alive, Upgrade' \
+  -H 'Cookie: b=1111111111111111; d=xoxd-1111111111111111111111111111111; tz=60; OptanonConsent=isGpcEnabled=0&datestamp=Wed+Feb+07+2024+15%3A37%3A16+GMT%2B0100+(Ora+standard+dell%E2%80%99Europa+centrale)&version=202211.1.0&isIABGlobal=false&hosts=&consentId=11111111-1111-1111-1111-111111111111&interactionCount=1&landingPath=NotLandingPage&groups=1%3A1%2C3%3A0%2C2%3A0%2C4%3A0&AwaitingReconsent=false; lc=1111111111; shown_download_ssb_modal=1; d-s=1111111111; x=11111111111111111111111111111111.1111111111' \
+  -H 'Sec-Fetch-Dest: empty' \
+  -H 'Sec-Fetch-Mode: websocket' \
+  -H 'Sec-Fetch-Site: same-site' -H 'Pragma: no-cache' -H 'Cache-Control: no-cache' -H 'Upgrade: websocket'
 ```
 
-* In the network tab inspect the request for "emoji.list".
-* From that request, copy the "Cookie" header.
-* The values in the field look like `key1=value1; key2=value2; key3=value3;`
-* Get the string `d=XXXXXX;` (where XXX is the secret) and that is your cookie value. It is important to copy the `d=` part and the final `;`.
-* Save the string in its own file (different than the token file).
+The `token=` part of the URL (terminated by `&`) and the `Cookie:` header are the parts that are important.
 
+The cookie header contains more than one cookie, we want the one starting with `d=`. The value for the cookie must include the initial `d=` and the final `;`.
+
+So, for example (the real values will be longer):
+
+```
+TOKEN=xoxc-1111111
+COOKIE="d=xoxd-1111111;"
+```
 
 Using localslackirc
 ===================
@@ -163,6 +162,8 @@ to connect to localslackirc with the IRC client.
 ## Sending files
 You can use `/sendfile #destination filepath` to send files. Destination can be a channel or a user.
 
+From the shell you can do `lsi-send -F file '#general'`
+
 ## Annoying people
 You can use `/annoy user` to send typing notifications whenever the specified user sends a typing notification.
 
@@ -171,6 +172,11 @@ There is some support for discussion threads.
 They are mapped as irc channels that get automatically joined when a message is received. The channel of origin is specified in the topic.
 Until a thread has some activity you can't write to it.
 They are only tested for channels, not private groups or chats.
+
+## Leaving channels
+Leaving a discussion thread means that you will no longer receive updates within that thread
+Leaving a regular channel means that discussion threads from that channel will no longer appear
+After leaving a channel, a personal mention in that channel will automatically join it again. @here will be ignored.
 
 ## Reacting to messages
 Since I don't feel like manually wasting time to do it, a very nice `/autoreact` command is available to automate reacting.

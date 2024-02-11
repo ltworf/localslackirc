@@ -1,6 +1,9 @@
 1.26
 * Add experimental command lsi-getconf to read the slack
   token from the browser
+* Install correct manpage for lsi-write
+* Improve descriptions
+* Improve --help output
 
 1.25
 * Fix crash when sending a non existing file
