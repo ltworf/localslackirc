@@ -4,6 +4,7 @@
 * Install correct manpage for lsi-write
 * Improve descriptions
 * Improve --help output
+* Do not crash when messages cannot be parsed
 
 1.25
 * Fix crash when sending a non existing file
