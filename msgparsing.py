@@ -201,16 +201,18 @@ def tokenize(msg: str) -> Iterable[PreBlock|SpecialItem|str]:
 
     Puts the emoji in place
     """
-    for txt, pre in preblocks(msg):
-        if pre:
-            yield PreBlock(convertpre(txt))
-        else:
-            for t in split_tokens(txt):
-                if isinstance(t, str):
-                    # Replace emoji codes (e.g. :thumbsup:)
-                    t = emojize(t, language='alias')
-                    # Usual substitutions
-                    for s in SLACK_SUBSTITUTIONS:
-                        t = t.replace(s[0], s[1])  # type: ignore
-                yield  t
-
+    try:
+        for txt, pre in preblocks(msg):
+            if pre:
+                yield PreBlock(convertpre(txt))
+            else:
+                for t in split_tokens(txt):
+                    if isinstance(t, str):
+                        # Replace emoji codes (e.g. :thumbsup:)
+                        t = emojize(t, language='alias')
+                        # Usual substitutions
+                        for s in SLACK_SUBSTITUTIONS:
+                            t = t.replace(s[0], s[1])  # type: ignore
+                    yield  t
+    except Exception as e:
+        yield f'ERROR: cannot parse: {msg!r}'
