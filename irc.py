@@ -880,7 +880,7 @@ class Client:
             await self._joined_parted(sl_ev, False)
         elif isinstance(sl_ev, slack.TopicChange):
             await self._sendreply(Replies.RPL_TOPIC, sl_ev.topic, ['#' + (await self.sl_client.get_channel(sl_ev.channel)).name])
-        elif isinstance(sl_ev, slack.GroupJoined):
+        elif isinstance(sl_ev, slack.GroupJoined) or isinstance(sl_ev, slack.MpimJoined):
             channel_name = '#%s' % sl_ev.channel.name_normalized
             await self._send_chan_info(channel_name.encode('utf-8'), sl_ev.channel)
 

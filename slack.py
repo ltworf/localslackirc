@@ -169,6 +169,12 @@ class GroupJoined:
 
 
 @dataclass
+class MpimJoined:
+    type: Literal['mpim_joined']
+    channel: Channel
+
+
+@dataclass
 class MessageEdit:
     type: Literal['message']
     subtype: Literal['message_changed']
@@ -330,6 +336,7 @@ SlackEvent = (
     Join|
     Leave|
     GroupJoined|
+    MpimJoined|
     UserTyping
 )
 
@@ -1022,7 +1029,7 @@ class Slack:
                 continue
 
             debug(event)
-            loadable_events = TopicChange|MessageBot|MessageEdit|MessageDelete|GroupJoined|Join|Leave|UserTyping
+            loadable_events = TopicChange|MessageBot|MessageEdit|MessageDelete|GroupJoined|Join|Leave|UserTyping|MpimJoined
             try:
                 ev: Optional[loadable_events] = self.tload(
                     event,
