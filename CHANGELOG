@@ -1,3 +1,5 @@
+1.27
+
 1.26
 * Add experimental command lsi-getconf to read the slack
   token from the browser
