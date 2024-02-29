@@ -119,6 +119,9 @@ class Channel:
     is_group: bool = False
     is_mpim: bool = False
 
+    # Last updated?
+    updated: int = 0
+
     latest: Optional[LatestMessage] = None
 
     @property

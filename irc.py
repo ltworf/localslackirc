@@ -192,7 +192,7 @@ class Client:
                 if not sl_chan.is_member:
                     continue
 
-                if sl_chan.is_mpim and (sl_chan.latest is None or sl_chan.latest.timestamp < mpim_cutoff):
+                if sl_chan.is_mpim and ((sl_chan.updated / 1000) < mpim_cutoff.timestamp()):
                     continue
 
                 channel_name = '#%s' % sl_chan.name_normalized
