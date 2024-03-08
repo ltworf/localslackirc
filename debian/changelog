@@ -1,4 +1,4 @@
-localslackirc (1.28-1) UNRELEASED; urgency=medium
+localslackirc (1.28-1) unstable; urgency=low
 
   * New upstream release (Closes: #1065051)
 
