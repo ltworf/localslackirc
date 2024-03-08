@@ -1,4 +1,5 @@
 1.28
+* Do not crash on errors with last known timestamp
 * Stop using match statement, so it can work with pypy
 
 1.27
