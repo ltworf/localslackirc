@@ -1,6 +1,6 @@
 localslackirc (1.28-1) UNRELEASED; urgency=medium
 
-  * New upstream release
+  * New upstream release (Closes: #1065051)
 
  -- Salvo 'LtWorf' Tomaselli <ltworf@debian.org>  Fri, 08 Mar 2024 14:30:28 +0100
 
