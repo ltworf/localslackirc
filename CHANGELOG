@@ -1,3 +1,5 @@
+1.28
+
 1.27
 * New group chats are automatically joined rather than ignored
   This used to work but slack changed API

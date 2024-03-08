@@ -1,3 +1,9 @@
+localslackirc (1.28-1) UNRELEASED; urgency=medium
+
+  * New upstream release
+
+ -- Salvo 'LtWorf' Tomaselli <ltworf@debian.org>  Fri, 08 Mar 2024 14:30:28 +0100
+
 localslackirc (1.27-1) unstable; urgency=low
 
   * New upstream release
