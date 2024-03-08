@@ -98,12 +98,11 @@ def lsi_send():
 
 
 def main() -> None:
-
-    match sys.argv[0].split('/')[-1]:
-        case 'lsi-send':
-            lsi_send()
-        case 'lsi-write':
-            lsi_write()
+    cmdname = sys.argv[0].split('/')[-1]
+    if cmdname == 'lsi-send':
+        lsi_send()
+    elif cmdname == 'lsi-write':
+        lsi_write()
 
 
 def find_socket() -> None | str:
