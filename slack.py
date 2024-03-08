@@ -469,7 +469,11 @@ class Slack:
         if time() - last_timestamp > FOUR_DAYS:
             log('Last timestamp is too old. Defaulting to 4 days.')
             last_timestamp = time() - FOUR_DAYS
-        dt = datetime.datetime.fromtimestamp(last_timestamp)
+        try:
+            dt = datetime.datetime.fromtimestamp(last_timestamp)
+        except ValueError:
+            log(f'Unable to parse timestamp {last_timestamp}')
+            return
         log(f'Last known timestamp {dt}')
 
         chats: Sequence[IM|Channel] = []
