@@ -74,7 +74,12 @@ class Response(NamedTuple):
 
 
 @dataclass
+class DeletedFile:
+    file_access: Literal['file_not_found']
+
+@dataclass
 class File:
+    file_access: Literal['visible']
     id: str
     url_private: str
     size: int
@@ -295,7 +300,7 @@ class HistoryBotMessage:
     bot_id: Optional[str]
     username: str = 'bot'
     ts: float = 0
-    files: list[File] = field(default_factory=list)
+    files: list[File | DeletedFile] = field(default_factory=list)
     thread_ts: Optional[str] = None
     attachments: list[dict[str, Any]] = field(default_factory=list)
 
@@ -306,7 +311,7 @@ class HistoryMessage:
     user: str
     text: str
     ts: float
-    files: list[File] = field(default_factory=list)
+    files: list[File | DeletedFile] = field(default_factory=list)
     thread_ts: Optional[str] = None
 
 
@@ -520,7 +525,7 @@ class Slack:
                             text=msg.text,
                             user=msg.user,
                             thread_ts=msg.thread_ts,
-                            files=msg.files,
+                            files=[i for i in msg.files if isinstance(i, File)],
                             ts=msg.ts,
                         ))
                     elif isinstance(msg, HistoryBotMessage):
@@ -820,7 +825,7 @@ class Slack:
         user = (await self.get_user(msg.user)).name if isinstance(msg, HistoryMessage) else 'bot'
 
         # Top message is a file
-        if msg.text == '' and msg.files:
+        if msg.text == '' and msg.files and isinstance(msg.files[0], File):
             f = msg.files[0]
             original_txt = f'{f.title} {f.mimetype} {f.url_private}'
         else:

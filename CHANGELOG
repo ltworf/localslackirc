@@ -1,4 +1,5 @@
 1.29
+* Do not crash when encountering deleted files
 
 1.28
 * Do not crash on errors with last known timestamp
