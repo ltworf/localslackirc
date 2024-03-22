@@ -88,6 +88,16 @@ class File:
     title: Optional[str] = None
     mimetype: Optional[str] = None
 
+@dataclass
+class TabutuFile:
+    """
+    'un sacciu chi minchia è sta cosa.
+
+    Sacciu sulu ca slack u manna
+    """
+    id: str
+    mode: Literal['tombstone']
+
 
 class Topic(NamedTuple):
     """
@@ -300,7 +310,7 @@ class HistoryBotMessage:
     bot_id: Optional[str]
     username: str = 'bot'
     ts: float = 0
-    files: list[File | DeletedFile] = field(default_factory=list)
+    files: list[File | DeletedFile | TabutuFile] = field(default_factory=list)
     thread_ts: Optional[str] = None
     attachments: list[dict[str, Any]] = field(default_factory=list)
 
@@ -311,7 +321,7 @@ class HistoryMessage:
     user: str
     text: str
     ts: float
-    files: list[File | DeletedFile] = field(default_factory=list)
+    files: list[File | DeletedFile | TabutuFile] = field(default_factory=list)
     thread_ts: Optional[str] = None
 
 

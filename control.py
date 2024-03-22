@@ -44,11 +44,10 @@ async def handle_sendfile(ircclient: "IrcClient", reader, writer) -> None:
 async def handle_client(ircclient: "IrcClient", reader, writer) -> None:
     command = (await reader.readline()).strip()
 
-    match command:
-        case b"sendfile":
-            await handle_sendfile(ircclient, reader, writer)
-        case b"write":
-            await handle_write(ircclient, reader, writer)
+    if command == b"sendfile":
+        await handle_sendfile(ircclient, reader, writer)
+    elif command == b"write":
+        await handle_write(ircclient, reader, writer)
 
 async def listen(socket_path: str, ircclient: "IrcClient") -> None:
     server = await asyncio.start_unix_server(lambda r,w: handle_client(ircclient, r, w), socket_path)
