@@ -146,8 +146,10 @@ So, for example (the real values will be longer):
 
 ```
 TOKEN=xoxc-1111111
-COOKIE="d=xoxd-1111111;"
+COOKIE=d=xoxd-1111111;
 ```
+
+Remember to quote if you pass them in a shell.
 
 Using localslackirc
 ===================
