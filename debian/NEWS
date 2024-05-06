@@ -1,3 +1,12 @@
+localslackirc (1.31-1) unstable; urgency=low
+
+  Due to changes in Debian, the default state directory is being moved from
+  /var/tmp to /var/lib/localslackirc.
+  If you want to preserve the status, stop the localslackirc service and move
+  the status files to the new location, then start the service.
+
+ -- Salvo 'LtWorf' Tomaselli <ltworf@debian.org>  Mon, 06 May 2024 17:35:13 +0200
+
 localslackirc (1.11-1) unstable; urgency=medium
 
   Rocket.Chat support was removed.
