@@ -30,10 +30,12 @@ Before=localslackirc.service
 [Service]
 Type=simple
 Restart=always
-ExecStart=/usr/bin/localslackirc --status-file /var/tmp/localslackirc-status-%i --log-suffix %i --control-socket /run/localslackirc/localslackirc-%i.sock
+ExecStart=/usr/bin/localslackirc --status-file ${STATE_DIRECTORY}/localslackirc-status-%i --log-suffix %i --control-socket ${RUNTIME_DIRECTORY}/localslackirc-%i.sock
 # Using the same mode as /tmp so that after changing uid a control socket can still be created
 RuntimeDirectory=localslackirc
 RuntimeDirectoryMode=1777
+StateDirectory=localslackirc
+StateDirectoryMode=1777
 # Log
 StandardOutput=journal
 StandardError=journal
