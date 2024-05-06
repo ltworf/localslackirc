@@ -1,3 +1,6 @@
+1.31
+* Store state into /var/lib/localslackirc when started from systemd
+
 1.30
 * Do not crash when encountering graves of deleted files
 
