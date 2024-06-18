@@ -1,4 +1,0 @@
-typedload>=2.16
-emoji>=2.0.0
-types-emoji
-websockets
